@@ -1,0 +1,23 @@
+@import "tailwindcss";
+
+@theme {
+  --color-primary: #F15A2D;
+  --color-primary-dark: #D94A1F;
+  --color-primary-light: #FF7A52;
+  --color-primary-50: #FFF3EF;
+  --color-primary-100: #FFE4DB;
+  --color-primary-600: #D94A1F;
+  --color-primary-700: #B83D18;
+  --font-sans: "Nunito", system-ui, sans-serif;
+}
+
+body {
+  margin: 0;
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+code, pre {
+  font-family: ui-monospace, "Cascadia Code", "Fira Code", Consolas, monospace;
+}
