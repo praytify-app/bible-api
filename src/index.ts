@@ -6,6 +6,7 @@ import { apiKeyMiddleware } from "./middleware/api-key.js";
 import { rateLimitMiddleware } from "./middleware/rate-limit.js";
 import { usageLoggerMiddleware } from "./middleware/usage-logger.js";
 import { proxyToBibleApi } from "./middleware/proxy.js";
+import { startScheduledJobs } from "./jobs/usage-aggregation.js";
 
 const app = new Hono();
 
@@ -107,6 +108,7 @@ serve(
   },
   (info) => {
     console.log(`praytify-bible gateway listening on http://localhost:${info.port}`);
+    startScheduledJobs();
   }
 );
 
