@@ -84,7 +84,7 @@ export function LandingPage() {
             <span className="w-2 h-2 rounded-full bg-primary animate-pulse" />
             Open Bible API
           </div>
-          <h1 className="text-5xl sm:text-6xl lg:text-7xl font-extrabold text-gray-900 tracking-tight leading-tight">
+          <h1 className="text-5xl sm:text-6xl lg:text-7xl font-extrabold text-gray-900 tracking-tight leading-tight font-serif">
             The Bible API<br />
             <span className="text-primary">for Developers</span>
           </h1>
