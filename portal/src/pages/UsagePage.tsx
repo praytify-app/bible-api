@@ -115,10 +115,10 @@ export function UsagePage() {
                 <Line
                   type="monotone"
                   dataKey="requests"
-                  stroke="#F15A2D"
+                  stroke="#4F46E5"
                   strokeWidth={2}
                   dot={false}
-                  activeDot={{ r: 5, fill: "#F15A2D" }}
+                  activeDot={{ r: 5, fill: "#4F46E5" }}
                 />
                 <Line
                   type="monotone"
