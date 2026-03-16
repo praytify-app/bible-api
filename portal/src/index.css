@@ -1,14 +1,22 @@
 @import "tailwindcss";
 
 @theme {
-  --color-primary: #F15A2D;
-  --color-primary-dark: #D94A1F;
-  --color-primary-light: #FF7A52;
-  --color-primary-50: #FFF3EF;
-  --color-primary-100: #FFE4DB;
-  --color-primary-600: #D94A1F;
-  --color-primary-700: #B83D18;
-  --font-sans: "Nunito", system-ui, sans-serif;
+  /* Brand primary — Sacred Indigo */
+  --color-primary: #4F46E5;
+  --color-primary-dark: #4338CA;
+  --color-primary-light: #818CF8;
+  --color-primary-50: #EEF2FF;
+  --color-primary-100: #E0E7FF;
+  --color-primary-200: #C7D2FE;
+  --color-primary-300: #A5B4FC;
+  --color-primary-400: #818CF8;
+  --color-primary-500: #6366F1;
+  --color-primary-600: #4F46E5;
+  --color-primary-700: #4338CA;
+
+  /* Typography */
+  --font-sans: "Plus Jakarta Sans", system-ui, -apple-system, sans-serif;
+  --font-serif: "Source Serif 4", Georgia, "Times New Roman", serif;
 }
 
 body {
