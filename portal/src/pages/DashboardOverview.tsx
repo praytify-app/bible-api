@@ -60,7 +60,7 @@ export function DashboardOverview() {
             <div className="bg-gray-950 rounded-lg p-4 overflow-x-auto">
               <pre className="text-sm text-gray-300">
                 <code>{`curl -H "Authorization: Bearer YOUR_API_KEY" \\
-  "${import.meta.env.VITE_API_URL || "https://api.praytify.bible"}/v1/bibles/eng-kjv/books/JHN/chapters/3/verses/16"`}</code>
+  "${import.meta.env.VITE_API_URL || "https://api.praytify.bible"}/v1/verses?ref=John+3:16&version=KJV"`}</code>
               </pre>
             </div>
           </div>

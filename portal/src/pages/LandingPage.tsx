@@ -5,32 +5,46 @@ const codeExamples = [
   {
     label: "cURL",
     language: "bash",
-    code: `curl -H "Authorization: Bearer pb_your_api_key" \\
-  "https://api.praytify.bible/v1/bibles/eng-kjv/books/JHN/chapters/3/verses/16"`,
+    code: `# Look up a verse
+curl -H "Authorization: Bearer pb_your_api_key" \\
+  "https://api.praytify.bible/v1/verses?ref=John+3:16&version=KJV"
+
+# Search across a version
+curl -H "Authorization: Bearer pb_your_api_key" \\
+  "https://api.praytify.bible/v1/search?q=love&version=KJV&limit=5"`,
   },
   {
     label: "JavaScript",
     language: "javascript",
-    code: `const response = await fetch(
-  "https://api.praytify.bible/v1/bibles/eng-kjv/books/JHN/chapters/3/verses/16",
-  { headers: { Authorization: "Bearer pb_your_api_key" } }
-);
+    code: `const API_KEY = "pb_your_api_key";
+const BASE = "https://api.praytify.bible";
 
-const verse = await response.json();
-console.log(verse.text);`,
+// Look up a verse
+const res = await fetch(
+  \`\${BASE}/v1/verses?ref=John+3:16&version=KJV\`,
+  { headers: { Authorization: \`Bearer \${API_KEY}\` } }
+);
+const { data } = await res.json();
+console.log(data.text);
+// "For God so loved the world..."`,
   },
   {
     label: "Python",
     language: "python",
     code: `import requests
 
-response = requests.get(
-    "https://api.praytify.bible/v1/bibles/eng-kjv/books/JHN/chapters/3/verses/16",
-    headers={"Authorization": "Bearer pb_your_api_key"}
-)
+API_KEY = "pb_your_api_key"
+BASE = "https://api.praytify.bible"
+headers = {"Authorization": f"Bearer {API_KEY}"}
 
-verse = response.json()
-print(verse["text"])`,
+# Look up a verse
+res = requests.get(
+    f"{BASE}/v1/verses",
+    params={"ref": "John 3:16", "version": "KJV"},
+    headers=headers
+)
+print(res.json()["data"]["text"])
+# "For God so loved the world..."`,
   },
 ];
 

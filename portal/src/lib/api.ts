@@ -1,4 +1,4 @@
-const API_URL = import.meta.env.VITE_API_URL || "http://localhost:3000";
+const API_URL = import.meta.env.VITE_API_URL || "http://localhost:3200";
 
 async function fetchAPI<T>(path: string, options?: RequestInit): Promise<T> {
   const res = await fetch(`${API_URL}${path}`, {
@@ -110,7 +110,7 @@ export interface Translation {
 
 export const translations = {
   list: () =>
-    fetchAPI<{ translations: Translation[] } | Translation[]>(
-      "/v1/translations"
-    ).then((r) => (Array.isArray(r) ? r : r.translations)),
+    fetchAPI<{ data: Translation[]; meta?: any }>(
+      "/v1/versions"
+    ).then((r) => r.data || []),
 };

@@ -41,7 +41,7 @@ export function QuickStartPage() {
         </div>
         <div className="ml-11">
           <p className="text-gray-600 mb-4">
-            Use your API key in the <code className="text-sm bg-gray-100 px-1.5 py-0.5 rounded">Authorization</code> header.
+            Use your API key in the <code className="text-sm bg-gray-100 px-1.5 py-0.5 rounded">Authorization</code> header with the <code className="text-sm bg-gray-100 px-1.5 py-0.5 rounded">Bearer</code> prefix.
           </p>
           <CodeBlock
             tabs={[
@@ -49,7 +49,7 @@ export function QuickStartPage() {
                 label: "cURL",
                 language: "bash",
                 code: `curl -H "Authorization: Bearer pb_your_api_key" \\
-  "${apiBase}/v1/translations"`,
+  "${apiBase}/v1/versions"`,
               },
               {
                 label: "JavaScript",
@@ -57,15 +57,11 @@ export function QuickStartPage() {
                 code: `const API_KEY = "pb_your_api_key";
 const BASE = "${apiBase}";
 
-async function getTranslations() {
-  const res = await fetch(\`\${BASE}/v1/translations\`, {
-    headers: { Authorization: \`Bearer \${API_KEY}\` },
-  });
-  return res.json();
-}
-
-const translations = await getTranslations();
-console.log(translations);`,
+const res = await fetch(\`\${BASE}/v1/versions\`, {
+  headers: { Authorization: \`Bearer \${API_KEY}\` },
+});
+const { data } = await res.json();
+console.log(data); // Array of available Bible versions`,
               },
               {
                 label: "Python",
@@ -74,13 +70,11 @@ console.log(translations);`,
 
 API_KEY = "pb_your_api_key"
 BASE = "${apiBase}"
-
 headers = {"Authorization": f"Bearer {API_KEY}"}
 
-# List all translations
-response = requests.get(f"{BASE}/v1/translations", headers=headers)
-translations = response.json()
-print(translations)`,
+response = requests.get(f"{BASE}/v1/versions", headers=headers)
+versions = response.json()["data"]
+print(f"Found {len(versions)} versions")`,
               },
             ]}
           />
@@ -97,34 +91,49 @@ print(translations)`,
         </div>
         <div className="ml-11">
           <p className="text-gray-600 mb-4">
-            The API follows a hierarchical structure: Translations &rarr; Books &rarr; Chapters &rarr; Verses.
+            The API provides these core endpoints. All require a valid API key via <code className="text-sm bg-gray-100 px-1.5 py-0.5 rounded">Authorization: Bearer &lt;key&gt;</code>.
           </p>
 
           <div className="space-y-3">
             <EndpointCard
               method="GET"
-              path="/v1/translations"
-              description="List all available Bible translations"
+              path="/v1/languages"
+              description="List all languages"
             />
             <EndpointCard
               method="GET"
-              path="/v1/bibles/{id}/books"
-              description="List books in a translation"
+              path="/v1/versions"
+              description="List all Bible versions (filter: ?language=eng)"
             />
             <EndpointCard
               method="GET"
-              path="/v1/bibles/{id}/books/{book}/chapters"
+              path="/v1/versions/:id/books"
+              description="List books in a version (use UUID or abbreviation like KJV)"
+            />
+            <EndpointCard
+              method="GET"
+              path="/v1/books/:id/chapters"
               description="List chapters in a book"
             />
             <EndpointCard
               method="GET"
-              path="/v1/bibles/{id}/books/{book}/chapters/{ch}/verses"
-              description="List verses in a chapter"
+              path="/v1/verses?ref=John+3:16&version=KJV"
+              description="Look up a verse by reference"
             />
             <EndpointCard
               method="GET"
-              path="/v1/bibles/{id}/books/{book}/chapters/{ch}/verses/{v}"
-              description="Get a single verse"
+              path="/v1/verses?ref=John+3:16&version=KJV,WEB"
+              description="Parallel verse lookup (multiple versions)"
+            />
+            <EndpointCard
+              method="GET"
+              path="/v1/search?q=love&version=KJV&limit=20"
+              description="Full-text search"
+            />
+            <EndpointCard
+              method="GET"
+              path="/v1/daily"
+              description="Verse of the day"
             />
           </div>
         </div>
@@ -148,32 +157,40 @@ print(translations)`,
                 label: "cURL",
                 language: "bash",
                 code: `curl -H "Authorization: Bearer pb_your_api_key" \\
-  "${apiBase}/v1/bibles/eng-kjv/books/JHN/chapters/3/verses/16"`,
+  "${apiBase}/v1/verses?ref=John+3:16&version=KJV"`,
               },
               {
                 label: "JavaScript",
                 language: "javascript",
-                code: `const verse = await fetch(
-  \`\${BASE}/v1/bibles/eng-kjv/books/JHN/chapters/3/verses/16\`,
+                code: `const res = await fetch(
+  \`\${BASE}/v1/verses?ref=John+3:16&version=KJV\`,
   { headers: { Authorization: \`Bearer \${API_KEY}\` } }
-).then(r => r.json());
-
-console.log(verse.text);
-// "For God so loved the world..."`,
+);
+const { data } = await res.json();
+console.log(data.text);
+// "For God so loved the world, that he gave his only
+//  begotten Son, that whosoever believeth in him should
+//  not perish, but have everlasting life."`,
               },
               {
                 label: "Python",
                 language: "python",
-                code: `verse = requests.get(
-    f"{BASE}/v1/bibles/eng-kjv/books/JHN/chapters/3/verses/16",
+                code: `res = requests.get(
+    f"{BASE}/v1/verses",
+    params={"ref": "John 3:16", "version": "KJV"},
     headers=headers
-).json()
-
+)
+verse = res.json()["data"]
 print(verse["text"])
-# "For God so loved the world..."`,
+# "For God so loved the world, that he gave his only
+#  begotten Son, that whosoever believeth in him should
+#  not perish, but have everlasting life."`,
               },
             ]}
           />
+          <div className="mt-4 p-4 bg-amber-50 border border-amber-200 rounded-lg text-sm text-amber-800">
+            <strong>Tip:</strong> Use <code className="bg-amber-100 px-1 rounded">version=KJV,WEB</code> to fetch the same verse from multiple translations in one request.
+          </div>
         </div>
       </section>
 
@@ -202,7 +219,7 @@ print(verse["text"])
               <Link to="/docs" className="text-primary font-medium">
                 API reference
               </Link>{" "}
-              with interactive examples
+              with interactive examples (Scalar docs)
             </span>
           </li>
           <li className="flex items-start gap-2">
@@ -233,14 +250,14 @@ function EndpointCard({
   description: string;
 }) {
   return (
-    <div className="flex items-center gap-3 bg-white border border-gray-200 rounded-lg px-4 py-3">
-      <span className="shrink-0 px-2 py-0.5 rounded text-xs font-bold text-green-700 bg-green-100 uppercase">
+    <div className="flex items-start gap-3 bg-white border border-gray-200 rounded-lg px-4 py-3">
+      <span className="shrink-0 px-2 py-0.5 rounded text-xs font-bold text-green-700 bg-green-100 uppercase mt-0.5">
         {method}
       </span>
-      <code className="text-sm text-gray-700 font-mono">{path}</code>
-      <span className="hidden sm:inline ml-auto text-xs text-gray-400">
-        {description}
-      </span>
+      <div className="min-w-0">
+        <code className="text-sm text-gray-700 font-mono break-all">{path}</code>
+        <p className="text-xs text-gray-400 mt-0.5">{description}</p>
+      </div>
     </div>
   );
 }
