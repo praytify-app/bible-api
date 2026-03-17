@@ -9,7 +9,11 @@ const BIBLE_API_URL =
  */
 export async function proxyToBibleApi(c: Context): Promise<Response> {
   const url = new URL(c.req.url);
-  const targetUrl = `${BIBLE_API_URL}${url.pathname}${url.search}`;
+  // Rewrite /v1/* to /api/v1/* for the upstream Bible API
+  const upstreamPath = url.pathname.startsWith("/v1/")
+    ? `/api${url.pathname}`
+    : url.pathname;
+  const targetUrl = `${BIBLE_API_URL}${upstreamPath}${url.search}`;
 
   const headers = new Headers();
   // Forward relevant headers

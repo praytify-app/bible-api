@@ -7,22 +7,25 @@ import { rateLimitMiddleware } from "./middleware/rate-limit.js";
 import { usageLoggerMiddleware } from "./middleware/usage-logger.js";
 import { proxyToBibleApi } from "./middleware/proxy.js";
 import { startScheduledJobs } from "./jobs/usage-aggregation.js";
+import { keysRouter } from "./routes/keys.js";
+import { usageRouter } from "./routes/usage.js";
+import { profileRouter } from "./routes/profile.js";
 
 const app = new Hono();
 
 // --- CORS ---
-// Restrictive CORS for auth/dashboard routes
+// Restrictive CORS for auth/dashboard routes (portal origin)
 app.use(
   "/api/auth/*",
   cors({
-    origin: process.env.BETTER_AUTH_URL || "http://localhost:3000",
+    origin: process.env.PORTAL_URL || "http://localhost:5173",
     credentials: true,
   })
 );
 app.use(
   "/api/dashboard/*",
   cors({
-    origin: process.env.BETTER_AUTH_URL || "http://localhost:3000",
+    origin: process.env.PORTAL_URL || "http://localhost:5173",
     credentials: true,
   })
 );
@@ -56,40 +59,23 @@ app.get("/docs", proxyToBibleApi);
 app.get("/docs/*", proxyToBibleApi);
 
 // --- BetterAuth Routes ---
-// Lazy-load to avoid import errors when DB isn't available
+// Forward directly to BetterAuth handler
 app.all("/api/auth/*", async (c) => {
-  const { authRouter } = await import("./routes/auth.js");
-  // Re-dispatch to the auth router
-  return authRouter.fetch(c.req.raw, c.env);
+  try {
+    const { auth } = await import("./auth/index.js");
+    const response = await auth.handler(c.req.raw);
+    return response;
+  } catch (err) {
+    console.error("[auth] Error handling auth request:", err);
+    return c.json({ error: "Internal auth error", details: String(err) }, 500);
+  }
 });
 
 // --- Dashboard API Routes ---
-app.all("/api/dashboard/keys/*", async (c) => {
-  const { keysRouter } = await import("./routes/keys.js");
-  return keysRouter.fetch(c.req.raw, c.env);
-});
-app.all("/api/dashboard/keys", async (c) => {
-  const { keysRouter } = await import("./routes/keys.js");
-  return keysRouter.fetch(c.req.raw, c.env);
-});
-
-app.all("/api/dashboard/usage/*", async (c) => {
-  const { usageRouter } = await import("./routes/usage.js");
-  return usageRouter.fetch(c.req.raw, c.env);
-});
-app.all("/api/dashboard/usage", async (c) => {
-  const { usageRouter } = await import("./routes/usage.js");
-  return usageRouter.fetch(c.req.raw, c.env);
-});
-
-app.all("/api/dashboard/profile/*", async (c) => {
-  const { profileRouter } = await import("./routes/profile.js");
-  return profileRouter.fetch(c.req.raw, c.env);
-});
-app.all("/api/dashboard/profile", async (c) => {
-  const { profileRouter } = await import("./routes/profile.js");
-  return profileRouter.fetch(c.req.raw, c.env);
-});
+// Mounted with app.route() so sub-router paths resolve correctly
+app.route("/api/dashboard/keys", keysRouter);
+app.route("/api/dashboard/usage", usageRouter);
+app.route("/api/dashboard/profile", profileRouter);
 
 // --- Authenticated Bible API Routes ---
 // /v1/* (except openapi.json) requires API key + rate limit + usage logging
@@ -99,7 +85,7 @@ app.use("/v1/*", usageLoggerMiddleware);
 app.all("/v1/*", proxyToBibleApi);
 
 // --- Start Server ---
-const port = parseInt(process.env.PORT || "3000", 10);
+const port = parseInt(process.env.PORT || "3200", 10);
 
 serve(
   {

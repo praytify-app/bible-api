@@ -104,13 +104,17 @@ export function UsagePage() {
                     boxShadow: "0 4px 6px -1px rgb(0 0 0 / 0.1)",
                     fontSize: "13px",
                   }}
-                  labelFormatter={(label: string) =>
-                    new Date(label).toLocaleDateString("en-US", {
+                  labelFormatter={(label) => {
+                    if (typeof label !== "string" && typeof label !== "number") {
+                      return "";
+                    }
+
+                    return new Date(label).toLocaleDateString("en-US", {
                       month: "short",
                       day: "numeric",
                       year: "numeric",
-                    })
-                  }
+                    });
+                  }}
                 />
                 <Line
                   type="monotone"

@@ -1,10 +1,9 @@
 import type { Context, Next } from "hono";
+import { createHash } from "crypto";
 
 /**
  * Extract an API key from the Authorization header.
  * Expects format: "Bearer <key>"
- *
- * Returns the key string or null if not valid.
  */
 export function extractApiKey(
   authorizationHeader: string | undefined
@@ -21,14 +20,13 @@ export function extractApiKey(
   return key;
 }
 
+function hashKey(key: string): string {
+  return createHash("sha256").update(key).digest("hex");
+}
+
 /**
  * Hono middleware that validates API keys from the Authorization header.
- *
- * On success, sets `c.set("apiKeyId", ...)` and `c.set("userId", ...)`
- * for downstream handlers.
- *
- * In production this would validate against a database table.
- * For now, it extracts and validates format only.
+ * Checks the key hash against platform.api_keys table.
  */
 export async function apiKeyMiddleware(c: Context, next: Next) {
   const authorization = c.req.header("Authorization");
@@ -39,16 +37,38 @@ export async function apiKeyMiddleware(c: Context, next: Next) {
       {
         error: "Unauthorized",
         message:
-          "Missing or invalid API key. Provide a Bearer token in the Authorization header.",
+          "Missing or invalid API key. Provide 'Authorization: Bearer <your_api_key>' header.",
       },
       401
     );
   }
 
-  // TODO: Validate API key against database and resolve userId
-  // For now, set the raw key as both apiKeyId and userId
-  c.set("apiKeyId", apiKey);
-  c.set("userId", apiKey);
+  try {
+    const { client } = await import("../db/client.js");
+    const keyHash = hashKey(apiKey);
+
+    const rows = await client`
+      SELECT id, user_id FROM platform.api_keys
+      WHERE key_hash = ${keyHash} AND revoked = false
+      LIMIT 1
+    `;
+
+    if (rows.length === 0) {
+      return c.json(
+        { error: "Unauthorized", message: "Invalid or revoked API key." },
+        401
+      );
+    }
+
+    c.set("apiKeyId", rows[0].id);
+    c.set("userId", rows[0].user_id);
+  } catch (err) {
+    console.error("[api-key] Validation error:", err);
+    return c.json(
+      { error: "Unauthorized", message: "API key validation failed." },
+      401
+    );
+  }
 
   await next();
 }

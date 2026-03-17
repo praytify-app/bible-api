@@ -2,7 +2,6 @@ import {
   createRouter,
   createRootRoute,
   createRoute,
-  Outlet,
 } from "@tanstack/react-router";
 import { RootLayout } from "./components/RootLayout";
 import { DashboardLayout } from "./components/DashboardLayout";

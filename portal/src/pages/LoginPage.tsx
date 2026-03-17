@@ -12,12 +12,14 @@ export function LoginPage() {
     }
   }, [session, navigate]);
 
+  const portalURL = window.location.origin;
+
   const handleGitHub = () => {
-    signIn.social({ provider: "github", callbackURL: "/dashboard" });
+    signIn.social({ provider: "github", callbackURL: `${portalURL}/dashboard` });
   };
 
   const handleGoogle = () => {
-    signIn.social({ provider: "google", callbackURL: "/dashboard" });
+    signIn.social({ provider: "google", callbackURL: `${portalURL}/dashboard` });
   };
 
   return (

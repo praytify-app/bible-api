@@ -1,70 +1,100 @@
 import { Hono } from "hono";
-import { randomBytes } from "crypto";
+import { randomBytes, createHash } from "crypto";
+import { db, client } from "../db/client.js";
+import { auth } from "../auth/index.js";
 
 const keysRouter = new Hono();
 
-/**
- * Generate a random API key with a prefix.
- */
 function generateApiKey(): string {
   const bytes = randomBytes(24);
   return `pb_${bytes.toString("base64url")}`;
 }
 
-/**
- * GET /api/dashboard/keys — List all API keys for the authenticated user.
- */
+function hashKey(key: string): string {
+  return createHash("sha256").update(key).digest("hex");
+}
+
+/** Get authenticated user from BetterAuth session cookie */
+async function getSessionUser(c: any): Promise<{ id: string; name: string; email: string } | null> {
+  try {
+    const session = await auth.api.getSession({ headers: c.req.raw.headers });
+    if (!session?.user) return null;
+    return session.user as any;
+  } catch {
+    return null;
+  }
+}
+
+// List keys
 keysRouter.get("/", async (c) => {
-  // TODO: Validate session via BetterAuth
-  // TODO: Query keys from database
+  const user = await getSessionUser(c);
+  if (!user) return c.json({ error: "Unauthorized" }, 401);
+
+  const rows = await client`
+    SELECT id, name, key_prefix, created_at, last_used_at, revoked
+    FROM platform.api_keys
+    WHERE user_id = ${user.id} AND revoked = false
+    ORDER BY created_at DESC
+  `;
+
   return c.json({
-    keys: [],
-    message: "API key listing requires database connection",
+    keys: rows.map((r: any) => ({
+      id: r.id,
+      name: r.name,
+      prefix: r.key_prefix,
+      createdAt: r.created_at,
+      lastUsedAt: r.last_used_at,
+    })),
   });
 });
 
-/**
- * POST /api/dashboard/keys — Create a new API key.
- * Body: { name: string }
- */
+// Create key
 keysRouter.post("/", async (c) => {
+  const user = await getSessionUser(c);
+  if (!user) return c.json({ error: "Unauthorized" }, 401);
+
   const body = await c.req.json().catch(() => ({}));
   const name = (body as { name?: string }).name || "Untitled Key";
 
-  // TODO: Validate session via BetterAuth
-  // TODO: Store key in database
-
   const apiKey = generateApiKey();
+  const keyHash = hashKey(apiKey);
+  const keyPrefix = apiKey.substring(0, 10) + "...";
+  const id = crypto.randomUUID();
+
+  await client`
+    INSERT INTO platform.api_keys (id, user_id, name, key_hash, key_prefix, created_at)
+    VALUES (${id}, ${user.id}, ${name}, ${keyHash}, ${keyPrefix}, NOW())
+  `;
 
   return c.json(
     {
       key: {
-        id: crypto.randomUUID(),
+        id,
         name,
         key: apiKey,
+        prefix: keyPrefix,
         createdAt: new Date().toISOString(),
       },
-      message:
-        "Store this key securely. It will not be shown again.",
+      message: "Store this key securely. It will not be shown again.",
     },
     201
   );
 });
 
-/**
- * DELETE /api/dashboard/keys/:id — Revoke an API key.
- */
+// Revoke key
 keysRouter.delete("/:id", async (c) => {
+  const user = await getSessionUser(c);
+  if (!user) return c.json({ error: "Unauthorized" }, 401);
+
   const id = c.req.param("id");
 
-  // TODO: Validate session via BetterAuth
-  // TODO: Soft-delete or revoke key in database
+  await client`
+    UPDATE platform.api_keys
+    SET revoked = true
+    WHERE id = ${id} AND user_id = ${user.id}
+  `;
 
-  return c.json({
-    revoked: true,
-    id,
-    message: "API key revoked successfully",
-  });
+  return c.json({ revoked: true, id });
 });
 
 export { keysRouter };

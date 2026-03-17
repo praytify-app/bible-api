@@ -1,0 +1,11 @@
+node_modules
+portal/node_modules
+dist
+portal/dist
+.git
+.env
+.worktrees
+bible-data.sql.gz
+docs
+tests
+portal

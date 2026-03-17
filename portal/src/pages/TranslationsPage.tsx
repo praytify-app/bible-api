@@ -1,6 +1,6 @@
 import { useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { translations, type Translation } from "../lib/api";
+import { translations } from "../lib/api";
 
 export function TranslationsPage() {
   const [search, setSearch] = useState("");
