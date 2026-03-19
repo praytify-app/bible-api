@@ -12,7 +12,7 @@ services:
       - "3200:3200"
     environment:
       - DATABASE_URL=postgresql://${POSTGRES_USER:-bible}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-praytify_bible}
-      - BIBLE_API_URL=http://bible-api:3100
+      - BIBLE_API_URL=http://bible-engine:3100
       - BETTER_AUTH_SECRET=${BETTER_AUTH_SECRET}
       - BETTER_AUTH_URL=${BETTER_AUTH_URL:-https://api.praytify.bible}
       - PORTAL_URL=${PORTAL_URL:-https://praytify.bible}
@@ -24,7 +24,7 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
-      bible-api:
+      bible-engine:
         condition: service_healthy
     healthcheck:
       test: ["CMD", "wget", "-qO-", "http://localhost:3200/health"]
@@ -38,8 +38,8 @@ services:
       - "traefik.http.routers.bible-gateway.tls.certresolver=letsencrypt"
       - "traefik.http.services.bible-gateway.loadbalancer.server.port=3200"
 
-  bible-api:
-    image: novashock/praytify-bible-api:latest
+  bible-engine:
+    image: novashock/praytify-bible-engine:latest
     restart: unless-stopped
     expose:
       - "3100"

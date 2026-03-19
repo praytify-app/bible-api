@@ -7,22 +7,22 @@ set -euo pipefail
 # Usage:
 #   ./scripts/deploy.sh              # builds + pushes with "latest" tag
 #   ./scripts/deploy.sh v1.0.0       # builds + pushes with version tag + latest
-#   ./scripts/deploy.sh --bible-only  # only build open-bible-api
-#   ./scripts/deploy.sh --gateway-only # only build gateway
+#   ./scripts/deploy.sh --engine-only   # only build the Bible engine
+#   ./scripts/deploy.sh --gateway-only  # only build the gateway
 
 DOCKER_USER="novashock"
-BIBLE_API_IMAGE="${DOCKER_USER}/praytify-bible-api"
+BIBLE_API_IMAGE="${DOCKER_USER}/praytify-bible-engine"
 GATEWAY_IMAGE="${DOCKER_USER}/praytify-bible-gateway"
 
 TAG="${1:-latest}"
-BUILD_BIBLE=true
+BUILD_ENGINE=true
 BUILD_GATEWAY=true
 
-if [ "$TAG" = "--bible-only" ]; then
+if [ "$TAG" = "--engine-only" ]; then
   BUILD_GATEWAY=false
   TAG="latest"
 elif [ "$TAG" = "--gateway-only" ]; then
-  BUILD_BIBLE=false
+  BUILD_ENGINE=false
   TAG="latest"
 fi
 
@@ -44,7 +44,7 @@ else
 fi
 
 # Build + push open-bible-api
-if [ "$BUILD_BIBLE" = true ]; then
+if [ "$BUILD_ENGINE" = true ]; then
   echo ">>> Building ${BIBLE_API_IMAGE}:${TAG} (linux/amd64)..."
   docker buildx build \
     --platform linux/amd64 \
@@ -72,7 +72,7 @@ fi
 echo "=== Deploy Complete ==="
 echo ""
 echo "Images pushed:"
-[ "$BUILD_BIBLE" = true ] && echo "  ${BIBLE_API_IMAGE}:${TAG}"
+[ "$BUILD_ENGINE" = true ] && echo "  ${BIBLE_API_IMAGE}:${TAG}"
 [ "$BUILD_GATEWAY" = true ] && echo "  ${GATEWAY_IMAGE}:${TAG}"
 echo ""
 echo "On your VPS, run: docker compose pull && docker compose up -d"
