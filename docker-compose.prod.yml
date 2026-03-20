@@ -56,6 +56,27 @@ services:
       timeout: 5s
       retries: 3
 
+  portal:
+    image: novashock/praytify-bible-portal:latest
+    restart: unless-stopped
+    expose:
+      - "80"
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:80/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.bible-portal.rule=Host(`praytify.bible`) || Host(`www.praytify.bible`)"
+      - "traefik.http.routers.bible-portal.entrypoints=websecure"
+      - "traefik.http.routers.bible-portal.tls.certresolver=letsencrypt"
+      - "traefik.http.services.bible-portal.loadbalancer.server.port=80"
+      - "traefik.http.middlewares.bible-www-redirect.redirectregex.regex=^https?://www\\.praytify\\.bible/(.*)"
+      - "traefik.http.middlewares.bible-www-redirect.redirectregex.replacement=https://praytify.bible/$${1}"
+      - "traefik.http.middlewares.bible-www-redirect.redirectregex.permanent=true"
+      - "traefik.http.routers.bible-portal.middlewares=bible-www-redirect"
+
   postgres:
     image: postgres:16-alpine
     restart: unless-stopped
