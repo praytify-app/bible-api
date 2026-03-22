@@ -2,27 +2,30 @@
 ##
 ## Architecture:
 ##   praytify.bible     → portal (static frontend, port 80)
-##   api.praytify.bible → gateway (public API, port 3200)
+##   api.praytify.bible → gateway (public API + auth, port 3200)
 ##   bible-engine       → internal only (raw Bible data, port 3100, NOT exposed)
-##   postgres           → internal only (database)
+##
+## Database: Uses an external Postgres. The bible-engine and gateway both
+## need DATABASE_URL pointing to a database with the Bible data already seeded.
+## The gateway also creates its own auth tables (better-auth) in the same database.
 ##
 ## Required env vars in Dokploy:
-##   PORTAL_DOMAIN        — e.g. praytify.bible
-##   GATEWAY_DOMAIN       — e.g. api.praytify.bible
-##   POSTGRES_PASSWORD    — database password
-##   BETTER_AUTH_SECRET   — auth secret key
-##   ADMIN_TOKEN          — admin API token
-##   GITHUB_CLIENT_ID     — GitHub OAuth
-##   GITHUB_CLIENT_SECRET — GitHub OAuth
-##   GOOGLE_CLIENT_ID     — Google OAuth
-##   GOOGLE_CLIENT_SECRET — Google OAuth
+##   PORTAL_DOMAIN          — e.g. praytify.bible
+##   GATEWAY_DOMAIN         — e.g. api.praytify.bible
+##   DATABASE_URL           — Full Postgres connection string (external DB)
+##   BETTER_AUTH_SECRET     — auth secret key
+##   ADMIN_TOKEN            — admin API token for bible-engine
+##   GITHUB_CLIENT_ID       — GitHub OAuth (optional)
+##   GITHUB_CLIENT_SECRET   — GitHub OAuth (optional)
+##   GOOGLE_CLIENT_ID       — Google OAuth (optional)
+##   GOOGLE_CLIENT_SECRET   — Google OAuth (optional)
 
 services:
   gateway:
     image: novashock/praytify-bible-gateway:latest
     restart: unless-stopped
     environment:
-      - DATABASE_URL=postgresql://${POSTGRES_USER:-bible}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-praytify_bible}
+      - DATABASE_URL=${DATABASE_URL}
       - BIBLE_API_URL=http://bible-engine:3100
       - BETTER_AUTH_SECRET=${BETTER_AUTH_SECRET}
       - BETTER_AUTH_URL=https://${GATEWAY_DOMAIN}
@@ -33,8 +36,6 @@ services:
       - GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET}
       - PORT=3200
     depends_on:
-      postgres:
-        condition: service_healthy
       bible-engine:
         condition: service_healthy
     healthcheck:
@@ -59,12 +60,9 @@ services:
     expose:
       - "3100"
     environment:
-      - DATABASE_URL=postgresql://${POSTGRES_USER:-bible}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-praytify_bible}
+      - DATABASE_URL=${DATABASE_URL}
       - ADMIN_TOKEN=${ADMIN_TOKEN}
       - PORT=3100
-    depends_on:
-      postgres:
-        condition: service_healthy
     healthcheck:
       test: ["CMD", "node", "-e", "fetch('http://localhost:3100/api/v1/health').then(r=>{if(!r.ok)process.exit(1)})"]
       interval: 30s
@@ -93,27 +91,6 @@ services:
       - traefik.http.services.bible-portal.loadbalancer.server.port=80
     networks:
       - dokploy-network
-
-  postgres:
-    image: postgres:16-alpine
-    restart: unless-stopped
-    environment:
-      - POSTGRES_USER=${POSTGRES_USER:-bible}
-      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
-      - POSTGRES_DB=${POSTGRES_DB:-praytify_bible}
-    volumes:
-      - bible_data:/var/lib/postgresql/data
-      - ./scripts/init-db.sql:/docker-entrypoint-initdb.d/01-init.sql
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-bible} -d ${POSTGRES_DB:-praytify_bible}"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-    networks:
-      - internal
-
-volumes:
-  bible_data:
 
 networks:
   dokploy-network:
