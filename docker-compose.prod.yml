@@ -1,21 +1,32 @@
-## Praytify Bible — Production Docker Compose
-## For Dokploy deployment. Images are pre-built and pushed to Docker Hub.
+## Praytify Bible — Production Docker Compose (Dokploy)
 ##
-## Required: copy .env.production and fill in all values before deploying.
-## Run: docker compose -f docker-compose.prod.yml pull && docker compose -f docker-compose.prod.yml up -d
+## Architecture:
+##   praytify.bible     → portal (static frontend, port 80)
+##   api.praytify.bible → gateway (public API, port 3200)
+##   bible-engine       → internal only (raw Bible data, port 3100, NOT exposed)
+##   postgres           → internal only (database)
+##
+## Required env vars in Dokploy:
+##   PORTAL_DOMAIN        — e.g. praytify.bible
+##   GATEWAY_DOMAIN       — e.g. api.praytify.bible
+##   POSTGRES_PASSWORD    — database password
+##   BETTER_AUTH_SECRET   — auth secret key
+##   ADMIN_TOKEN          — admin API token
+##   GITHUB_CLIENT_ID     — GitHub OAuth
+##   GITHUB_CLIENT_SECRET — GitHub OAuth
+##   GOOGLE_CLIENT_ID     — Google OAuth
+##   GOOGLE_CLIENT_SECRET — Google OAuth
 
 services:
   gateway:
     image: novashock/praytify-bible-gateway:latest
     restart: unless-stopped
-    ports:
-      - "3200:3200"
     environment:
       - DATABASE_URL=postgresql://${POSTGRES_USER:-bible}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-praytify_bible}
       - BIBLE_API_URL=http://bible-engine:3100
       - BETTER_AUTH_SECRET=${BETTER_AUTH_SECRET}
-      - BETTER_AUTH_URL=${BETTER_AUTH_URL:-https://api.praytify.bible}
-      - PORTAL_URL=${PORTAL_URL:-https://praytify.bible}
+      - BETTER_AUTH_URL=https://${GATEWAY_DOMAIN}
+      - PORTAL_URL=https://${PORTAL_DOMAIN}
       - GITHUB_CLIENT_ID=${GITHUB_CLIENT_ID}
       - GITHUB_CLIENT_SECRET=${GITHUB_CLIENT_SECRET}
       - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}
@@ -27,16 +38,20 @@ services:
       bible-engine:
         condition: service_healthy
     healthcheck:
-      test: ["CMD", "wget", "-qO-", "http://localhost:3200/health"]
+      test: ["CMD", "node", "-e", "fetch('http://localhost:3200/health').then(r=>{if(!r.ok)process.exit(1)})"]
       interval: 30s
       timeout: 5s
       retries: 3
+      start_period: 15s
     labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.bible-gateway.rule=Host(`api.praytify.bible`)"
-      - "traefik.http.routers.bible-gateway.entrypoints=websecure"
-      - "traefik.http.routers.bible-gateway.tls.certresolver=letsencrypt"
-      - "traefik.http.services.bible-gateway.loadbalancer.server.port=3200"
+      - traefik.enable=true
+      - traefik.http.routers.bible-gateway.rule=Host(`${GATEWAY_DOMAIN}`)
+      - traefik.http.routers.bible-gateway.entrypoints=websecure
+      - traefik.http.routers.bible-gateway.tls.certresolver=letsencrypt
+      - traefik.http.services.bible-gateway.loadbalancer.server.port=3200
+    networks:
+      - dokploy-network
+      - internal
 
   bible-engine:
     image: novashock/praytify-bible-engine:latest
@@ -51,10 +66,13 @@ services:
       postgres:
         condition: service_healthy
     healthcheck:
-      test: ["CMD", "wget", "-qO-", "http://localhost:3100/api/v1/health"]
+      test: ["CMD", "node", "-e", "fetch('http://localhost:3100/api/v1/health').then(r=>{if(!r.ok)process.exit(1)})"]
       interval: 30s
       timeout: 5s
       retries: 3
+      start_period: 15s
+    networks:
+      - internal
 
   portal:
     image: novashock/praytify-bible-portal:latest
@@ -62,20 +80,19 @@ services:
     expose:
       - "80"
     healthcheck:
-      test: ["CMD", "wget", "-qO-", "http://localhost:80/health"]
+      test: ["CMD", "node", "-e", "fetch('http://localhost:80').then(r=>{if(!r.ok)process.exit(1)})"]
       interval: 30s
       timeout: 5s
       retries: 3
+      start_period: 15s
     labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.bible-portal.rule=Host(`praytify.bible`) || Host(`www.praytify.bible`)"
-      - "traefik.http.routers.bible-portal.entrypoints=websecure"
-      - "traefik.http.routers.bible-portal.tls.certresolver=letsencrypt"
-      - "traefik.http.services.bible-portal.loadbalancer.server.port=80"
-      - "traefik.http.middlewares.bible-www-redirect.redirectregex.regex=^https?://www\\.praytify\\.bible/(.*)"
-      - "traefik.http.middlewares.bible-www-redirect.redirectregex.replacement=https://praytify.bible/$${1}"
-      - "traefik.http.middlewares.bible-www-redirect.redirectregex.permanent=true"
-      - "traefik.http.routers.bible-portal.middlewares=bible-www-redirect"
+      - traefik.enable=true
+      - traefik.http.routers.bible-portal.rule=Host(`${PORTAL_DOMAIN}`)
+      - traefik.http.routers.bible-portal.entrypoints=websecure
+      - traefik.http.routers.bible-portal.tls.certresolver=letsencrypt
+      - traefik.http.services.bible-portal.loadbalancer.server.port=80
+    networks:
+      - dokploy-network
 
   postgres:
     image: postgres:16-alpine
@@ -92,6 +109,14 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+    networks:
+      - internal
 
 volumes:
   bible_data:
+
+networks:
+  dokploy-network:
+    external: true
+  internal:
+    driver: bridge
