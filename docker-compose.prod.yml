@@ -1,18 +1,18 @@
 ## Praytify Bible — Production Docker Compose (Dokploy)
 ##
 ## Architecture:
-##   praytify.bible     → portal (static frontend, port 80)
+##   praytify.bible     → portal (static frontend, nginx, port 80)
 ##   api.praytify.bible → gateway (public API + auth, port 3200)
 ##   bible-engine       → internal only (raw Bible data, port 3100, NOT exposed)
 ##
-## Database: Uses an external Postgres. The bible-engine and gateway both
-## need DATABASE_URL pointing to a database with the Bible data already seeded.
-## The gateway also creates its own auth tables (better-auth) in the same database.
+## Database: Uses an external Postgres via DATABASE_URL.
+## If your Postgres is in another Docker compose project, use the host
+## machine IP (e.g. 172.17.0.1) or add both to dokploy-network.
 ##
 ## Required env vars in Dokploy:
 ##   PORTAL_DOMAIN          — e.g. praytify.bible
 ##   GATEWAY_DOMAIN         — e.g. api.praytify.bible
-##   DATABASE_URL           — Full Postgres connection string (external DB)
+##   DATABASE_URL           — Full Postgres connection string
 ##   BETTER_AUTH_SECRET     — auth secret key
 ##   ADMIN_TOKEN            — admin API token for bible-engine
 ##   GITHUB_CLIENT_ID       — GitHub OAuth (optional)
@@ -78,7 +78,7 @@ services:
     expose:
       - "80"
     healthcheck:
-      test: ["CMD", "node", "-e", "fetch('http://localhost:80').then(r=>{if(!r.ok)process.exit(1)})"]
+      test: ["CMD-SHELL", "wget -qO- http://localhost:80/ || exit 1"]
       interval: 30s
       timeout: 5s
       retries: 3
