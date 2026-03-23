@@ -5,14 +5,12 @@
 ##   api.praytify.bible → gateway (public API + auth, port 3200)
 ##   bible-engine       → internal only (raw Bible data, port 3100, NOT exposed)
 ##
-## Database: Uses an external Postgres via DATABASE_URL.
-## If your Postgres is in another Docker compose project, use the host
-## machine IP (e.g. 172.17.0.1) or add both to dokploy-network.
+## Database: Bundled Postgres instance with persistent volume.
 ##
 ## Required env vars in Dokploy:
 ##   PORTAL_DOMAIN          — e.g. praytify.bible
 ##   GATEWAY_DOMAIN         — e.g. api.praytify.bible
-##   DATABASE_URL           — Full Postgres connection string
+##   POSTGRES_PASSWORD      — Postgres password
 ##   BETTER_AUTH_SECRET     — auth secret key
 ##   ADMIN_TOKEN            — admin API token for bible-engine
 ##   GITHUB_CLIENT_ID       — GitHub OAuth (optional)
@@ -25,7 +23,7 @@ services:
     image: novashock/praytify-bible-gateway:latest
     restart: unless-stopped
     environment:
-      - DATABASE_URL=${DATABASE_URL}
+      - DATABASE_URL=postgresql://bible:${POSTGRES_PASSWORD}@postgres:5432/praytify_bible
       - BIBLE_API_URL=http://bible-engine:3100
       - BETTER_AUTH_SECRET=${BETTER_AUTH_SECRET}
       - BETTER_AUTH_URL=https://${GATEWAY_DOMAIN}
@@ -36,6 +34,8 @@ services:
       - GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET}
       - PORT=3200
     depends_on:
+      postgres:
+        condition: service_healthy
       bible-engine:
         condition: service_healthy
     healthcheck:
@@ -60,7 +60,7 @@ services:
     expose:
       - "3100"
     environment:
-      - DATABASE_URL=${DATABASE_URL}
+      - DATABASE_URL=postgresql://bible:${POSTGRES_PASSWORD}@postgres:5432/praytify_bible
       - ADMIN_TOKEN=${ADMIN_TOKEN}
       - PORT=3100
     healthcheck:
@@ -69,6 +69,27 @@ services:
       timeout: 5s
       retries: 3
       start_period: 15s
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - internal
+
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      - POSTGRES_USER=bible
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_DB=praytify_bible
+    volumes:
+      - bible_data:/var/lib/postgresql/data
+      - ./scripts/init-db.sql:/docker-entrypoint-initdb.d/01-init.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U bible -d praytify_bible"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
     networks:
       - internal
 
@@ -91,6 +112,9 @@ services:
       - traefik.http.services.bible-portal.loadbalancer.server.port=80
     networks:
       - dokploy-network
+
+volumes:
+  bible_data:
 
 networks:
   dokploy-network:
