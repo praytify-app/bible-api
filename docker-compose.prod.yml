@@ -7,7 +7,7 @@
 ##
 ## Database: Bundled Postgres instance with persistent volume.
 ##
-## Required env vars — set in Dokploy compose environment section:
+## Required env vars — set in Dokploy environment section:
 ##   DATABASE_URL, BETTER_AUTH_SECRET, ADMIN_TOKEN, POSTGRES_PASSWORD
 ##   Optional: GITHUB_CLIENT_ID, GITHUB_CLIENT_SECRET, GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET
 
@@ -16,15 +16,15 @@ services:
     image: novashock/praytify-bible-gateway:latest
     restart: unless-stopped
     environment:
-      DATABASE_URL: ${DATABASE_URL}
+      DATABASE_URL: ${{environment.DATABASE_URL}}
       BIBLE_API_URL: http://bible-engine:3100
-      BETTER_AUTH_SECRET: ${BETTER_AUTH_SECRET}
+      BETTER_AUTH_SECRET: ${{environment.BETTER_AUTH_SECRET}}
       BETTER_AUTH_URL: https://api.praytify.bible
       PORTAL_URL: https://praytify.bible
-      GITHUB_CLIENT_ID: ${GITHUB_CLIENT_ID:-}
-      GITHUB_CLIENT_SECRET: ${GITHUB_CLIENT_SECRET:-}
-      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
-      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
+      GITHUB_CLIENT_ID: ${{environment.GITHUB_CLIENT_ID}}
+      GITHUB_CLIENT_SECRET: ${{environment.GITHUB_CLIENT_SECRET}}
+      GOOGLE_CLIENT_ID: ${{environment.GOOGLE_CLIENT_ID}}
+      GOOGLE_CLIENT_SECRET: ${{environment.GOOGLE_CLIENT_SECRET}}
       PORT: "3200"
     depends_on:
       postgres:
@@ -53,8 +53,8 @@ services:
     expose:
       - "3100"
     environment:
-      DATABASE_URL: ${DATABASE_URL}
-      ADMIN_TOKEN: ${ADMIN_TOKEN}
+      DATABASE_URL: ${{environment.DATABASE_URL}}
+      ADMIN_TOKEN: ${{environment.ADMIN_TOKEN}}
       PORT: "3100"
     healthcheck:
       test: ["CMD", "node", "-e", "fetch('http://localhost:3100/api/v1/health').then(r=>{if(!r.ok)process.exit(1)})"]
@@ -73,7 +73,7 @@ services:
     restart: unless-stopped
     environment:
       POSTGRES_USER: bible
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_PASSWORD: ${{environment.POSTGRES_PASSWORD}}
       POSTGRES_DB: praytify_bible
     volumes:
       - bible_data:/var/lib/postgresql/data
