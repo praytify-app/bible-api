@@ -43,6 +43,13 @@ services:
       - traefik.http.routers.bible-gateway.entrypoints=websecure
       - traefik.http.routers.bible-gateway.tls.certresolver=letsencrypt
       - traefik.http.services.bible-gateway.loadbalancer.server.port=3200
+    deploy:
+      labels:
+        - traefik.enable=true
+        - traefik.http.routers.bible-gateway.rule=Host(`api.praytify.bible`)
+        - traefik.http.routers.bible-gateway.entrypoints=websecure
+        - traefik.http.routers.bible-gateway.tls.certresolver=letsencrypt
+        - traefik.http.services.bible-gateway.loadbalancer.server.port=3200
     networks:
       - dokploy-network
       - internal
@@ -103,6 +110,13 @@ services:
       - traefik.http.routers.bible-portal.entrypoints=websecure
       - traefik.http.routers.bible-portal.tls.certresolver=letsencrypt
       - traefik.http.services.bible-portal.loadbalancer.server.port=80
+    deploy:
+      labels:
+        - traefik.enable=true
+        - traefik.http.routers.bible-portal.rule=Host(`praytify.bible`)
+        - traefik.http.routers.bible-portal.entrypoints=websecure
+        - traefik.http.routers.bible-portal.tls.certresolver=letsencrypt
+        - traefik.http.services.bible-portal.loadbalancer.server.port=80
     networks:
       - dokploy-network
 
