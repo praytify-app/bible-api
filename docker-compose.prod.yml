@@ -7,17 +7,11 @@
 ##
 ## Database: Bundled Postgres instance with persistent volume.
 ##
-## Required env vars — set as SERVICE-LEVEL env vars in Dokploy UI:
-##
-##   gateway:
-##     BETTER_AUTH_SECRET     — auth secret key
-##     GITHUB_CLIENT_ID       — GitHub OAuth (optional)
-##     GITHUB_CLIENT_SECRET   — GitHub OAuth (optional)
-##     GOOGLE_CLIENT_ID       — Google OAuth (optional)
-##     GOOGLE_CLIENT_SECRET   — Google OAuth (optional)
-##
-##   bible-engine:
-##     ADMIN_TOKEN            — admin API token
+## Optional env vars — set as SERVICE-LEVEL env vars in Dokploy UI on gateway:
+##     GITHUB_CLIENT_ID       — GitHub OAuth
+##     GITHUB_CLIENT_SECRET   — GitHub OAuth
+##     GOOGLE_CLIENT_ID       — Google OAuth
+##     GOOGLE_CLIENT_SECRET   — Google OAuth
 
 services:
   gateway:
@@ -26,6 +20,7 @@ services:
     environment:
       DATABASE_URL: postgresql://bible:praytify2024@postgres:5432/praytify_bible
       BIBLE_API_URL: http://bible-engine:3100
+      BETTER_AUTH_SECRET: d2dde4370bf395799399f7e070e5cbed3bcc417a8ed62f92fb862f084280b760
       BETTER_AUTH_URL: https://api.praytify.bible
       PORTAL_URL: https://praytify.bible
       PORT: "3200"
@@ -57,6 +52,7 @@ services:
       - "3100"
     environment:
       DATABASE_URL: postgresql://bible:praytify2024@postgres:5432/praytify_bible
+      ADMIN_TOKEN: ae8f674bd00dcb149ca9f2de1addddb1
       PORT: "3100"
     healthcheck:
       test: ["CMD", "node", "-e", "fetch('http://localhost:3100/api/v1/health').then(r=>{if(!r.ok)process.exit(1)})"]
