@@ -10,7 +10,6 @@
 ## Required env vars — set as SERVICE-LEVEL env vars in Dokploy UI:
 ##
 ##   gateway:
-##     DATABASE_URL           — e.g. postgresql://bible:yourpass@postgres:5432/praytify_bible
 ##     BETTER_AUTH_SECRET     — auth secret key
 ##     GITHUB_CLIENT_ID       — GitHub OAuth (optional)
 ##     GITHUB_CLIENT_SECRET   — GitHub OAuth (optional)
@@ -18,17 +17,14 @@
 ##     GOOGLE_CLIENT_SECRET   — Google OAuth (optional)
 ##
 ##   bible-engine:
-##     DATABASE_URL           — same as gateway
 ##     ADMIN_TOKEN            — admin API token
-##
-##   postgres:
-##     POSTGRES_PASSWORD      — must match the password in DATABASE_URL
 
 services:
   gateway:
     image: novashock/praytify-bible-gateway:latest
     restart: unless-stopped
     environment:
+      DATABASE_URL: postgresql://bible:praytify2024@postgres:5432/praytify_bible
       BIBLE_API_URL: http://bible-engine:3100
       BETTER_AUTH_URL: https://api.praytify.bible
       PORTAL_URL: https://praytify.bible
@@ -60,6 +56,7 @@ services:
     expose:
       - "3100"
     environment:
+      DATABASE_URL: postgresql://bible:praytify2024@postgres:5432/praytify_bible
       PORT: "3100"
     healthcheck:
       test: ["CMD", "node", "-e", "fetch('http://localhost:3100/api/v1/health').then(r=>{if(!r.ok)process.exit(1)})"]
