@@ -78,6 +78,7 @@ services:
     restart: unless-stopped
     environment:
       POSTGRES_USER: bible
+      POSTGRES_PASSWORD: praytify2024
       POSTGRES_DB: praytify_bible
     volumes:
       - bible_data:/var/lib/postgresql/data
