@@ -8,8 +8,6 @@
 ## Database: Bundled Postgres instance with persistent volume.
 ##
 ## Required env vars in Dokploy:
-##   PORTAL_DOMAIN          — e.g. praytify.bible
-##   GATEWAY_DOMAIN         — e.g. api.praytify.bible
 ##   POSTGRES_PASSWORD      — Postgres password
 ##   BETTER_AUTH_SECRET     — auth secret key
 ##   ADMIN_TOKEN            — admin API token for bible-engine
@@ -26,8 +24,8 @@ services:
       - DATABASE_URL=postgresql://bible:${POSTGRES_PASSWORD}@postgres:5432/praytify_bible
       - BIBLE_API_URL=http://bible-engine:3100
       - BETTER_AUTH_SECRET=${BETTER_AUTH_SECRET}
-      - BETTER_AUTH_URL=https://${GATEWAY_DOMAIN}
-      - PORTAL_URL=https://${PORTAL_DOMAIN}
+      - BETTER_AUTH_URL=https://api.praytify.bible
+      - PORTAL_URL=https://praytify.bible
       - GITHUB_CLIENT_ID=${GITHUB_CLIENT_ID}
       - GITHUB_CLIENT_SECRET=${GITHUB_CLIENT_SECRET}
       - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}
@@ -46,7 +44,7 @@ services:
       start_period: 15s
     labels:
       - traefik.enable=true
-      - traefik.http.routers.bible-gateway.rule=Host(`${GATEWAY_DOMAIN}`)
+      - traefik.http.routers.bible-gateway.rule=Host(`api.praytify.bible`)
       - traefik.http.routers.bible-gateway.entrypoints=websecure
       - traefik.http.routers.bible-gateway.tls.certresolver=letsencrypt
       - traefik.http.services.bible-gateway.loadbalancer.server.port=3200
@@ -106,7 +104,7 @@ services:
       start_period: 15s
     labels:
       - traefik.enable=true
-      - traefik.http.routers.bible-portal.rule=Host(`${PORTAL_DOMAIN}`)
+      - traefik.http.routers.bible-portal.rule=Host(`praytify.bible`)
       - traefik.http.routers.bible-portal.entrypoints=websecure
       - traefik.http.routers.bible-portal.tls.certresolver=letsencrypt
       - traefik.http.services.bible-portal.loadbalancer.server.port=80
