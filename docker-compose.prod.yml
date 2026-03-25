@@ -10,7 +10,7 @@
 ## Routing: Managed via Dokploy Domains UI (not Traefik labels).
 ##
 ## Required env vars — set in Dokploy compose environment section:
-##   DATABASE_URL, BETTER_AUTH_SECRET, ADMIN_TOKEN, POSTGRES_PASSWORD
+##   DATABASE_URL, BETTER_AUTH_SECRET, ADMIN_TOKEN, POSTGRES_PASSWORD, MASTER_API_KEY
 ##   Optional: GITHUB_CLIENT_ID, GITHUB_CLIENT_SECRET, GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET
 
 services:
@@ -28,6 +28,7 @@ services:
       GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
       GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
       PORT: "3200"
+      MASTER_API_KEY: ${MASTER_API_KEY}
     depends_on:
       postgres:
         condition: service_healthy
