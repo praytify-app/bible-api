@@ -141,6 +141,12 @@ const defaultLimiter = new RateLimiter({ perDay: 1000, perMinute: 60 });
 export async function rateLimitMiddleware(c: Context, next: Next) {
   const apiKeyId = c.get("apiKeyId") as string | undefined;
 
+  // Master key is not rate-limited
+  if (apiKeyId === "master") {
+    await next();
+    return;
+  }
+
   if (!apiKeyId) {
     return c.json({ error: "Unauthorized", message: "API key required" }, 401);
   }
