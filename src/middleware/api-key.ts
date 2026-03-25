@@ -43,6 +43,15 @@ export async function apiKeyMiddleware(c: Context, next: Next) {
     );
   }
 
+  // Master key bypass — internal apps (Praytify mobile/web) use this
+  const MASTER_KEY = process.env.MASTER_API_KEY;
+  if (MASTER_KEY && apiKey === MASTER_KEY) {
+    c.set("apiKeyId", "master");
+    c.set("userId", "internal");
+    await next();
+    return;
+  }
+
   try {
     const { client } = await import("../db/client.js");
     const keyHash = hashKey(apiKey);
