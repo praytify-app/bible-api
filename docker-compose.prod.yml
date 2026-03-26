@@ -45,7 +45,7 @@ services:
       - internal
 
   bible-engine:
-    image: novashock/praytify-bible-engine:latest
+    image: novashock/praytify-bible-engine:1.1.0
     restart: unless-stopped
     expose:
       - "3100"
