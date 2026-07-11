@@ -1,7 +1,7 @@
 import { Hono } from "hono";
 import { randomBytes, createHash } from "crypto";
-import { db, client } from "../db/client.js";
-import { auth } from "../auth/index.js";
+import { client } from "../db/client.js";
+import { getSessionUser } from "../lib/session.js";
 
 const keysRouter = new Hono();
 
@@ -12,17 +12,6 @@ function generateApiKey(): string {
 
 function hashKey(key: string): string {
   return createHash("sha256").update(key).digest("hex");
-}
-
-/** Get authenticated user from BetterAuth session cookie */
-async function getSessionUser(c: any): Promise<{ id: string; name: string; email: string } | null> {
-  try {
-    const session = await auth.api.getSession({ headers: c.req.raw.headers });
-    if (!session?.user) return null;
-    return session.user as any;
-  } catch {
-    return null;
-  }
 }
 
 // List keys

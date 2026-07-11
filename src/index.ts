@@ -33,23 +33,38 @@ app.use(
 // Open CORS for API routes (public Bible API)
 app.use("/v1/*", cors());
 
-// --- Health Check ---
-app.get("/health", async (c) => {
-  let dbStatus = "unknown";
+// --- Health Checks ---
+async function checkDatabase(): Promise<boolean> {
   try {
     const { client } = await import("./db/client.js");
     await client`SELECT 1`;
-    dbStatus = "connected";
+    return true;
   } catch {
-    dbStatus = "disconnected";
+    return false;
   }
+}
 
+// Liveness: always 200 so the container isn't restart-looped over a DB
+// outage, but status/database reflect reality for anyone looking.
+app.get("/health", async (c) => {
+  const dbUp = await checkDatabase();
   return c.json({
-    status: "ok",
+    status: dbUp ? "ok" : "degraded",
     service: "praytify-bible-gateway",
-    database: dbStatus,
+    database: dbUp ? "connected" : "disconnected",
     timestamp: new Date().toISOString(),
   });
+});
+
+// Readiness: 503 when the platform can't serve its core function.
+// Point uptime monitoring here — a green /health with a dead DB is how
+// the July 2026 outage went unnoticed.
+app.get("/health/ready", async (c) => {
+  const dbUp = await checkDatabase();
+  return c.json(
+    { ready: dbUp, database: dbUp ? "connected" : "disconnected" },
+    dbUp ? 200 : 503
+  );
 });
 
 // --- Unauthenticated Proxy Routes ---
@@ -57,6 +72,14 @@ app.get("/health", async (c) => {
 app.get("/v1/openapi.json", proxyToBibleApi);
 app.get("/docs", proxyToBibleApi);
 app.get("/docs/*", proxyToBibleApi);
+
+// Catalog metadata (which translations/languages exist) is public: it powers
+// the portal's translation browser and lets anyone evaluate the corpus before
+// signing up. Scripture content itself stays behind API keys. These routes
+// skip the gateway key/rate-limit chain; the engine's own IP rate limiter
+// still applies upstream.
+app.get("/v1/versions", proxyToBibleApi);
+app.get("/v1/languages", proxyToBibleApi);
 
 // --- BetterAuth Routes ---
 // Forward directly to BetterAuth handler

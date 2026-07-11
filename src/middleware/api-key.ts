@@ -71,6 +71,11 @@ export async function apiKeyMiddleware(c: Context, next: Next) {
 
     c.set("apiKeyId", rows[0].id);
     c.set("userId", rows[0].user_id);
+
+    // Fire-and-forget so key lookup latency doesn't grow with a write
+    client`
+      UPDATE platform.api_keys SET last_used_at = NOW() WHERE id = ${rows[0].id}
+    `.catch(() => {});
   } catch (err) {
     console.error("[api-key] Validation error:", err);
     return c.json(

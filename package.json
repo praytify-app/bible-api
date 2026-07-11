@@ -1,6 +1,6 @@
 {
   "name": "praytify-bible",
-  "version": "0.1.0",
+  "version": "0.3.0",
   "private": true,
   "description": "Developer platform gateway for the Open Bible API",
   "type": "module",
