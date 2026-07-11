@@ -112,6 +112,58 @@ export interface Translation {
 export const translations = {
   list: () =>
     fetchAPI<{ data: Translation[]; meta?: any }>(
-      "/v1/versions"
+      "/v1/versions?limit=2000"
+    ).then((r) => r.data || []),
+};
+
+// --- Public Bible reading (no API key required) ---
+
+export interface BibleVersion {
+  id: string;
+  abbreviation: string;
+  name: string;
+  language?: string | null;
+  languageCode?: string | null;
+  textDirection?: string | null;
+  verseCount: number;
+  license?: string | null;
+  attribution?: string | null;
+  attributionUrl?: string | null;
+}
+
+export interface BibleBook {
+  id: string;
+  bookCode: string;
+  name: string;
+  position: number;
+  chapterCount: number;
+  testament: string;
+}
+
+export interface BibleVerse {
+  id: number;
+  number: number;
+  text: string;
+}
+
+export const bible = {
+  versions: (search?: string) =>
+    fetchAPI<{ data: BibleVersion[] }>(
+      `/v1/versions?limit=2000${search ? `&search=${encodeURIComponent(search)}` : ""}`
+    ).then((r) => r.data || []),
+
+  version: (idOrAbbr: string) =>
+    fetchAPI<{ data: BibleVersion }>(
+      `/v1/versions/${encodeURIComponent(idOrAbbr)}`
+    ).then((r) => r.data),
+
+  books: (versionIdOrAbbr: string) =>
+    fetchAPI<{ data: BibleBook[] }>(
+      `/v1/versions/${encodeURIComponent(versionIdOrAbbr)}/books`
+    ).then((r) => r.data || []),
+
+  chapterVerses: (version: string, bookCode: string, chapter: string | number) =>
+    fetchAPI<{ data: BibleVerse[] }>(
+      `/v1/chapters/${encodeURIComponent(version)}/${encodeURIComponent(bookCode)}/${chapter}/verses`
     ).then((r) => r.data || []),
 };

@@ -117,10 +117,10 @@ export function LandingPage() {
               </svg>
             </Link>
             <Link
-              to="/docs/quickstart"
+              to="/read"
               className="inline-flex items-center px-8 py-3.5 text-base font-bold text-gray-700 bg-white border border-gray-300 hover:border-gray-400 rounded-xl no-underline transition-colors"
             >
-              Read the docs
+              Read the Bible online
             </Link>
           </div>
         </div>

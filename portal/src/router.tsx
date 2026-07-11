@@ -2,6 +2,7 @@ import {
   createRouter,
   createRootRoute,
   createRoute,
+  Navigate,
 } from "@tanstack/react-router";
 import { RootLayout } from "./components/RootLayout";
 import { DashboardLayout } from "./components/DashboardLayout";
@@ -14,6 +15,7 @@ import { SettingsPage } from "./pages/SettingsPage";
 import { DocsPage } from "./pages/DocsPage";
 import { QuickStartPage } from "./pages/QuickStartPage";
 import { TranslationsPage } from "./pages/TranslationsPage";
+import { ReadPage } from "./pages/ReadPage";
 
 // Root route
 const rootRoute = createRootRoute({
@@ -50,6 +52,25 @@ const translationsRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/docs/translations",
   component: TranslationsPage,
+});
+
+// Public Bible reader
+const readIndexRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/read",
+  component: () => (
+    <Navigate
+      to="/read/$version/$book/$chapter"
+      params={{ version: "WEB", book: "JHN", chapter: "3" }}
+      replace
+    />
+  ),
+});
+
+const readChapterRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/read/$version/$book/$chapter",
+  component: ReadPage,
 });
 
 // Dashboard layout route
@@ -90,6 +111,8 @@ const routeTree = rootRoute.addChildren([
   docsRoute,
   quickstartRoute,
   translationsRoute,
+  readIndexRoute,
+  readChapterRoute,
   dashboardLayoutRoute.addChildren([
     dashboardIndexRoute,
     dashboardKeysRoute,

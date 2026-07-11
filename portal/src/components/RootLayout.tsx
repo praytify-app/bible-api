@@ -22,6 +22,12 @@ export function RootLayout() {
             </Link>
             <div className="hidden md:flex items-center gap-6">
               <Link
+                to="/read"
+                className="text-sm font-medium text-gray-600 hover:text-gray-900 no-underline"
+              >
+                Read
+              </Link>
+              <Link
                 to="/docs"
                 className="text-sm font-medium text-gray-600 hover:text-gray-900 no-underline"
               >

@@ -73,13 +73,20 @@ app.get("/v1/openapi.json", proxyToBibleApi);
 app.get("/docs", proxyToBibleApi);
 app.get("/docs/*", proxyToBibleApi);
 
-// Catalog metadata (which translations/languages exist) is public: it powers
-// the portal's translation browser and lets anyone evaluate the corpus before
-// signing up. Scripture content itself stays behind API keys. These routes
-// skip the gateway key/rate-limit chain; the engine's own IP rate limiter
-// still applies upstream.
+// Catalog metadata and the chapter-reading path are public: they power the
+// portal's translation browser and the /read Bible reader, so any visitor can
+// read scripture without an account. Search, reference lookup (?ref=), and
+// full-Bible download stay behind API keys — they are the developer-platform
+// surface. These routes skip the gateway key/rate-limit chain; the engine's
+// own IP rate limiter still applies upstream.
 app.get("/v1/versions", proxyToBibleApi);
+app.get("/v1/versions/:id", proxyToBibleApi);
+app.get("/v1/versions/:id/books", proxyToBibleApi);
+app.get("/v1/books/:id/chapters", proxyToBibleApi);
+app.get("/v1/chapters/:version/:bookCode/:chapter/verses", proxyToBibleApi);
+app.get("/v1/chapters/:id/verses", proxyToBibleApi);
 app.get("/v1/languages", proxyToBibleApi);
+app.get("/v1/daily", proxyToBibleApi);
 
 // --- BetterAuth Routes ---
 // Forward directly to BetterAuth handler
