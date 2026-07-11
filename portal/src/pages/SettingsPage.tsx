@@ -127,7 +127,7 @@ export function SettingsPage() {
               Free
             </span>
             <span className="text-sm text-gray-500">
-              Unlimited requests with generous rate limits
+              1,000 requests per day, 60 per minute
             </span>
           </div>
         </div>

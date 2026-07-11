@@ -58,6 +58,7 @@ export interface UsageSummary {
   totalRequests: number;
   totalErrors: number;
   avgResponseTimeMs: number;
+  requestsToday: number;
   activeKeys: number;
 }
 

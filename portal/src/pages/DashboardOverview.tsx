@@ -5,14 +5,15 @@ import { useSession } from "../lib/auth";
 
 export function DashboardOverview() {
   const { data: session } = useSession();
-  const { data: summary } = useQuery({
+  const { data: summary, isError: summaryError } = useQuery({
     queryKey: ["usage-summary"],
     queryFn: () => usage.summary(),
   });
-  const { data: keyList } = useQuery({
+  const { data: keyList, isError: keysError } = useQuery({
     queryKey: ["keys"],
     queryFn: () => keys.list(),
   });
+  const hasError = summaryError || keysError;
 
   const firstName = session?.user?.name?.split(" ")[0] || "Developer";
 
@@ -27,24 +28,31 @@ export function DashboardOverview() {
         </p>
       </div>
 
+      {hasError && (
+        <div className="mb-6 bg-red-50 border border-red-200 rounded-xl p-4 text-sm text-red-700">
+          We couldn't load your dashboard data. Refresh the page or try again
+          shortly.
+        </div>
+      )}
+
       {/* Summary Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
         <div className="bg-white rounded-xl border border-gray-200 p-5">
           <div className="text-sm font-medium text-gray-500">Total Requests</div>
           <div className="mt-1 text-3xl font-bold text-gray-900">
-            {summary?.totalRequests?.toLocaleString() ?? "0"}
+            {hasError ? "--" : (summary?.totalRequests?.toLocaleString() ?? "0")}
           </div>
         </div>
         <div className="bg-white rounded-xl border border-gray-200 p-5">
           <div className="text-sm font-medium text-gray-500">Requests Today</div>
           <div className="mt-1 text-3xl font-bold text-gray-900">
-            {summary?.totalRequests ? "0" : "0"}
+            {hasError ? "--" : (summary?.requestsToday?.toLocaleString() ?? "0")}
           </div>
         </div>
         <div className="bg-white rounded-xl border border-gray-200 p-5">
           <div className="text-sm font-medium text-gray-500">Active Keys</div>
           <div className="mt-1 text-3xl font-bold text-gray-900">
-            {keyList?.length ?? summary?.activeKeys ?? "0"}
+            {hasError ? "--" : (keyList?.length ?? summary?.activeKeys ?? "0")}
           </div>
         </div>
       </div>

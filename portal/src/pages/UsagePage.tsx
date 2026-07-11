@@ -11,19 +11,30 @@ import {
 import { usage } from "../lib/api";
 
 export function UsagePage() {
-  const { data: dailyData, isLoading: loadingDaily } = useQuery({
+  const {
+    data: dailyData,
+    isLoading: loadingDaily,
+    isError: dailyError,
+  } = useQuery({
     queryKey: ["usage-daily"],
     queryFn: () => usage.daily(30),
   });
 
-  const { data: summary, isLoading: loadingSummary } = useQuery({
+  const {
+    data: summary,
+    isLoading: loadingSummary,
+    isError: summaryError,
+  } = useQuery({
     queryKey: ["usage-summary"],
     queryFn: () => usage.summary(),
   });
 
-  // Generate placeholder data if API returns empty
+  const hasError = dailyError || summaryError;
+
+  // Zero-fill the 30-day window only for a successful-but-sparse response;
+  // an error must render as an error, not as "0 requests"
   const chartData =
-    dailyData?.daily && dailyData.daily.length > 0
+    !dailyError && dailyData?.daily && dailyData.daily.length > 0
       ? dailyData.daily
       : Array.from({ length: 30 }, (_, i) => {
           const date = new Date();
@@ -45,30 +56,37 @@ export function UsagePage() {
         </p>
       </div>
 
+      {hasError && (
+        <div className="mb-6 bg-red-50 border border-red-200 rounded-xl p-4 text-sm text-red-700">
+          We couldn't load your usage data. Refresh the page or try again
+          shortly.
+        </div>
+      )}
+
       {/* Summary Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-4 gap-4 mb-8">
         <div className="bg-white rounded-xl border border-gray-200 p-5">
           <div className="text-sm font-medium text-gray-500">Total Requests</div>
           <div className="mt-1 text-2xl font-bold text-gray-900">
-            {loadingSummary ? "--" : (summary?.totalRequests?.toLocaleString() ?? "0")}
+            {loadingSummary || summaryError ? "--" : (summary?.totalRequests?.toLocaleString() ?? "0")}
           </div>
         </div>
         <div className="bg-white rounded-xl border border-gray-200 p-5">
           <div className="text-sm font-medium text-gray-500">Total Errors</div>
           <div className="mt-1 text-2xl font-bold text-gray-900">
-            {loadingSummary ? "--" : (summary?.totalErrors?.toLocaleString() ?? "0")}
+            {loadingSummary || summaryError ? "--" : (summary?.totalErrors?.toLocaleString() ?? "0")}
           </div>
         </div>
         <div className="bg-white rounded-xl border border-gray-200 p-5">
           <div className="text-sm font-medium text-gray-500">Avg Response</div>
           <div className="mt-1 text-2xl font-bold text-gray-900">
-            {loadingSummary ? "--" : `${summary?.avgResponseTimeMs ?? 0}ms`}
+            {loadingSummary || summaryError ? "--" : `${summary?.avgResponseTimeMs ?? 0}ms`}
           </div>
         </div>
         <div className="bg-white rounded-xl border border-gray-200 p-5">
           <div className="text-sm font-medium text-gray-500">Active Keys</div>
           <div className="mt-1 text-2xl font-bold text-gray-900">
-            {loadingSummary ? "--" : (summary?.activeKeys ?? "0")}
+            {loadingSummary || summaryError ? "--" : (summary?.activeKeys ?? "0")}
           </div>
         </div>
       </div>
@@ -76,7 +94,11 @@ export function UsagePage() {
       {/* Chart */}
       <div className="bg-white rounded-xl border border-gray-200 p-6">
         <h2 className="text-lg font-bold text-gray-900 mb-6">Daily Requests</h2>
-        {loadingDaily ? (
+        {dailyError ? (
+          <div className="flex items-center justify-center h-64 text-sm text-gray-500">
+            Usage data is unavailable right now.
+          </div>
+        ) : loadingDaily ? (
           <div className="flex items-center justify-center h-64">
             <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary" />
           </div>

@@ -6,7 +6,7 @@ export function TranslationsPage() {
   const [search, setSearch] = useState("");
   const [languageFilter, setLanguageFilter] = useState("");
 
-  const { data: translationList, isLoading } = useQuery({
+  const { data: translationList, isLoading, isError } = useQuery({
     queryKey: ["translations"],
     queryFn: () => translations.list(),
   });
@@ -72,11 +72,22 @@ export function TranslationsPage() {
       <div className="mb-4 text-sm text-gray-500">
         {isLoading
           ? "Loading translations..."
-          : `${filtered.length} translation${filtered.length !== 1 ? "s" : ""} found`}
+          : isError
+            ? ""
+            : `${filtered.length} translation${filtered.length !== 1 ? "s" : ""} found`}
       </div>
 
       {/* Table */}
-      {isLoading ? (
+      {isError ? (
+        <div className="bg-red-50 border border-red-200 rounded-xl p-12 text-center">
+          <p className="text-red-700 font-medium">
+            We couldn't load the translation list.
+          </p>
+          <p className="mt-1 text-sm text-red-600">
+            Please refresh the page or try again in a few minutes.
+          </p>
+        </div>
+      ) : isLoading ? (
         <div className="flex items-center justify-center py-12">
           <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary" />
         </div>

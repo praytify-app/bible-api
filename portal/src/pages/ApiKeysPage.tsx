@@ -14,13 +14,19 @@ export function ApiKeysPage() {
     queryFn: () => keys.list(),
   });
 
+  const [createError, setCreateError] = useState<string | null>(null);
+
   const createMutation = useMutation({
     mutationFn: (name: string) => keys.create(name),
     onSuccess: (key) => {
       setNewKey(key);
       setKeyName("");
       setShowCreate(false);
+      setCreateError(null);
       queryClient.invalidateQueries({ queryKey: ["keys"] });
+    },
+    onError: (err: Error) => {
+      setCreateError(err.message || "Key creation failed. Please try again.");
     },
   });
 
@@ -56,6 +62,12 @@ export function ApiKeysPage() {
           Create Key
         </button>
       </div>
+
+      {createError && (
+        <div className="mb-6 bg-red-50 border border-red-200 rounded-xl p-4 text-sm text-red-700">
+          {createError}
+        </div>
+      )}
 
       {/* New Key Banner */}
       {newKey?.key && (
