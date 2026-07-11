@@ -89,7 +89,7 @@ services:
           - bible-db
 
   portal:
-    image: novashock/praytify-bible-portal:0.4.0-17ea66f
+    image: novashock/praytify-bible-portal:0.4.1-e043cc9
     restart: unless-stopped
     expose:
       - "80"
