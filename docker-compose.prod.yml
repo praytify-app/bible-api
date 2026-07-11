@@ -15,7 +15,7 @@
 
 services:
   gateway:
-    image: novashock/praytify-bible-gateway:0.3.0-8785095
+    image: novashock/praytify-bible-gateway:0.4.0-17ea66f
     restart: unless-stopped
     environment:
       DATABASE_URL: ${DATABASE_URL}
@@ -89,7 +89,7 @@ services:
           - bible-db
 
   portal:
-    image: novashock/praytify-bible-portal:0.3.0-8785095
+    image: novashock/praytify-bible-portal:0.4.0-17ea66f
     restart: unless-stopped
     expose:
       - "80"
