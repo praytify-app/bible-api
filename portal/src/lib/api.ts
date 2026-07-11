@@ -18,6 +18,24 @@ async function fetchAPI<T>(path: string, options?: RequestInit): Promise<T> {
   return res.json();
 }
 
+/**
+ * Anonymous GET for the public read/catalog endpoints. Must NOT send
+ * credentials: the gateway serves these with a wildcard
+ * Access-Control-Allow-Origin, and browsers reject credentialed requests
+ * against a wildcard. No Content-Type header either — a bare GET skips
+ * the CORS preflight entirely.
+ */
+async function fetchPublic<T>(path: string): Promise<T> {
+  const res = await fetch(`${API_URL}${path}`);
+
+  if (!res.ok) {
+    const error = await res.json().catch(() => ({ message: res.statusText }));
+    throw new Error(error.message || `API error: ${res.status}`);
+  }
+
+  return res.json();
+}
+
 // --- API Key Management ---
 
 export interface ApiKey {
@@ -111,7 +129,7 @@ export interface Translation {
 
 export const translations = {
   list: () =>
-    fetchAPI<{ data: Translation[]; meta?: any }>(
+    fetchPublic<{ data: Translation[]; meta?: any }>(
       "/v1/versions?limit=2000"
     ).then((r) => r.data || []),
 };
@@ -148,22 +166,22 @@ export interface BibleVerse {
 
 export const bible = {
   versions: (search?: string) =>
-    fetchAPI<{ data: BibleVersion[] }>(
+    fetchPublic<{ data: BibleVersion[] }>(
       `/v1/versions?limit=2000${search ? `&search=${encodeURIComponent(search)}` : ""}`
     ).then((r) => r.data || []),
 
   version: (idOrAbbr: string) =>
-    fetchAPI<{ data: BibleVersion }>(
+    fetchPublic<{ data: BibleVersion }>(
       `/v1/versions/${encodeURIComponent(idOrAbbr)}`
     ).then((r) => r.data),
 
   books: (versionIdOrAbbr: string) =>
-    fetchAPI<{ data: BibleBook[] }>(
+    fetchPublic<{ data: BibleBook[] }>(
       `/v1/versions/${encodeURIComponent(versionIdOrAbbr)}/books`
     ).then((r) => r.data || []),
 
   chapterVerses: (version: string, bookCode: string, chapter: string | number) =>
-    fetchAPI<{ data: BibleVerse[] }>(
+    fetchPublic<{ data: BibleVerse[] }>(
       `/v1/chapters/${encodeURIComponent(version)}/${encodeURIComponent(bookCode)}/${chapter}/verses`
     ).then((r) => r.data || []),
 };
