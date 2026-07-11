@@ -57,7 +57,7 @@ app.get("/health", async (c) => {
 });
 
 // Readiness: 503 when the platform can't serve its core function.
-// Point uptime monitoring here — a green /health with a dead DB is how
+// Point uptime monitoring here: a green /health with a dead DB is how
 // the July 2026 outage went unnoticed.
 app.get("/health/ready", async (c) => {
   const dbUp = await checkDatabase();

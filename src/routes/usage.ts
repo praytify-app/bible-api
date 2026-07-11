@@ -6,7 +6,7 @@ const usageRouter = new Hono();
 
 /**
  * GET /api/dashboard/usage — Daily usage stats for the authenticated user.
- * Query params: ?days=30 (default 30, max 90 — matches the retention purge
+ * Query params: ?days=30 (default 30, max 90, matching the retention purge
  * in jobs/usage-aggregation.ts, so older rows never exist anyway)
  */
 usageRouter.get("/", async (c) => {
