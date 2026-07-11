@@ -3,3 +3,5 @@ dist/
 .env
 .worktrees
 bible-data.sql.gz
+
+.env.production
