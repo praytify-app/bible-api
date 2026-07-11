@@ -81,7 +81,12 @@ services:
       timeout: 5s
       retries: 5
     networks:
-      - internal
+      # Unique alias because the gateway also sits on the shared
+      # dokploy-network, where another stack's "postgres" wins DNS lookups.
+      # DATABASE_URL must use host "bible-db", never "postgres".
+      internal:
+        aliases:
+          - bible-db
 
   portal:
     image: novashock/praytify-bible-portal:0.3.0-8785095
