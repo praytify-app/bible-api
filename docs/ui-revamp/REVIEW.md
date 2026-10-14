@@ -1,6 +1,6 @@
 # Revamp review: Praytify Bible portal
 
-Branch `ui/core2-revamp` at `ad5a696`, 2026-10-14. Static gates and e2e ran on `b4c8730`; `ad5a696` changes only `portal/nginx.conf`, which the container check covers. Reviewer: qa-critic (Phase 6).
+Branch `ui/core2-revamp` at `300366d`, 2026-10-14. Static gates and e2e ran on `b4c8730`; the two later commits (`ad5a696`, `300366d`) change only `portal/nginx.conf`, which the final container check covers. The final e2e run (22:22 UTC) started after the lead's last engine (21:18 UTC, version 1.5.0) and gateway (21:50 UTC) restarts. Reviewer: qa-critic (Phase 6).
 
 Every result below was produced on this branch's final tree against the real local stack (gateway `:3200`, engine `:3100`, Postgres with WEB, KJV and AVD seeded; anonymous limit raised to 1,000 a minute for local runs). Commands run from `portal/` unless noted.
 
@@ -18,7 +18,7 @@ Every result below was produced on this branch's final tree against the real loc
 | Static gates | from the repo root: `python3 ~/.claude/skills/core2-revamp/scripts/check_gates.py --root portal --src src --ds src/components/ds --primitive-lib radix-ui --identity "Core 2" --identity UI8` | exit 0. identity 0, raw-hex 0, palette 0, primitives 0. `public/` checked by hand: brand SVGs, favicons, `theme-init.js`, `_redirects`, `embed/v1.js`; no template sample assets |
 | e2e | `E2E_MODE=preview E2E_OUTPUT_DIR=<scratch> VITE_PUBLIC_SEARCH_KEY=<publishable key> ./node_modules/.bin/playwright test` (both projects, whole suite, one run) | exit 0. **216 passed, 0 failed, 0 flaky, 78 skipped** in 3.4 min. Skips: 76 are the opt-in screens spec, 2 are the reader's keyboard-only cases on mobile. An earlier run on this branch had 6 failures (defects 1 and 2 below); this is the run after both fixes |
 | Axe | serious or critical violations, WCAG 2.1 A and AA tags, light and dark, desktop and mobile | **0 serious or critical** in 28 axe tests per project: `/`, `/read/WEB/JHN/3` (bare and with a selection), `/read/AVD/JHN/3`, `/embed`, `/docs` (inside the Scalar frame too), `/docs/quickstart`, `/docs/translations`, `/login`, not-found, `/dashboard`, `/dashboard/keys` (empty, create dialog, reveal), `/dashboard/usage`, `/dashboard/embed`, `/dashboard/settings`, each in light and dark. Covers every page in BRIEF §10 |
-| Container | `docker build -f portal/Dockerfile -t praytify-bible-portal:qa --build-arg VITE_API_URL=http://localhost:3200 .` (repo root), run read-only with `--cap-drop ALL --security-opt no-new-privileges` | build exit 0 on `ad5a696`; every check passed, see below |
+| Container | `docker build -f portal/Dockerfile -t praytify-bible-portal:qa --build-arg VITE_API_URL=http://localhost:3200 .` (repo root), run read-only with `--cap-drop ALL --security-opt no-new-privileges` | build exit 0 on `300366d`; every check passed, see below |
 | Gateway image | `docker build -t praytify-bible-gateway:qa .`; `docker run --rm --entrypoint id` | build exit 0; `uid=100(app) gid=101(app)` |
 | Docs and screens | `QA_SCREENS=1 ... playwright test e2e/qa/screens.spec.ts` | 80 captures in `docs/ui-revamp/screens/`, every one examined, see below |
 | Git state | `git status` | clean after the QA commits |
@@ -43,17 +43,17 @@ Passed / failed / skipped, desktop (1440x900) and mobile (Pixel 7, 390x844).
 
 ### Container check
 
-Run three times: mid-pass, on `b4c8730` after the font fixes, and on `ad5a696` after the redirect fix; the table is the final state. Image built on the remote dev daemon (linux/amd64), run with `-p 18080:80 --read-only --tmpfs /tmp --tmpfs /var/cache/nginx --tmpfs /var/run --cap-drop ALL --security-opt no-new-privileges --sysctl net.ipv4.ip_unprivileged_port_start=0`, forwarded to `localhost:8080` (a local process already held 18080, and 8080 is an origin the dev gateway trusts for CORS and `frame-ancestors`).
+Run four times: mid-pass, on `b4c8730` after the font fixes, on `ad5a696` after the redirect fix, and on `300366d` after HSTS `preload` was dropped; the table is the final state. Image built on the remote dev daemon (linux/amd64), run with `-p 18080:80 --read-only --tmpfs /tmp --tmpfs /var/cache/nginx --tmpfs /var/run --cap-drop ALL --security-opt no-new-privileges --sysctl net.ipv4.ip_unprivileged_port_start=0`, forwarded to `localhost:8080` (a local process already held 18080, and 8080 is an origin the dev gateway trusts for CORS and `frame-ancestors`).
 
 | Check | Result |
 |---|---|
-| `GET /` | 200, `Cache-Control: no-cache`, CSP (`default-src 'self'`, `connect-src 'self' http://localhost:3200`, `frame-src http://localhost:3200`, `frame-ancestors 'none'`), `Strict-Transport-Security: max-age=63072000; includeSubDomains; preload`, `nosniff`, `X-Frame-Options: DENY`, `Referrer-Policy`, `Permissions-Policy` |
-| Hard loads | `/embed`, `/read/WEB/JHN/3`, `/dashboard/keys`, `/no-such-page`: 200 with the app shell. `/embed/` answers 301 with `Location: /embed`, which lands on the app (defect 5, fixed) |
+| `GET /` | 200, `Cache-Control: no-cache`, CSP (`default-src 'self'`, `connect-src 'self' http://localhost:3200`, `frame-src http://localhost:3200`, `frame-ancestors 'none'`), `Strict-Transport-Security: max-age=31536000; includeSubDomains`, `nosniff`, `X-Frame-Options: DENY`, `Referrer-Policy`, `Permissions-Policy` |
+| Hard loads | `/embed`, `/read/WEB/JHN/3`, `/dashboard/keys`, `/no-such-page`: 200 with the app shell. `/embed/` answers 301 with `Location: /embed`, both plainly and with `Host: praytify.bible` (defect 5, fixed) |
 | `/embed/v1.js` | 200, `Access-Control-Allow-Origin: *`, `Content-Type: application/javascript`, 1 hour cache with stale-while-revalidate |
 | `/assets/*` | `Cache-Control: public, max-age=31536000, immutable`; `Content-Encoding: gzip` with `Vary: Accept-Encoding`. A missing asset is a 404, not `index.html` |
 | `/health` | 200 `ok`; Docker health status `healthy` |
 | User | `uid=101(nginx)`; nginx logged no errors |
-| In the browser | Chromium rendered all 13 routes from the container on both projects, dashboard signed in, the Scalar frame on `/docs` included: zero console errors, zero failed fonts. The mid-pass run had found defects 3 and 4 here |
+| In the browser | On `b4c8730`, Chromium rendered all 13 routes from the container on both projects, dashboard signed in, the Scalar frame on `/docs` included: zero console errors, zero failed fonts. Rechecked on `300366d` for `/`, `/read/WEB/JHN/3`, `/embed`, `/docs` and `/dashboard`: same result. The mid-pass run had found defects 3 and 4 here |
 
 Containers, images and the forward were removed afterwards (`docker rm -f`, `docker rmi`, `vdk forward --stop`).
 
@@ -117,7 +117,7 @@ How it was checked: `e2e/qa/inert-controls.spec.ts` visits 16 routes on both pro
 - **Terms and Privacy text** (BRIEF §11, BOARD "Decisions needed"). Working default holds: no claim on the login page.
 - **Production search key** (BRIEF §11): create the publishable key and pass `VITE_PUBLIC_SEARCH_KEY` at build time.
 - **Public repository** (BRIEF §11): make it public and set `VITE_SOURCE_URL`, or keep the source links hidden.
-- **HSTS `preload`** (raised in this pass): `portal/nginx.conf:18`, `:58` send `preload`. The directive alone changes nothing, but submitting the domain to the preload list is slow to undo and binds every subdomain to HTTPS. Confirm it is intended.
+- **HSTS `preload`** (raised in this pass): the lead dropped `preload` in `300366d`; the portal now sends `max-age=31536000; includeSubDomains`. Adding it back and submitting to the preload list is the owner's call, recorded in `docs/DEPLOY.md`.
 
 ## Not verified
 
