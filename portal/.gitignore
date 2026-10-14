@@ -25,3 +25,5 @@ dist-ssr
 
 # Generated from packages/embed by scripts/copy-embed.mjs or the Docker build.
 public/embed/
+playwright-report/
+e2e/results/
