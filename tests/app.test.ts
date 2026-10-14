@@ -354,6 +354,16 @@ describe("hardening", () => {
     expect(await r.json()).toEqual({ error: { code: "NOT_FOUND", message: expect.any(String) } });
   });
 
+  it("publishes the limits it enforces, readable from any origin", async () => {
+    const { app } = setup({ ANON_RATE_PER_MINUTE: "77", MAX_KEYS_PER_USER: "9" });
+    const r = await app.request("/api/limits", { headers: { origin: "https://anywhere.example" } });
+    const body = await r.json();
+    expect(body.anonymous).toEqual({ perMinute: 77, perDay: 20000 });
+    expect(body.tiers.free.secret).toEqual({ perMinute: 60, perDay: 1000 });
+    expect(body.maxKeysPerUser).toBe(9);
+    expect(r.headers.get("access-control-allow-origin")).toBe("*");
+  });
+
   it("lists only the sign-in methods that are configured", async () => {
     const { app } = setup({ GITHUB_CLIENT_ID: "id", GITHUB_CLIENT_SECRET: "secret", EMAIL_PASSWORD_AUTH: "true" });
     const r = await app.request("/api/auth-methods", { headers: { origin: "https://praytify.bible" } });

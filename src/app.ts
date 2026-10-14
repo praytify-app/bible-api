@@ -6,6 +6,7 @@ import { requestId } from "hono/request-id";
 import { secureHeaders } from "hono/secure-headers";
 import type { Config } from "./config.js";
 import { apiError } from "./lib/errors.js";
+import { PLAN_LIMITS } from "./plans.js";
 import { log } from "./lib/logger.js";
 import type { LruCache } from "./lib/lru.js";
 import { apiKeyAuth, KeyResolver, LastUsedTracker } from "./middleware/api-key.js";
@@ -174,6 +175,16 @@ export function createApp(deps: AppDeps): Hono<GatewayEnv> {
       publicUrl: cfg.PUBLIC_API_URL ?? cfg.BETTER_AUTH_URL,
       gatewayToken: cfg.GATEWAY_TOKEN,
     })
+  );
+
+  // The limits this deployment enforces, so public pages never quote stale
+  // numbers. Public, no credentials; the same values the limiter reads.
+  app.get("/api/limits", cors({ origin: "*", allowMethods: ["GET"] }), (c) =>
+    c.json(
+      { anonymous: anonymousLimits, tiers: PLAN_LIMITS, maxKeysPerUser: cfg.MAX_KEYS_PER_USER },
+      200,
+      { "cache-control": "public, max-age=300" }
+    )
   );
 
   // Which sign-in methods exist, so the portal renders only real options.
