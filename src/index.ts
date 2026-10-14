@@ -1,131 +1,101 @@
-import { Hono } from "hono";
-import { cors } from "hono/cors";
 import { serve } from "@hono/node-server";
+import { assertProductionReady, config } from "./config.js";
+import { apiError } from "./lib/errors.js";
+import { log, setLogLevel } from "./lib/logger.js";
+import { createApp } from "./app.js";
+import { dbKeyLookup, dbTouchKey, KeyResolver, LastUsedTracker } from "./middleware/api-key.js";
+import { createReadCache } from "./middleware/proxy.js";
+import { createRateLimitStore, RateLimiter } from "./middleware/rate-limit.js";
+import { dbUsageSink, UsageBuffer } from "./middleware/usage-logger.js";
 
-import { apiKeyMiddleware } from "./middleware/api-key.js";
-import { rateLimitMiddleware } from "./middleware/rate-limit.js";
-import { usageLoggerMiddleware } from "./middleware/usage-logger.js";
-import { proxyToBibleApi } from "./middleware/proxy.js";
-import { startScheduledJobs } from "./jobs/usage-aggregation.js";
-import { keysRouter } from "./routes/keys.js";
-import { usageRouter } from "./routes/usage.js";
-import { profileRouter } from "./routes/profile.js";
+async function main() {
+  const cfg = config();
+  setLogLevel(cfg.LOG_LEVEL);
+  assertProductionReady(cfg);
 
-const app = new Hono();
-
-// --- CORS ---
-// Restrictive CORS for auth/dashboard routes (portal origin)
-app.use(
-  "/api/auth/*",
-  cors({
-    origin: process.env.PORTAL_URL || "http://localhost:5173",
-    credentials: true,
-  })
-);
-app.use(
-  "/api/dashboard/*",
-  cors({
-    origin: process.env.PORTAL_URL || "http://localhost:5173",
-    credentials: true,
-  })
-);
-
-// Open CORS for API routes (public Bible API)
-app.use("/v1/*", cors());
-
-// --- Health Checks ---
-async function checkDatabase(): Promise<boolean> {
-  try {
-    const { client } = await import("./db/client.js");
-    await client`SELECT 1`;
-    return true;
-  } catch {
-    return false;
+  if (cfg.MASTER_API_KEY) {
+    log.warn("MASTER_API_KEY is deprecated: give first-party apps an internal-tier secret key instead");
   }
+
+  if (cfg.MIGRATE_ON_BOOT) {
+    const { runMigrations } = await import("./db/migrate.js");
+    await runMigrations(cfg.DATABASE_URL!);
+  }
+
+  // Imported after the config check: these modules open the database pool.
+  const [{ client }, { auth }, { keysRouter }, { usageRouter }, { profileRouter, planRouter }] = await Promise.all([
+    import("./db/client.js"),
+    import("./auth/index.js"),
+    import("./routes/keys.js"),
+    import("./routes/usage.js"),
+    import("./routes/profile.js"),
+  ]);
+
+  const store = await createRateLimitStore(cfg.REDIS_URL);
+  const resolver = new KeyResolver(dbKeyLookup, cfg.KEY_CACHE_TTL_SECONDS * 1000);
+  const usage = new UsageBuffer(dbUsageSink);
+  const anonymous = { perMinute: cfg.ANON_RATE_PER_MINUTE, perDay: cfg.ANON_RATE_PER_DAY };
+
+  const app = createApp({
+    config: cfg,
+    resolver,
+    lastUsed: new LastUsedTracker(dbTouchKey),
+    limiter: new RateLimiter(store),
+    usage,
+    readCache: cfg.READ_CACHE_MAX_MB > 0 ? createReadCache(cfg.READ_CACHE_MAX_MB * 1024 * 1024) : undefined,
+    checkDatabase: async () => {
+      try {
+        await client`SELECT 1`;
+        return true;
+      } catch {
+        return false;
+      }
+    },
+    mountAccountRoutes: (a) => {
+      a.all("/api/auth/*", async (c) => {
+        try {
+          return await auth.handler(c.req.raw);
+        } catch (err) {
+          log.error("auth handler failed", { err, id: c.get("requestId") });
+          return apiError(c, 500, "AUTH_ERROR", "Sign-in failed. Please try again.");
+        }
+      });
+      a.route(
+        "/api/dashboard/keys",
+        keysRouter({ maxKeysPerUser: cfg.MAX_KEYS_PER_USER, onKeyChanged: (id) => resolver.invalidateKeyId(id) })
+      );
+      a.route("/api/dashboard/usage", usageRouter());
+      a.route("/api/dashboard/profile", profileRouter());
+      a.route("/api/dashboard/plan", planRouter({ anonymous, maxKeysPerUser: cfg.MAX_KEYS_PER_USER }));
+    },
+  });
+
+  const stopJobs = cfg.RUN_JOBS ? (await import("./jobs/usage-aggregation.js")).startScheduledJobs() : () => {};
+
+  const server = serve({ fetch: app.fetch, port: cfg.PORT }, (info) => {
+    log.info("gateway listening", { port: info.port, engine: cfg.BIBLE_API_URL, redis: Boolean(cfg.REDIS_URL) });
+  });
+
+  let shuttingDown = false;
+  const shutdown = async (signal: string) => {
+    if (shuttingDown) return;
+    shuttingDown = true;
+    log.info("shutting down", { signal });
+    const force = setTimeout(() => process.exit(1), 10_000);
+    force.unref();
+    server.close();
+    stopJobs();
+    await usage.stop();
+    await store.close?.();
+    await client.end({ timeout: 5 });
+    clearTimeout(force);
+    process.exit(0);
+  };
+  process.on("SIGTERM", () => void shutdown("SIGTERM"));
+  process.on("SIGINT", () => void shutdown("SIGINT"));
 }
 
-// Liveness: always 200 so the container isn't restart-looped over a DB
-// outage, but status/database reflect reality for anyone looking.
-app.get("/health", async (c) => {
-  const dbUp = await checkDatabase();
-  return c.json({
-    status: dbUp ? "ok" : "degraded",
-    service: "praytify-bible-gateway",
-    database: dbUp ? "connected" : "disconnected",
-    timestamp: new Date().toISOString(),
-  });
+main().catch((err) => {
+  log.error("gateway failed to start", { err });
+  process.exit(1);
 });
-
-// Readiness: 503 when the platform can't serve its core function.
-// Point uptime monitoring here: a green /health with a dead DB is how
-// the July 2026 outage went unnoticed.
-app.get("/health/ready", async (c) => {
-  const dbUp = await checkDatabase();
-  return c.json(
-    { ready: dbUp, database: dbUp ? "connected" : "disconnected" },
-    dbUp ? 200 : 503
-  );
-});
-
-// --- Unauthenticated Proxy Routes ---
-// OpenAPI spec and docs are public
-app.get("/v1/openapi.json", proxyToBibleApi);
-app.get("/docs", proxyToBibleApi);
-app.get("/docs/*", proxyToBibleApi);
-
-// Catalog metadata and the chapter-reading path are public: they power the
-// portal's translation browser and the /read Bible reader, so any visitor can
-// read scripture without an account. Search, reference lookup (?ref=), and
-// full-Bible download stay behind API keys — they are the developer-platform
-// surface. These routes skip the gateway key/rate-limit chain; the engine's
-// own IP rate limiter still applies upstream.
-app.get("/v1/versions", proxyToBibleApi);
-app.get("/v1/versions/:id", proxyToBibleApi);
-app.get("/v1/versions/:id/books", proxyToBibleApi);
-app.get("/v1/books/:id/chapters", proxyToBibleApi);
-app.get("/v1/chapters/:version/:bookCode/:chapter/verses", proxyToBibleApi);
-app.get("/v1/chapters/:id/verses", proxyToBibleApi);
-app.get("/v1/languages", proxyToBibleApi);
-app.get("/v1/daily", proxyToBibleApi);
-
-// --- BetterAuth Routes ---
-// Forward directly to BetterAuth handler
-app.all("/api/auth/*", async (c) => {
-  try {
-    const { auth } = await import("./auth/index.js");
-    const response = await auth.handler(c.req.raw);
-    return response;
-  } catch (err) {
-    console.error("[auth] Error handling auth request:", err);
-    return c.json({ error: "Internal auth error", details: String(err) }, 500);
-  }
-});
-
-// --- Dashboard API Routes ---
-// Mounted with app.route() so sub-router paths resolve correctly
-app.route("/api/dashboard/keys", keysRouter);
-app.route("/api/dashboard/usage", usageRouter);
-app.route("/api/dashboard/profile", profileRouter);
-
-// --- Authenticated Bible API Routes ---
-// /v1/* (except openapi.json) requires API key + rate limit + usage logging
-app.use("/v1/*", apiKeyMiddleware);
-app.use("/v1/*", rateLimitMiddleware);
-app.use("/v1/*", usageLoggerMiddleware);
-app.all("/v1/*", proxyToBibleApi);
-
-// --- Start Server ---
-const port = parseInt(process.env.PORT || "3200", 10);
-
-serve(
-  {
-    fetch: app.fetch,
-    port,
-  },
-  (info) => {
-    console.log(`praytify-bible gateway listening on http://localhost:${info.port}`);
-    startScheduledJobs();
-  }
-);
-
-export { app };

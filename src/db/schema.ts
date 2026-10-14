@@ -11,6 +11,7 @@ import {
   varchar,
   jsonb,
 } from "drizzle-orm/pg-core";
+import { sql } from "drizzle-orm";
 
 // --- BetterAuth tables (public schema) ---
 // These must be exported so the Drizzle adapter can find them.
@@ -94,6 +95,11 @@ export const apiKeys = platformSchema.table(
     name: text("name").notNull(),
     keyHash: text("key_hash").notNull(),
     keyPrefix: varchar("key_prefix", { length: 32 }).notNull(),
+    // "secret" (servers, full access) or "publishable" (browsers, read-only,
+    // origin-restricted). See docs/adr/0001-publishable-and-secret-api-keys.md.
+    kind: varchar("kind", { length: 20 }).default("secret").notNull(),
+    allowedOrigins: text("allowed_origins").array().default(sql`'{}'::text[]`).notNull(),
+    expiresAt: timestamp("expires_at", { withTimezone: true }),
     lastUsedAt: timestamp("last_used_at", { withTimezone: true }),
     revoked: boolean("revoked").default(false).notNull(),
     createdAt: timestamp("created_at", { withTimezone: true })
@@ -133,6 +139,7 @@ export const usageLogs = platformSchema.table(
     index("usage_logs_api_key_id_idx").on(table.apiKeyId),
     index("usage_logs_user_id_idx").on(table.userId),
     index("usage_logs_created_at_idx").on(table.createdAt),
+    index("usage_logs_user_id_created_at_idx").on(table.userId, table.createdAt),
   ]
 );
 

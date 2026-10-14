@@ -12,5 +12,6 @@ export default defineConfig({
     include: ["tests/**/*.test.ts"],
     exclude: ["**/node_modules/**", ".worktrees/**", "portal/**", "packages/**"],
     fsModuleCachePath: "node_modules/.vitest-cache",
+    env: { LOG_LEVEL: process.env.LOG_LEVEL ?? "silent" },
   },
 });

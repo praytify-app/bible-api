@@ -1,88 +1,190 @@
 import type { Context, Next } from "hono";
-import { createHash } from "crypto";
+import type { KeyKind } from "../lib/api-keys.js";
+import { extractBearer, hashApiKey, originAllowed, requestOrigin, safeEqual } from "../lib/api-keys.js";
+import { clientIp } from "../lib/client-ip.js";
+import { apiError } from "../lib/errors.js";
+import { log } from "../lib/logger.js";
+import { LruCache } from "../lib/lru.js";
+import type { Tier } from "../plans.js";
+import { normalizeTier } from "../plans.js";
+import type { GatewayEnv } from "../types.js";
 
-/**
- * Extract an API key from the Authorization header.
- * Expects format: "Bearer <key>"
- */
-export function extractApiKey(
-  authorizationHeader: string | undefined
-): string | null {
-  if (!authorizationHeader) return null;
-
-  const parts = authorizationHeader.split(" ");
-  if (parts.length !== 2) return null;
-  if (parts[0] !== "Bearer") return null;
-
-  const key = parts[1];
-  if (!key || key.trim() === "") return null;
-
-  return key;
+export interface ResolvedKey {
+  id: string;
+  userId: string;
+  kind: KeyKind;
+  tier: Tier;
+  allowedOrigins: string[];
+  expiresAt: Date | null;
+  revoked: boolean;
 }
 
-function hashKey(key: string): string {
-  return createHash("sha256").update(key).digest("hex");
+export type KeyLookup = (keyHash: string) => Promise<ResolvedKey | null>;
+
+/** Reads a key, its owner's tier, and its restrictions in one query. */
+export async function dbKeyLookup(keyHash: string): Promise<ResolvedKey | null> {
+  const { client } = await import("../db/client.js");
+  const rows = await client`
+    SELECT k.id, k.user_id, k.kind, k.allowed_origins, k.expires_at, k.revoked,
+           COALESCE(p.tier, 'free') AS tier
+    FROM platform.api_keys k
+    LEFT JOIN platform.developer_profiles p ON p.user_id = k.user_id
+    WHERE k.key_hash = ${keyHash}
+    LIMIT 1
+  `;
+  const r = rows[0];
+  if (!r) return null;
+  return {
+    id: r.id,
+    userId: r.user_id,
+    kind: r.kind === "publishable" ? "publishable" : "secret",
+    tier: normalizeTier(r.tier),
+    allowedOrigins: r.allowed_origins ?? [],
+    expiresAt: r.expires_at ? new Date(r.expires_at) : null,
+    revoked: Boolean(r.revoked),
+  };
 }
 
+const NOT_FOUND = Symbol("not-found");
+
 /**
- * Hono middleware that validates API keys from the Authorization header.
- * Checks the key hash against platform.api_keys table.
+ * Caches key lookups so a hot key costs no database read. Unknown keys are
+ * cached briefly too, so a client hammering with a bad key cannot turn into a
+ * database load test. Revocation through the dashboard invalidates the entry on
+ * this replica immediately; other replicas see it within the TTL.
  */
-export async function apiKeyMiddleware(c: Context, next: Next) {
-  const authorization = c.req.header("Authorization");
-  const apiKey = extractApiKey(authorization);
+export class KeyResolver {
+  private cache: LruCache<ResolvedKey | typeof NOT_FOUND>;
 
-  if (!apiKey) {
-    return c.json(
-      {
-        error: "Unauthorized",
-        message:
-          "Missing or invalid API key. Provide 'Authorization: Bearer <your_api_key>' header.",
-      },
-      401
-    );
+  constructor(
+    private readonly lookup: KeyLookup,
+    private readonly ttlMs: number,
+    private readonly negativeTtlMs = Math.min(ttlMs, 10_000)
+  ) {
+    // Entries are tiny; bound by count via a nominal size of 1.
+    this.cache = new LruCache(50_000, () => 1);
   }
 
-  // Master key bypass — internal apps (Praytify mobile/web) use this
-  const MASTER_KEY = process.env.MASTER_API_KEY;
-  if (MASTER_KEY && apiKey === MASTER_KEY) {
-    c.set("apiKeyId", "master");
-    c.set("userId", "internal");
-    await next();
-    return;
+  async resolve(keyHash: string): Promise<ResolvedKey | null> {
+    const hit = this.cache.get(keyHash);
+    if (hit !== undefined) return hit === NOT_FOUND ? null : hit;
+    const found = await this.lookup(keyHash);
+    this.cache.set(keyHash, found ?? NOT_FOUND, found ? this.ttlMs : this.negativeTtlMs);
+    return found;
   }
 
-  try {
-    const { client } = await import("../db/client.js");
-    const keyHash = hashKey(apiKey);
+  invalidateKeyId(keyId: string): void {
+    this.cache.deleteWhere((v) => v !== NOT_FOUND && v.id === keyId);
+  }
 
-    const rows = await client`
-      SELECT id, user_id FROM platform.api_keys
-      WHERE key_hash = ${keyHash} AND revoked = false
-      LIMIT 1
-    `;
+  clear(): void {
+    this.cache.clear();
+  }
+}
 
-    if (rows.length === 0) {
-      return c.json(
-        { error: "Unauthorized", message: "Invalid or revoked API key." },
-        401
-      );
+/** Writes last_used_at at most once per interval per key instead of on every request. */
+export class LastUsedTracker {
+  private last = new Map<string, number>();
+
+  constructor(
+    private readonly write: (keyId: string) => Promise<unknown>,
+    private readonly intervalMs = 60_000
+  ) {}
+
+  touch(keyId: string, now = Date.now()): void {
+    const prev = this.last.get(keyId);
+    if (prev !== undefined && now - prev < this.intervalMs) return;
+    this.last.set(keyId, now);
+    if (this.last.size > 100_000) this.last.clear();
+    this.write(keyId).catch((err) => log.warn("last_used_at update failed", { err, keyId }));
+  }
+}
+
+export async function dbTouchKey(keyId: string): Promise<void> {
+  const { client } = await import("../db/client.js");
+  await client`UPDATE platform.api_keys SET last_used_at = NOW() WHERE id = ${keyId}`;
+}
+
+export interface ApiKeyAuthOptions {
+  resolver: KeyResolver;
+  lastUsed: LastUsedTracker;
+  masterKey?: string;
+  trustedHops: number;
+  /** When false, a request without Authorization proceeds as anonymous. */
+  required: boolean;
+}
+
+const READ_METHODS = new Set(["GET", "HEAD"]);
+
+export function apiKeyAuth(opts: ApiKeyAuthOptions) {
+  return async (c: Context<GatewayEnv>, next: Next) => {
+    const ip = clientIp(c, opts.trustedHops);
+    const header = c.req.header("authorization");
+
+    if (!header) {
+      if (opts.required) {
+        return apiError(
+          c,
+          401,
+          "API_KEY_REQUIRED",
+          "This endpoint needs an API key. Send 'Authorization: Bearer <key>'. Create one at https://praytify.bible/dashboard/keys."
+        );
+      }
+      c.set("auth", { type: "anonymous", ip });
+      return next();
     }
 
-    c.set("apiKeyId", rows[0].id);
-    c.set("userId", rows[0].user_id);
+    const token = extractBearer(header);
+    if (!token) {
+      return apiError(c, 401, "INVALID_AUTHORIZATION", "Expected 'Authorization: Bearer <key>'.");
+    }
 
-    // Fire-and-forget so key lookup latency doesn't grow with a write
-    client`
-      UPDATE platform.api_keys SET last_used_at = NOW() WHERE id = ${rows[0].id}
-    `.catch(() => {});
-  } catch (err) {
-    console.error("[api-key] Validation error:", err);
-    return c.json(
-      { error: "Unauthorized", message: "API key validation failed." },
-      401
-    );
-  }
+    if (opts.masterKey && safeEqual(token, opts.masterKey)) {
+      c.set("auth", { type: "master", ip });
+      return next();
+    }
 
-  await next();
+    let key: ResolvedKey | null;
+    try {
+      key = await opts.resolver.resolve(hashApiKey(token));
+    } catch (err) {
+      // A database failure is our outage, not the caller's bad key. Reporting
+      // it as 401 is how the July 2026 outage hid behind "invalid key".
+      log.error("api key lookup failed", { err });
+      return apiError(c, 503, "AUTH_UNAVAILABLE", "Key validation is temporarily unavailable. Please retry shortly.", {
+        "Retry-After": "5",
+      });
+    }
+
+    if (!key || key.revoked) {
+      return apiError(c, 401, "INVALID_API_KEY", "This API key is invalid or has been revoked.");
+    }
+    if (key.expiresAt && key.expiresAt.getTime() <= Date.now()) {
+      return apiError(c, 401, "API_KEY_EXPIRED", "This API key has expired. Roll it in the dashboard to get a new one.");
+    }
+
+    if (key.kind === "publishable") {
+      if (!READ_METHODS.has(c.req.method)) {
+        return apiError(c, 403, "READ_ONLY_KEY", "Publishable keys can only make GET requests.");
+      }
+      if (/\/download\/?$/.test(c.req.path)) {
+        return apiError(c, 403, "SECRET_KEY_REQUIRED", "Full-Bible downloads need a secret key from a server.");
+      }
+      const origin = requestOrigin({ origin: c.req.header("origin"), referer: c.req.header("referer") });
+      if (!originAllowed(origin, key.allowedOrigins)) {
+        return apiError(
+          c,
+          403,
+          "ORIGIN_NOT_ALLOWED",
+          origin
+            ? `This publishable key is not allowed on ${origin}. Add the origin to the key in the dashboard.`
+            : "Publishable keys only work from a browser on an allowed origin. Use a secret key on servers."
+        );
+      }
+    }
+
+    c.set("auth", { type: "key", ip, keyId: key.id, userId: key.userId, kind: key.kind, tier: key.tier });
+    opts.lastUsed.touch(key.id);
+    return next();
+  };
 }
