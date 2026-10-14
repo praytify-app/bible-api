@@ -30,6 +30,12 @@
 | 2026-10-14 | happy-dom for unit tests | Lighter than jsdom and covers what Radix needs; no stubs required | design-system |
 | 2026-10-14 | Deprecated `primary-*` colour aliases kept in `index.css` | Unmigrated pages keep rendering; remove with the stock palette after Phase 4 | design-system |
 | 2026-10-14 | Favicon PNG and apple-touch-icon rendered from the brand SVGs (96px, 180px opaque), not the 659px PNG export | Right sizes; iOS renders transparent corners black | design-system |
+| 2026-10-14 | Keys: the plaintext key is split off inside the create and roll `mutationFn` and handed to page state; those mutations use `gcTime: 0` | TanStack keeps a mutation's resolved value in the MutationCache (visible in devtools, kept after unmount). Must-not-regress 4 covers any cache | keys |
+| 2026-10-14 | Keys: one-time reveal is an inline panel above the table, not a modal; focus moves to its heading and dismissing it drops the key | Key, usage snippet and the new row stay visible together; matches the audited banner behaviour | keys |
+| 2026-10-14 | Keys: kind is chosen with radio cards (visually hidden native radios; the card carries the focus outline), not Tabs | It is a form value, not a view switch; native radios give arrow-key behaviour and form semantics | keys |
+| 2026-10-14 | Keys: client origin validator mirrors the gateway's `normalizeOriginPattern` exactly (including `127.0.0.1`, `[::1]`, and plain http on real hosts, which is accepted with a warning). The gateway's message wins on disagreement | Errors show on the row before a round trip; one rule set, two copies kept in step (`features/keys/origins.ts` names its source) | keys |
+| 2026-10-14 | Keys: a blank name sends "Untitled Key" (must-not-regress 6), although the gateway's own default is "Untitled key" | Keeps the audited behaviour; the lead can align the gateway default if preferred | keys |
+| 2026-10-14 | Keys: per-key usage (requests and errors, last 30 days) sits in the table row and links to `/dashboard/usage?keyId=`; no detail drawer | Accounts hold at most 20 keys; one glance beats a click per key | keys |
 
 ## Decisions needed
 - Terms and Privacy text (BRIEF §11). Working default: remove the claim, list as gated.
@@ -53,8 +59,11 @@
 - **Bundle:** one 852 kB JS chunk (260 kB gzip), up from the 742 kB baseline measured before the upgrade, mostly Radix and lucide now reached through the CodeBlock shim. Route-level splitting is Phase 2 scope.
 - **Static gates, full `src`:** 12 raw hex (LoginPage, UsagePage) and 193 stock palette classes across 11 unmigrated page and layout files. `src/components/ds` is clean. Recommend adding `--primitive-lib radix-ui` to the BRIEF §10 command so pages importing the unified `radix-ui` package directly are caught (the default only matches `@radix-ui/`).
 - **Gate script:** does not skip `.pnpm-store/`; keep the pnpm store outside `portal/` or pass `--exclude`.
+- **Shared-worktree e2e flake (keys).** `vite dev` full-reloads every open page when any agent edits a shared module (seen for `src/lib/api.ts`), and Playwright's `outputDir` (`portal/e2e/results`) sits inside Vite's watch root, so trace writes also trigger reloads mid-test. Keys ran its spec against a scratch `vite build` served by `vite preview` (`E2E_PORT=5183`, `--output` outside `portal/`). Suggest design-system add `e2e/results` and `playwright-report` to `server.watch.ignored`, or move `outputDir` out of `portal/`.
+- **Fixed: gateway 500 on create or roll with an expiry** (postgres.js rejected a `Date` bind). Lead fixed in 85c0fcf; the keys spec's expiring-key case guards it.
 
 ## QA log
 | Task | Owner | Result | Screens | Findings |
 |---|---|---|---|---|
 | Phase 1 self-check: dev gallery at 1440x3600 and 390x6200 (light, dark), ConfirmDialog at 1440x900 (light, dark), Dialog at 390x844 (light, dark) | design-system | pass after fixes | session scratchpad, not committed (qa-critic owns `screens/`); reproduce from `/src/components/ds/gallery/index.html` | Fixed: stacked Table rows looked like cards nested in a Card (now divided rows); stacked cell labels inherited `font-mono`; Dialog focused Close before the first field (Close now last in DOM). Not a bug: overlays look translucent in headless captures mid-animation; opaque with reduced motion |
+| Phase 3 key manager self-check: list, create dialog, reveal panel at 1440x900 and 390x844, light and dark | keys | pass, awaiting qa-critic | `screens/keys-{list,create,reveal}-{desktop,mobile}-{light,dark}.png` | e2e `features/keys.spec.ts` 10/10 (desktop and mobile) against the local stack; axe clean in both themes. Fixed during the pass: focus fell back to Create when the reveal and the dialog close landed in one render; reveal footer text wrapped into columns on phones; origins broke mid-host at 1440 when an expiry badge widened the table. Known: very long hosts still wrap mid-word in stacked rows at 390 |
