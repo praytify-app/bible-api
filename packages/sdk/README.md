@@ -16,6 +16,7 @@ const passage = await bible.passage("John 3:16-18", { version: "WEB" });
 const sideBySide = await bible.parallel("John 1:1", ["WEB", "KJV"]);
 const today = await bible.daily({ version: "WEB" });
 const english = await bible.versions.list({ language: "eng" });
+const { verses, meta } = await bible.chapterWithMeta("WEB", "JHN", 3); // meta.attribution, meta.license
 ```
 
 Reading needs no key. Search and full-Bible downloads do:
@@ -23,6 +24,7 @@ Reading needs no key. Search and full-Bible downloads do:
 ```ts
 const bible = createClient({ apiKey: process.env.PRAYTIFY_BIBLE_KEY }); // pb_sk_… on servers
 const hits = await bible.search("still waters", { version: "WEB", limit: 10 });
+const wholeBible = await bible.download("WEB"); // offline use: { version, books: [{ chapters: [{ verses }] }] }
 ```
 
 In browser code use a publishable key (`pb_pk_…`) restricted to your site's origins; never ship a secret key.

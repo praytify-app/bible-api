@@ -141,4 +141,24 @@ describe("PraytifyBible client", () => {
     await createClient({ fetch, baseUrl: "https://bible.example.org/" }).languages.list();
     expect(calls[0]?.url.toString()).toBe("https://bible.example.org/v1/languages");
   });
+
+  it("returns a chapter with its licensing metadata", async () => {
+    const { fetch } = mockFetch(() =>
+      json({ data: [{ id: 1, number: 1, text: "In the beginning" }], meta: { version: "WEB", bookCode: "GEN", license: "Public Domain", attribution: null, attributionUrl: null } })
+    );
+    const r = await createClient({ fetch }).chapterWithMeta("WEB", "GEN", 1);
+    expect(r.verses).toHaveLength(1);
+    expect(r.meta?.license).toBe("Public Domain");
+  });
+
+  it("downloads a translation in the books format and never caches it", async () => {
+    const { fetch, calls } = mockFetch(() => json({ data: { version: { abbreviation: "WEB" }, books: [{ bookCode: "GEN", chapters: [] }] } }));
+    const bible = createClient({ fetch, apiKey: "pb_sk_x" });
+    const d = await bible.download("WEB");
+    await bible.download("WEB");
+    expect(d.books[0]?.bookCode).toBe("GEN");
+    expect(calls[0]?.url.searchParams.get("format")).toBe("books");
+    expect(calls).toHaveLength(2);
+  });
 });
+
