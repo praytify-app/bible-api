@@ -91,7 +91,7 @@ export interface BookChapterPickersRowProps {
   trailing?: ReactNode;
 }
 
-/** Full width on phones (its own line under the translation), one flexible column from sm up. */
+/** Full width on phones (its own line under the translation); from sm up the translation takes the spare width. */
 export function BookChapterPickersRow({
   books,
   currentBook,
@@ -104,9 +104,9 @@ export function BookChapterPickersRow({
   trailing,
 }: BookChapterPickersRowProps) {
   return (
-    <div className="flex w-full min-w-0 items-center gap-2 sm:w-auto sm:flex-1">
+    <div className="flex w-full min-w-0 items-center gap-2 sm:w-auto">
       <BookPicker
-        className="min-w-0 flex-1"
+        className="min-w-0 flex-1 sm:w-44 sm:flex-none"
         books={books}
         bookCode={bookCode}
         bookName={bookName}

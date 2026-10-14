@@ -262,7 +262,7 @@ export function ReadPage() {
       <Card as="section" aria-label="Reader controls" padding="sm" className="mb-8">
         <div className="flex flex-wrap items-center gap-2">
           <VersionPicker
-            className="min-w-0 flex-1 sm:w-56 sm:flex-none"
+            className="min-w-0 flex-1"
             version={version}
             currentLabel={detail ? `${detail.abbreviation} · ${detail.name}` : version}
             onSelect={(abbreviation) => void switchVersion(abbreviation)}
