@@ -3,9 +3,14 @@ import { ExternalLink } from "lucide-react";
 import { Button, PageHeader } from "@/components/ds";
 import { ApiReferenceFrame } from "@/features/docs/ApiReferenceFrame";
 import { API_URL } from "@/lib/api";
+import { useTheme } from "@/lib/theme";
 
 export function DocsPage() {
+  // resolvedTheme is the scheme on screen ("system" already resolved to the OS), so the
+  // reference matches the portal. The new-tab link stays unpinned and follows the OS there.
+  const { resolvedTheme } = useTheme();
   const referenceUrl = `${API_URL}/docs`;
+  const frameUrl = `${referenceUrl}?theme=${resolvedTheme}`;
 
   return (
     <div className="mx-auto flex w-full max-w-content flex-col gap-8 px-4 py-10 sm:px-6 lg:px-8">
@@ -28,7 +33,8 @@ export function DocsPage() {
           </Button>
         }
       />
-      <ApiReferenceFrame src={referenceUrl} />
+      {/* Keyed by URL: a theme change reloads the reference and resets its loading state. */}
+      <ApiReferenceFrame key={frameUrl} src={frameUrl} />
     </div>
   );
 }
