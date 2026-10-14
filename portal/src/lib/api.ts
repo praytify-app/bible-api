@@ -372,6 +372,22 @@ export const bible = {
       { signal, apiKey: PUBLIC_SEARCH_KEY }
     ).then((r) => (r.data || []).map(toSearchHit)),
 
+  /**
+   * Catalog size without downloading the catalog: the version total comes
+   * from pagination metadata, languages from the languages list (only those
+   * with at least one version).
+   */
+  catalogStats: async () => {
+    const [versions, languages] = await Promise.all([
+      fetchPublic<{ meta?: CatalogMeta }>("/v1/versions?limit=1"),
+      fetchPublic<{ data: { versionCount: number }[] }>("/v1/languages"),
+    ]);
+    return {
+      versions: versions.meta?.total ?? null,
+      languages: (languages.data || []).filter((l) => l.versionCount > 0).length,
+    };
+  },
+
   languages: () =>
     fetchPublic<{ data: { code: string; name: string; versionCount: number }[] }>("/v1/languages").then(
       (r) => r.data || []

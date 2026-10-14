@@ -28,8 +28,12 @@ COPY --from=embed /embed/dist/embed.js ./public/embed/v1.js
 # key restricted to the portal's origin, so it is safe to ship to browsers.
 ARG VITE_API_URL=https://api.praytify.bible
 ARG VITE_PUBLIC_SEARCH_KEY=
+# Links to the source repository render only when this is set, so the site
+# never points at a private or missing repository.
+ARG VITE_SOURCE_URL=
 ENV VITE_API_URL=$VITE_API_URL \
-    VITE_PUBLIC_SEARCH_KEY=$VITE_PUBLIC_SEARCH_KEY
+    VITE_PUBLIC_SEARCH_KEY=$VITE_PUBLIC_SEARCH_KEY \
+    VITE_SOURCE_URL=$VITE_SOURCE_URL
 RUN pnpm build
 # The CSP must allow exactly the API the bundle talks to.
 RUN API_ORIGIN=$(node -e "console.log(new URL(process.env.VITE_API_URL).origin)") && \
