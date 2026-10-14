@@ -180,10 +180,12 @@ test.describe("reader", () => {
   });
 
   test("honest states for missing books, missing chapters and rate limits", async ({ page }) => {
+    // A book the translation lacks (the catalog links every version to Genesis 1,
+    // and some are New Testament only) lands on its first book, with a note.
     await page.goto("/read/WEB/TOB/1");
-    await expect(page.getByRole("heading", { level: 2, name: "World English Bible does not include TOB" })).toBeVisible();
-    await page.getByRole("link", { name: "Start at Genesis 1" }).click();
+    await expect(page).toHaveURL(/\/read\/WEB\/GEN\/1$/);
     await expect(heading(page)).toHaveText("Genesis 1");
+    await expect(page.getByText("WEB does not include TOB, so you are at Genesis 1.")).toBeVisible();
 
     await page.goto("/read/WEB/JHN/40");
     await expect(page.getByRole("heading", { level: 2, name: "John has 21 chapters in WEB" })).toBeVisible();

@@ -197,7 +197,7 @@ export function ChapterBody({
         <SelectionToolbar
           reference={
             <>
-              <bdi>{bookName}</bdi> {chapter}:{formatVerseParam(range)} ({version})
+              <bdi lang={lang}>{bookName}</bdi> {chapter}:{formatVerseParam(range)} ({version})
             </>
           }
           copyText={() =>

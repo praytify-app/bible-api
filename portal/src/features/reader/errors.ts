@@ -23,18 +23,3 @@ export function retryUnlessFinal(failureCount: number, error: unknown): boolean 
   if (error instanceof ApiError && (error.status === 404 || error.status === 400 || error.status === 429)) return false;
   return failureCount < 1;
 }
-
-/**
- * The engine stores ISO 639-3 codes ("eng", "arb"). HTML wants BCP 47, which
- * uses the shortest code ("en", "ar"); CLDR aliases in Intl do the mapping.
- * Malformed codes give undefined, so the page inherits its language instead
- * of declaring a wrong one.
- */
-export function toLangTag(code: string | null | undefined): string | undefined {
-  if (!code) return undefined;
-  try {
-    return Intl.getCanonicalLocales(code)[0];
-  } catch {
-    return undefined;
-  }
-}

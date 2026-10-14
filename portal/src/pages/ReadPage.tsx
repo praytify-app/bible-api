@@ -1,13 +1,14 @@
 import { useQuery, useQueryClient, type QueryClient } from "@tanstack/react-query";
 import { Link, useNavigate, useParams, useSearch } from "@tanstack/react-router";
 import { ChevronLeft, ChevronRight } from "lucide-react";
-import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { Alert, Button, Card, EmptyState, Eyebrow, IconButton, SkeletonText, Spinner } from "@/components/ds";
 import { PUBLIC_SEARCH_KEY, bible, type BibleBook } from "@/lib/api";
+import { toDir, toLangTag } from "@/lib/lang";
 import { BookChapterPickersRow } from "@/features/reader/BookChapterPickers";
 import { ChapterBody } from "@/features/reader/ChapterBody";
 import { adjacentChapters, resolveVersionSwitch, sortBooks } from "@/features/reader/chapter-nav";
-import { isNotFound, isRateLimited, rateLimitMessage, retryUnlessFinal, toLangTag } from "@/features/reader/errors";
+import { isNotFound, isRateLimited, rateLimitMessage, retryUnlessFinal } from "@/features/reader/errors";
 import { useChapterShortcuts } from "@/features/reader/keyboard";
 import { rememberLocation } from "@/features/reader/last-read";
 import { ReaderSearch } from "@/features/reader/ReaderSearch";
@@ -68,7 +69,8 @@ export function ReadPage() {
   const currentBook = books?.find((b) => b.bookCode === bookCode);
   const bookName = currentBook?.name ?? cachedBookName(queryClient, bookCode) ?? bookCode;
   const versionName = detail?.name ?? version;
-  const dir = detail?.textDirection === "rtl" ? "rtl" : "ltr";
+  // Book names and scripture are in the translation's language; version names and UI are not.
+  const dir = toDir(detail?.textDirection);
   const lang = toLangTag(detail?.languageCode);
   const { prev, next } = useMemo(
     () => (books ? adjacentChapters(books, bookCode, chapter) : { prev: null, next: null }),
@@ -103,6 +105,27 @@ export function ReadPage() {
   const [switchError, setSwitchError] = useState<string | null>(null);
   const [switchNote, setSwitchNote] = useState<{ path: string; text: string } | null>(null);
   const currentPath = readerPath(version, bookCode, chapter).toUpperCase();
+
+  // A link to a book this translation lacks lands on its first book, with the
+  // same note a translation switch shows. The catalog links every version to
+  // Genesis 1, and some translations are New Testament only.
+  const fallbackBook = books && !currentBook ? sortBooks(books).find((b) => b.chapterCount > 0) : undefined;
+  const redirectedFrom = useRef<string | null>(null);
+  useEffect(() => {
+    const from = `${version}/${bookCode}`;
+    if (!fallbackBook || redirectedFrom.current === from) return;
+    redirectedFrom.current = from;
+    const note = {
+      path: readerPath(version, fallbackBook.bookCode, 1).toUpperCase(),
+      // The abbreviation, not the name: the version details may not have arrived yet.
+      text: `${version} does not include ${bookName}, so you are at ${fallbackBook.name} 1.`,
+    };
+    void navigate({
+      to: "/read/$version/$book/$chapter",
+      params: { version, book: fallbackBook.bookCode, chapter: "1" },
+      replace: true,
+    }).then(() => setSwitchNote(note));
+  }, [fallbackBook, version, bookCode, bookName, navigate]);
 
   async function switchVersion(abbreviation: string) {
     if (abbreviation.toUpperCase() === version) return;
@@ -158,25 +181,12 @@ export function ReadPage() {
         </Alert>
       );
     }
-    if (books && books.length === 0) {
-      return <EmptyState titleAs="h2" title={`${versionName} has no books yet`} description="Choose another translation from the list above." />;
-    }
-    if (books && !currentBook) {
-      const first = sortBooks(books).find((b) => b.chapterCount > 0);
+    if (books && !currentBook && !fallbackBook) {
       return (
         <EmptyState
           titleAs="h2"
-          title={`${versionName} does not include ${bookName}`}
-          description="Some translations cover only part of the Bible. Pick another book or translation above."
-          action={
-            first && (
-              <Button asChild variant="secondary">
-                <Link to="/read/$version/$book/$chapter" params={{ version, book: first.bookCode, chapter: "1" }}>
-                  Start at {first.name} 1
-                </Link>
-              </Button>
-            )
-          }
+          title={`${versionName} has no books to read yet`}
+          description="Choose another translation from the list above."
         />
       );
     }
@@ -198,8 +208,10 @@ export function ReadPage() {
         />
       );
     }
-    // A 404 while the book list is still loading is probably a missing book; wait to say which.
-    if (versesQuery.isError && !(isNotFound(versesQuery.error) && booksQuery.isPending)) {
+    // A 404 while the book list loads is probably a missing book; wait to say which.
+    // A missing book with a fallback is about to redirect, so it shows as loading.
+    const redirecting = books !== undefined && !currentBook;
+    if (versesQuery.isError && !redirecting && !(isNotFound(versesQuery.error) && booksQuery.isPending)) {
       const error = versesQuery.error;
       return (
         <Alert
@@ -219,7 +231,7 @@ export function ReadPage() {
         </Alert>
       );
     }
-    if (!versesQuery.isSuccess) {
+    if (!versesQuery.isSuccess || redirecting) {
       return (
         <div aria-busy="true">
           <p role="status" className="sr-only">
@@ -321,7 +333,9 @@ export function ReadPage() {
       <article aria-labelledby="reader-chapter-title">
         {/* No synthetic italic: scripts the serif lacks (Arabic, Hebrew) fall back upright. */}
         <header className="mb-8">
-          <Eyebrow as="p">{versionName}</Eyebrow>
+          <Eyebrow as="p">
+            <bdi>{versionName}</bdi>
+          </Eyebrow>
           <h1 id="reader-chapter-title" lang={lang} dir={dir} className="mt-2 font-serif text-h1 font-medium italic text-ink [font-synthesis:none]">
             {bookName} {chapter}
           </h1>
@@ -346,7 +360,6 @@ export function ReadPage() {
               attribution={detail.attribution}
               attributionUrl={detail.attributionUrl}
               license={detail.license}
-              lang={lang}
             />
           ) : null}
         </footer>
@@ -360,7 +373,7 @@ export function ReadPage() {
               params={{ version, book: prev.book.bookCode, chapter: String(prev.chapter) }}
             >
               <span className="sr-only">Previous: </span>
-              <bdi>{prev.book.name}</bdi> {prev.chapter}
+              <bdi lang={lang}>{prev.book.name}</bdi> {prev.chapter}
             </Link>
           </Button>
         ) : (
@@ -373,7 +386,7 @@ export function ReadPage() {
               params={{ version, book: next.book.bookCode, chapter: String(next.chapter) }}
             >
               <span className="sr-only">Next: </span>
-              <bdi>{next.book.name}</bdi> {next.chapter}
+              <bdi lang={lang}>{next.book.name}</bdi> {next.chapter}
             </Link>
           </Button>
         )}
@@ -393,12 +406,10 @@ function Attribution({
   attribution,
   attributionUrl,
   license,
-  lang,
 }: {
   attribution?: string | null;
   attributionUrl?: string | null;
   license?: string | null;
-  lang?: string;
 }) {
   if (!attribution && !license) {
     return <p>No attribution or licence details are recorded for this translation.</p>;
@@ -406,7 +417,8 @@ function Attribution({
   return (
     <div className="space-y-1">
       {attribution && (
-        <p lang={lang} dir="auto">
+        // No translation lang: attribution is often English even for other languages (AVD's is "Public Domain").
+        <p dir="auto">
           {attribution}
           {attributionUrl && (
             <>
