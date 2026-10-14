@@ -208,7 +208,9 @@ test.describe("key manager", () => {
       await openKeys(page);
       await expectAccessible(page, `empty keys page, ${theme}`);
 
-      await createKey(page, { kind: "Publishable", name: "Axe site", origins: ["https://example.org"] });
+      // A blank name is not sent, so the gateway's default ("Untitled key") is the one that shows.
+      await createKey(page, { kind: "Publishable", name: "", origins: ["https://example.org"] });
+      await expect(rowFor(page, "Untitled key")).toHaveCount(1);
       await expectAccessible(page, `reveal panel and table, ${theme}`);
 
       await page.getByRole("button", { name: "Create key", exact: true }).click();

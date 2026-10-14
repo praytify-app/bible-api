@@ -8,8 +8,8 @@ import { OriginsEditor } from "./OriginsEditor";
 import { checkOriginRows } from "./origins";
 import { useCreateKey, type Revealed } from "./queries";
 
-/** AUDIT must-not-regress 6: a blank name still creates a key with this name. */
-export const DEFAULT_KEY_NAME = "Untitled Key";
+/** Shown as the placeholder only. A blank name is not sent, so the gateway applies its own default. */
+const SERVER_DEFAULT_NAME = "Untitled key";
 
 const KIND_ICON: Record<KeyKind, typeof Server> = { secret: Server, publishable: Globe };
 
@@ -51,7 +51,7 @@ export function CreateKeyDialog({ plan, onCreated, onDone, onCloseAutoFocus }: C
     }
     create.mutate(
       {
-        name: name.trim() || DEFAULT_KEY_NAME,
+        name: name.trim() || undefined,
         kind,
         allowedOrigins: kind === "publishable" ? check.patterns : undefined,
         expiresInDays: expiresInDays(expiry),
@@ -82,7 +82,7 @@ export function CreateKeyDialog({ plan, onCreated, onDone, onCloseAutoFocus }: C
           <Input
             value={name}
             onChange={(event) => setName(event.target.value)}
-            placeholder={DEFAULT_KEY_NAME}
+            placeholder={SERVER_DEFAULT_NAME}
             maxLength={80}
             autoComplete="off"
           />

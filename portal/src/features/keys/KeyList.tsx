@@ -256,7 +256,7 @@ function Origins({ kind, origins }: { kind: KeyKind; origins: string[] }) {
     <div className="flex min-w-0 flex-col gap-1">
       <ul className="flex flex-col gap-0.5">
         {origins.map((origin) => (
-          <li key={origin} className="break-all font-mono text-caption text-ink md:whitespace-nowrap md:break-normal">
+          <li key={origin} className="font-mono text-caption text-ink wrap-anywhere md:whitespace-nowrap">
             {origin}
           </li>
         ))}
