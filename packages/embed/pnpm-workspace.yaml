@@ -1,0 +1,6 @@
+# Standalone package: stop pnpm from adopting the repo-root workspace.
+packages:
+  - "."
+
+allowBuilds:
+  esbuild: true
