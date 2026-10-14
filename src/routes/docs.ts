@@ -94,6 +94,10 @@ export function toPublicSpec(engine: OpenApiDoc, publicUrl: string, translations
 // Sacred Dawn colours for Scalar, so the reference passes AA in both themes
 // and matches the portal that frames it. Values mirror portal/src/index.css.
 const SCALAR_CSS = `
+:root {
+  --scalar-font: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --scalar-font-code: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
 .light-mode {
   --scalar-background-1: #faf6f1; --scalar-background-2: #f4eee6; --scalar-background-3: #ffffff;
   --scalar-color-1: #2c1810; --scalar-color-2: #66564f; --scalar-color-3: #74665f;
@@ -124,6 +128,9 @@ export function scalarConfiguration(theme: string | undefined): Record<string, u
     url: "/v1/openapi.json",
     theme: "none",
     customCss: SCALAR_CSS,
+    // No third-party font requests: Scalar's defaults load from
+    // fonts.scalar.com, which the CSP rightly refuses. System fonts instead.
+    withDefaultFonts: false,
     hideClientButton: false,
     ...(pinned ? { forceDarkModeState: pinned, hideDarkModeToggle: true } : {}),
   };
