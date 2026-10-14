@@ -1,5 +1,5 @@
 import type { Locator, Page } from "@playwright/test";
-import { API_URL, expect, signUp, test } from "../support/fixtures";
+import { API_URL, DOCS_FRAME_TIMEOUT, expect, signUp, test } from "../support/fixtures";
 
 // Zero inert controls (BRIEF §10, qa-critic brief): every route, public and
 // signed in, on both viewports. For each page, and for the menu sheet on
@@ -65,7 +65,9 @@ async function settled(page: Page) {
 async function waitForRoute(page: Page, path: string) {
   await expect(page.locator("main").first()).toBeVisible();
   if (path.startsWith("/read/")) await expect(page.locator('[data-verse="1"]')).toBeVisible();
-  if (path === "/docs") await expect(page.locator('iframe[title="Praytify Bible API reference"]')).toBeVisible();
+  if (path === "/docs") {
+    await expect(page.locator('iframe[title="Praytify Bible API reference"]')).toBeVisible({ timeout: DOCS_FRAME_TIMEOUT });
+  }
   if (path === "/docs/translations") await expect(page.getByRole("table", { name: "Bible translations" })).toBeVisible();
   await settled(page);
 }

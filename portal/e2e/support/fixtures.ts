@@ -6,6 +6,13 @@ export const API_URL = process.env.E2E_API_URL ?? "http://localhost:3200";
 export type Theme = "light" | "dark";
 
 /**
+ * The docs frame shows once its load event fires, which waits on Scalar from
+ * cdn.jsdelivr.net. The page allows 15 s before calling the reference slow
+ * (SLOW_AFTER_MS in ApiReferenceFrame), so specs wait as long for it.
+ */
+export const DOCS_FRAME_TIMEOUT = 15_000;
+
+/**
  * Force a theme before the app boots (the no-flash script reads pb-theme).
  * Top frame only: Firefox also runs init scripts in a child frame's initial
  * about:blank, which shares the portal's origin, so writing there fired a

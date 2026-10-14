@@ -1,5 +1,5 @@
 import type { Page } from "@playwright/test";
-import { API_URL, expect, expectAccessible, signUp, test, useTheme, type Theme } from "../support/fixtures";
+import { API_URL, DOCS_FRAME_TIMEOUT, expect, expectAccessible, signUp, test, useTheme, type Theme } from "../support/fixtures";
 
 // The pages page-migration owns (login, docs, quick start, translations,
 // usage, settings) against the real local gateway. Responses are stubbed only
@@ -113,14 +113,14 @@ test.describe("docs", () => {
     const frame = page.locator('iframe[title="Praytify Bible API reference"]');
     await expect(frame).toHaveAttribute("sandbox", /allow-scripts/);
     await expect(frame).toHaveAttribute("src", `${API_URL}/docs?theme=dark`);
-    await expect(frame).toBeVisible();
+    await expect(frame).toBeVisible({ timeout: DOCS_FRAME_TIMEOUT });
     await expect(page.getByRole("link", { name: /Open in a new tab/ })).toHaveAttribute("href", `${API_URL}/docs`);
 
     // Switching the portal theme reloads the reference in the new theme.
     await page.getByRole("button", { name: /^Theme:/ }).first().click();
     await page.getByRole("menuitemradio", { name: "Light" }).click();
     await expect(frame).toHaveAttribute("src", `${API_URL}/docs?theme=light`);
-    await expect(frame).toBeVisible();
+    await expect(frame).toBeVisible({ timeout: DOCS_FRAME_TIMEOUT });
   });
 
   test("API reference shows an error, not a blank frame, when the spec fails", async ({ page }) => {
@@ -319,7 +319,7 @@ for (const theme of ["light", "dark"] as Theme[]) {
   test(`axe /docs (${theme})`, async ({ page }) => {
     await useTheme(page, theme);
     await page.goto("/docs");
-    await expect(page.locator('iframe[title="Praytify Bible API reference"]')).toBeVisible();
+    await expect(page.locator('iframe[title="Praytify Bible API reference"]')).toBeVisible({ timeout: DOCS_FRAME_TIMEOUT });
     await expect(
       page.frameLocator('iframe[title="Praytify Bible API reference"]').getByRole("heading", { name: /Praytify Bible API/ }).first(),
     ).toBeVisible();

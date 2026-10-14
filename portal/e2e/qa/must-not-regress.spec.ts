@@ -1,5 +1,5 @@
 import type { Page, Request } from "@playwright/test";
-import { API_URL, expect, signUp, test } from "../support/fixtures";
+import { API_URL, DOCS_FRAME_TIMEOUT, expect, signUp, test } from "../support/fixtures";
 
 // QA coverage for the AUDIT "Must not regress" items that no feature spec
 // pins down on its own: the guard's pending state (1), the signed-in bounce
@@ -53,7 +53,7 @@ test("3: public reads carry no cookie and no Content-Type, even for a signed-in 
   await page.goto("/embed");
   await settled(page);
   await page.goto("/docs");
-  await expect(page.locator('iframe[title="Praytify Bible API reference"]')).toBeVisible();
+  await expect(page.locator('iframe[title="Praytify Bible API reference"]')).toBeVisible({ timeout: DOCS_FRAME_TIMEOUT });
 
   const withHeaders = await Promise.all(requests);
   const publicReads = withHeaders.filter((r) => new URL(r.url).pathname.startsWith("/v1/") && r.method === "GET");
