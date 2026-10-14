@@ -1,4 +1,4 @@
-import { Link, Outlet, useNavigate, useRouterState } from "@tanstack/react-router";
+import { Link, Outlet, useRouterState } from "@tanstack/react-router";
 import { ArrowUpRight, ChevronDown, Menu } from "lucide-react";
 import { useState, type MouseEvent, type ReactNode } from "react";
 import {
@@ -81,9 +81,7 @@ function PublicHeader() {
 }
 
 function DocsMenu() {
-  const pathname = useRouterState({ select: (state) => state.location.pathname });
-  const navigate = useNavigate();
-  const inDocs = pathname.startsWith("/docs");
+  const inDocs = useRouterState({ select: (state) => state.location.pathname.startsWith("/docs") });
   return (
     <DropdownMenu>
       <DropdownMenuTrigger className={cx(headerLink, inDocs && "text-accent-text")}>
@@ -91,24 +89,17 @@ function DocsMenu() {
         <ChevronDown aria-hidden className="size-4" />
       </DropdownMenuTrigger>
       <DropdownMenuContent align="start" className="w-72">
-        {/* Items navigate on select rather than wrapping a Link: DropdownMenuItem asChild
-            fails to slot without an icon (BOARD contract changes). Swap back once fixed. */}
-        {docsNav.map((item) => {
-          const current = pathname === item.to;
-          return (
-            <DropdownMenuItem
-              key={item.to}
-              onSelect={() => void navigate({ to: item.to })}
-              aria-current={current ? "page" : undefined}
-              className={cx("py-2", current && "text-accent-text")}
-            >
+        {docsNav.map((item) => (
+          <DropdownMenuItem key={item.to} asChild className="py-2 data-[status=active]:text-accent-text">
+            {/* exact: the API reference lives at /docs, the parent of the other two. */}
+            <Link to={item.to} activeOptions={{ exact: true }}>
               <span className="flex flex-col">
                 <span className="font-semibold">{item.label}</span>
                 <span className="text-caption text-ink-muted">{item.description}</span>
               </span>
-            </DropdownMenuItem>
-          );
-        })}
+            </Link>
+          </DropdownMenuItem>
+        ))}
       </DropdownMenuContent>
     </DropdownMenu>
   );

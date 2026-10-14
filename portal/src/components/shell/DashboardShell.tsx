@@ -158,7 +158,6 @@ function MobileSidebar() {
 
 function UserMenu({ name, email }: { name: string; email: string }) {
   const signOut = useSignOut();
-  const navigate = useNavigate();
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
@@ -172,9 +171,8 @@ function UserMenu({ name, email }: { name: string; email: string }) {
           <span className="truncate font-normal">{email}</span>
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
-        {/* onSelect, not asChild + Link: see the DropdownMenuItem note in BOARD contract changes. */}
-        <DropdownMenuItem icon={<Settings />} onSelect={() => void navigate({ to: "/dashboard/settings" })}>
-          Settings
+        <DropdownMenuItem asChild icon={<Settings />}>
+          <Link to="/dashboard/settings">Settings</Link>
         </DropdownMenuItem>
         <DropdownMenuItem icon={<LogOut />} onSelect={() => void signOut()}>
           Sign out

@@ -64,10 +64,10 @@ for (const target of publicTargets) {
     const again = await openPublicNav(page, isMobile);
     if (target.docs && !isMobile) {
       await again.getByRole("button", { name: "Docs" }).click();
-      await expect(page.getByRole("menuitem", { name: new RegExp(`^${target.name}`) })).toHaveAttribute(
-        "aria-current",
-        "page",
-      );
+      const item = page.getByRole("menuitem", { name: new RegExp(`^${target.name}`) });
+      await expect(item).toHaveAttribute("aria-current", "page");
+      // Real links, so they open in a new tab and preload like any other.
+      await expect(item).toHaveAttribute("href", new URL(page.url()).pathname);
       await expect(page.locator('[role="menuitem"][aria-current="page"]')).toHaveCount(1);
     } else {
       await expect(again.getByRole("link", { name: target.name, exact: true })).toHaveAttribute("aria-current", "page");
@@ -174,6 +174,7 @@ test("sign out returns to the home page and ends the session", async ({ page, ba
   await signUp(page, baseURL!);
   await page.goto("/dashboard");
   await page.getByRole("button", { name: /^Account menu for/ }).click();
+  await expect(page.getByRole("menuitem", { name: "Settings" })).toHaveAttribute("href", "/dashboard/settings");
   await page.getByRole("menuitem", { name: "Sign out" }).click();
   await expect(page).toHaveURL(new URL("/", baseURL!).href);
   await page.goto("/dashboard");
