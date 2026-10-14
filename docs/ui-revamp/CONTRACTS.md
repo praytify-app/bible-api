@@ -216,3 +216,4 @@ Helpers also exported: `cx()` (class join, no conflict resolution: prefer props 
 | 2026-10-14 | 30 primitives, `ThemeProvider`, `readToken`, `touch-target` utility, and the dev gallery published | everyone |
 | 2026-10-14 | `components/CodeBlock.tsx` replaced by a re-export of the ds CodeBlock (same `tabs` prop). Not breaking | page-migration (LandingPage, QuickStartPage) |
 | 2026-10-14 | SearchSelect gains server-side search (`onQueryChange`, `filterOptions`, `loading`) | reader |
+| 2026-10-14 | No-flash theme script is `public/theme-init.js` (CSP `script-src 'self'`); it and `resolveTheme()` in `lib/theme.tsx` must stay in step | lead |

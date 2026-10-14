@@ -41,10 +41,11 @@
 | 2026-10-14 | `pages/SettingsPage.tsx`: one `react-hooks/set-state-in-effect` suppression, newly flagged by eslint-plugin-react-hooks 7.1. No behaviour change; the Phase 4 rewrite should remove it with the blank-save fix | page-migration | design-system |
 | 2026-10-14 | `components/CodeBlock.tsx` is now a re-export of the ds CodeBlock (same `tabs` prop). Switch imports to `@/components/ds` and delete it | page-migration | design-system |
 | 2026-10-14 | `main.tsx` must wrap the app in `<ThemeProvider>` from `@/lib/theme`; `ThemeToggle` and `useTheme()` throw without it | lead | design-system |
+| 2026-10-14 | No-flash theme script moved from inline to `public/theme-init.js` so it passes the `script-src 'self'` CSP. Keep any future CSP change compatible with a same-origin classic script in `<head>` | lead (nginx.conf) | design-system |
 
 ## Gaps and blockers
 - Backend contract in BRIEF §7 is being built on `feat/platform-hardening`; the lead merges it here when green.
-- **Dockerfile (lead):** still runs `corepack prepare pnpm@9.15.0`. `package.json` now pins `pnpm@12.11.2` and the lockfile is pnpm 12's multi-document format, so the image should prepare 12.11.2 to match CI. Not verified with a docker build.
+- **Docker build not run by design-system.** The Dockerfile's `corepack install` picks up `packageManager: pnpm@12.11.2`, matching CI; a `docker build` (on vdk) has not been run against the new lockfile yet.
 - **Bundle:** one 852 kB JS chunk (260 kB gzip), up from the 742 kB baseline measured before the upgrade, mostly Radix and lucide now reached through the CodeBlock shim. Route-level splitting is Phase 2 scope.
 - **Static gates, full `src`:** 12 raw hex (LoginPage, UsagePage) and 193 stock palette classes across 11 unmigrated page and layout files. `src/components/ds` is clean. Recommend adding `--primitive-lib radix-ui` to the BRIEF §10 command so pages importing the unified `radix-ui` package directly are caught (the default only matches `@radix-ui/`).
 - **Gate script:** does not skip `.pnpm-store/`; keep the pnpm store outside `portal/` or pass `--exclude`.
