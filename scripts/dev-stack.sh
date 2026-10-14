@@ -45,7 +45,7 @@ find_pg_bin() {
 
 PGB="$(find_pg_bin)"
 PGDATA="$STATE/pg"
-psql_admin() { "$PGB/psql" -h 127.0.0.1 -p "$PG_PORT" -U postgres -v ON_ERROR_STOP=1 -qtA "$@"; }
+psql_admin() { PGOPTIONS="-c client_min_messages=warning" "$PGB/psql" -h 127.0.0.1 -p "$PG_PORT" -U postgres -v ON_ERROR_STOP=1 -qtA "$@"; }
 
 pg_running() { "$PGB/pg_ctl" -D "$PGDATA" status >/dev/null 2>&1; }
 
@@ -58,7 +58,7 @@ start_postgres() {
   if ! pg_running; then
     say "starting Postgres on 127.0.0.1:$PG_PORT"
     "$PGB/pg_ctl" -D "$PGDATA" -l "$STATE/postgres.log" -w \
-      -o "-p $PG_PORT -k $STATE -c listen_addresses=127.0.0.1" start >/dev/null
+      -o "-p $PG_PORT -k $STATE -c listen_addresses=127.0.0.1" start </dev/null >/dev/null
   fi
   if [[ "$(psql_admin -d postgres -c "SELECT 1 FROM pg_database WHERE datname = '$DB_NAME'")" != "1" ]]; then
     psql_admin -d postgres -c "CREATE DATABASE $DB_NAME"
@@ -115,7 +115,14 @@ start_bg() {
   local pidfile="$STATE/$name.pid"
   if [[ -f "$pidfile" ]] && kill -0 "$(cat "$pidfile")" 2>/dev/null; then return; fi
   say "starting $name"
-  (cd "$dir" && nohup "$@" >"$STATE/$name.log" 2>&1 & echo $! >"$pidfile")
+  # `cd` is its own statement: in `cd && nohup ... &` the & would background
+  # the whole list, leaving a subshell that holds the caller's stdout open and
+  # recording that subshell's PID instead of the server's.
+  (
+    cd "$dir" || exit 1
+    nohup "$@" </dev/null >"$STATE/$name.log" 2>&1 &
+    echo $! >"$pidfile"
+  )
 }
 
 wait_for() {
