@@ -101,12 +101,12 @@ export function KeyUsageTable({ query, periodLabel, selectedKeyId, onChartKey }:
                   variant={charted ? "secondary" : "ghost"}
                   size="sm"
                   leadingIcon={<ChartLine aria-hidden />}
+                  // Starts with the visible text (label in name); aria-pressed carries the state.
+                  aria-label={`Chart this key: ${k.name}`}
                   aria-pressed={charted}
                   onClick={() => onChartKey(charted ? undefined : k.keyId)}
                 >
-                  {/* aria-pressed carries the state, so the name stays the same either way. */}
                   Chart this key
-                  <span className="sr-only">: {k.name}</span>
                 </Button>
               </TableCell>
             </TableRow>
