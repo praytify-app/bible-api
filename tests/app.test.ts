@@ -388,4 +388,22 @@ describe("public API reference", () => {
     expect(r.headers.get("x-frame-options")).toBeNull();
     expect(await r.text()).toContain('integrity="sha384-');
   });
+
+  it("themes the reference and pins dark mode when the portal asks for it", async () => {
+    const { app } = setup();
+    const html = await (await app.request("/docs?theme=dark")).text();
+    const attr = /data-configuration="([^"]+)"/.exec(html)![1]!.replace(/&quot;/g, '"').replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&amp;/g, "&");
+    const cfg = JSON.parse(attr);
+    expect(cfg).toMatchObject({ url: "/v1/openapi.json", forceDarkModeState: "dark", hideDarkModeToggle: true });
+    expect(cfg.customCss).toContain("--scalar-color-accent");
+    const free = await (await app.request("/docs?theme=<script>")).text();
+    expect(free).not.toContain("forceDarkModeState");
+    expect(free).not.toContain("<script>\"");
+  });
+
+  it("quotes the live translation count in the API description", async () => {
+    const { app } = setup();
+    const spec = await (await app.request("/v1/openapi.json")).json();
+    expect(spec.info.description).toMatch(/^Scripture in (\d[\d,]* translations|Bible translations) over/);
+  });
 });

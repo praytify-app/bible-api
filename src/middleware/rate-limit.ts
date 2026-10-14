@@ -85,6 +85,26 @@ export async function createRateLimitStore(redisUrl?: string): Promise<RateLimit
   return new RedisStore(client as unknown as MinimalRedis);
 }
 
+/**
+ * The bucket an anonymous client is counted in. IPv4 addresses count alone.
+ * An IPv6 client usually controls a whole /64 and can rotate through it at
+ * will, so IPv6 is counted per /64 prefix; otherwise one host could
+ * multiply the anonymous limit by changing addresses.
+ */
+export function anonymousBucket(ip: string | null): string {
+  if (!ip) return "unknown";
+  const addr = ip.replace(/^\[|\]$/g, "").replace(/%.*$/, "").toLowerCase();
+  if (addr.startsWith("::ffff:") && addr.includes(".")) return addr.slice(7); // IPv4-mapped
+  if (!addr.includes(":")) return addr;
+  const [head = "", tail = ""] = addr.split("::");
+  const left = head ? head.split(":") : [];
+  const right = tail ? tail.split(":") : [];
+  const missing = addr.includes("::") ? 8 - left.length - right.length : 0;
+  const groups = [...left, ...Array(Math.max(0, missing)).fill("0"), ...right];
+  if (groups.length !== 8) return addr;
+  return groups.slice(0, 4).map((g) => g.replace(/^0+(?=.)/, "")).join(":") + "::/64";
+}
+
 export interface RateLimitResult {
   allowed: boolean;
   limit: number;
@@ -145,7 +165,7 @@ export function rateLimitMiddleware(limiter: RateLimiter, anonymous: Limits) {
     const auth = c.get("auth");
     if (!auth || auth.type === "master") return next();
 
-    const scope = auth.type === "key" ? `u:${auth.userId}:${auth.kind}` : `ip:${auth.ip ?? "unknown"}`;
+    const scope = auth.type === "key" ? `u:${auth.userId}:${auth.kind}` : `ip:${anonymousBucket(auth.ip)}`;
     const limits = auth.type === "key" ? limitsFor(auth.tier, auth.kind) : anonymous;
 
     let result: RateLimitResult;

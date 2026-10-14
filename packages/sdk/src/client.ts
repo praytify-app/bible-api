@@ -1,7 +1,10 @@
 import { PraytifyBibleError, parseErrorBody } from "./errors.js";
 import type {
+  BibleDownload,
   Book,
   Chapter,
+  ChapterMeta,
+  ChapterWithMeta,
   DailyVerse,
   Language,
   ListVersionsParams,
@@ -99,6 +102,7 @@ function toSearchResult(row: Record<string, unknown>): SearchResult {
     versionAbbreviation: pick("versionAbbreviation", "version_abbreviation"),
     license: (row.license as string | null) ?? null,
     attribution: (row.attribution as string | null) ?? null,
+    attributionUrl: (row.attributionUrl as string | null | undefined) ?? null,
     rank: Number(row.rank ?? 0),
   };
 }
@@ -164,7 +168,32 @@ export class PraytifyBible {
     ).then((r) => r.data);
   }
 
-  /** A verse or range by human reference, e.g. `passage("John 3:16-18", { version: "WEB" })`. */
+  /** A chapter's verses plus its translation's licensing and attribution, for display. */
+  chapterWithMeta(version: string, bookCode: string, chapter: number | string): Promise<ChapterWithMeta> {
+    return this.get<{ data: Verse[]; meta?: ChapterMeta }>(
+      `/v1/chapters/${enc(version)}/${enc(bookCode)}/${enc(String(chapter))}/verses`,
+      {},
+      true
+    ).then((r) => ({ verses: r.data, meta: r.meta ?? null }));
+  }
+
+  /**
+   * A whole translation, for offline reading. Needs a secret key (publishable
+   * keys cannot download). About 5 MB for a full Bible; cache it, and the
+   * response's ETag makes re-checks cheap.
+   */
+  download(version: string): Promise<BibleDownload> {
+    return this.get<{ data: BibleDownload }>(`/v1/versions/${enc(version)}/download`, { format: "books" }, false).then(
+      (r) => r.data
+    );
+  }
+
+  /**
+   * A verse or range by human reference, e.g. `passage("John 3:16-18", { version: "WEB" })`.
+   * Accepts book names in the translation's language, common abbreviations
+   * (`Jn 3:16`), USFM codes (`JHN 3:16`), and whole chapters (`Psalm 23`).
+   * A reference that does not exist rejects with a 404 PraytifyBibleError.
+   */
   passage(reference: string, opts: { version: string }): Promise<Passage> {
     return this.get<{ data: Passage }>("/v1/verses", { ref: reference, version: opts.version }, true).then(
       (r) => r.data

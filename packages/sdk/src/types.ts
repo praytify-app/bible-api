@@ -53,10 +53,41 @@ export interface Verse {
   text: string;
 }
 
-export interface Passage {
+/** Licensing and language of the translation a response came from. */
+export interface Licensing {
+  license: string | null;
+  attribution: string | null;
+  attributionUrl: string | null;
+  /** ISO 639-3, e.g. `eng`. Use `Intl.getCanonicalLocales` for an HTML `lang`. */
+  languageCode?: string | null;
+  textDirection?: "ltr" | "rtl" | string | null;
+}
+
+export interface Passage extends Partial<Licensing> {
   reference: string;
   version: string;
   verses: Verse[];
+  bookCode?: string;
+  bookName?: string;
+  chapter?: number;
+  /** First and last verse actually returned. */
+  verseStart?: number;
+  verseEnd?: number;
+}
+
+/** What `chapterWithMeta()` returns: the verses plus the chapter's licensing. */
+export interface ChapterMeta extends Licensing {
+  version: string;
+  versionName: string;
+  bookCode: string;
+  bookName: string;
+  chapter: number;
+  licenseType?: string;
+}
+
+export interface ChapterWithMeta {
+  verses: Verse[];
+  meta: ChapterMeta | null;
 }
 
 export interface ParallelPassage {
@@ -66,6 +97,7 @@ export interface ParallelPassage {
 }
 
 export interface SearchResult {
+  attributionUrl?: string | null;
   id: number;
   verseNumber: number;
   chapterNumber: number;
@@ -78,13 +110,33 @@ export interface SearchResult {
   rank: number;
 }
 
-export interface DailyVerse {
+export interface DailyVerse extends Partial<Licensing> {
   dayOfYear: number;
+  /** UTC date the verse is for, YYYY-MM-DD. */
+  date?: string;
   reference: string;
   text: string;
   version: string;
+  bookCode?: string;
+  bookName?: string;
+  chapter?: number;
+  verseStart?: number;
+  verseEnd?: number;
+  /** Set when the requested version lacked the verse and the curated text was used instead. */
   requestedVersion?: string;
   note?: string;
+}
+
+/** A whole translation for offline use, from `download()`. */
+export interface BibleDownload {
+  version: Licensing & { id: string; abbreviation: string; name: string; licenseType?: string };
+  books: {
+    bookCode: string;
+    name: string;
+    position: number;
+    testament: string;
+    chapters: { number: number; verses: { number: number; text: string }[] }[];
+  }[];
 }
 
 export interface PageMeta {

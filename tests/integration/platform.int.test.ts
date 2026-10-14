@@ -215,6 +215,41 @@ suite("gateway against a real database", () => {
       secret = body.key;
     });
 
+    it("creates an expiring key and rolls it with the same lifetime", async () => {
+      // Make room under the 3-key cap used by this suite.
+      const existing = (await (await app.request("/api/dashboard/keys", as("u1"))).json()).keys as { id: string; kind: string }[];
+      for (const k of existing.filter((k) => k.kind === "publishable")) {
+        await app.request(`/api/dashboard/keys/${k.id}`, as("u1", { method: "DELETE" }));
+      }
+      const res = await app.request(
+        "/api/dashboard/keys",
+        as("u1", { method: "POST", body: JSON.stringify({ name: "Expiring", expiresInDays: 30 }) })
+      );
+      expect(res.status).toBe(201);
+      const created = (await res.json()).key;
+      const days = (new Date(created.expiresAt).getTime() - Date.now()) / 86_400_000;
+      expect(days).toBeGreaterThan(29.9);
+      expect(days).toBeLessThan(30.1);
+
+      const rolled = await app.request(`/api/dashboard/keys/${created.id}/roll`, as("u1", { method: "POST" }));
+      expect(rolled.status).toBe(201);
+      const next = (await rolled.json()).key;
+      const nextDays = (new Date(next.expiresAt).getTime() - Date.now()) / 86_400_000;
+      expect(nextDays).toBeGreaterThan(29.9);
+      expect(nextDays).toBeLessThan(30.1);
+    });
+
+    it("rejects a key once it has expired", async () => {
+      const list = (await (await app.request("/api/dashboard/keys", as("u1"))).json()).keys as { id: string; name: string }[];
+      const expiring = list.find((k) => k.name === "Expiring")!;
+      const rolled = await app.request(`/api/dashboard/keys/${expiring.id}/roll`, as("u1", { method: "POST" }));
+      const { key } = await rolled.json();
+      await sql`UPDATE platform.api_keys SET expires_at = NOW() - interval '1 minute' WHERE id = ${key.id}`;
+      const r = await app.request("/v1/search?q=x", { headers: { authorization: `Bearer ${key.key}` } });
+      expect(r.status).toBe(401);
+      expect((await r.json()).error.code).toBe("API_KEY_EXPIRED");
+    });
+
     it("revokes once and then reports not found", async () => {
       expect((await app.request(`/api/dashboard/keys/${secret.id}`, as("u1", { method: "DELETE" }))).status).toBe(200);
       expect((await app.request(`/api/dashboard/keys/${secret.id}`, as("u1", { method: "DELETE" }))).status).toBe(404);

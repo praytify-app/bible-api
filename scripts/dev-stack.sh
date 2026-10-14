@@ -45,7 +45,7 @@ find_pg_bin() {
 
 PGB="$(find_pg_bin)"
 PGDATA="$STATE/pg"
-psql_admin() { "$PGB/psql" -h 127.0.0.1 -p "$PG_PORT" -U postgres -v ON_ERROR_STOP=1 -qtA "$@"; }
+psql_admin() { PGOPTIONS="-c client_min_messages=warning" "$PGB/psql" -h 127.0.0.1 -p "$PG_PORT" -U postgres -v ON_ERROR_STOP=1 -qtA "$@"; }
 
 pg_running() { "$PGB/pg_ctl" -D "$PGDATA" status >/dev/null 2>&1; }
 
@@ -58,7 +58,7 @@ start_postgres() {
   if ! pg_running; then
     say "starting Postgres on 127.0.0.1:$PG_PORT"
     "$PGB/pg_ctl" -D "$PGDATA" -l "$STATE/postgres.log" -w \
-      -o "-p $PG_PORT -k $STATE -c listen_addresses=127.0.0.1" start >/dev/null
+      -o "-p $PG_PORT -k $STATE -c listen_addresses=127.0.0.1" start </dev/null >/dev/null
   fi
   if [[ "$(psql_admin -d postgres -c "SELECT 1 FROM pg_database WHERE datname = '$DB_NAME'")" != "1" ]]; then
     psql_admin -d postgres -c "CREATE DATABASE $DB_NAME"
@@ -83,7 +83,10 @@ GATEWAY_ENV=(DATABASE_URL="$DB_URL" PORT="$GATEWAY_PORT" BIBLE_API_URL="http://1
   GATEWAY_TOKEN="$GATEWAY_TOKEN" BETTER_AUTH_URL="http://localhost:$GATEWAY_PORT"
   PUBLIC_API_URL="http://localhost:$GATEWAY_PORT" PORTAL_URL="${PORTAL_URL:-http://localhost:5173,http://127.0.0.1:5173}"
   BETTER_AUTH_SECRET="${BETTER_AUTH_SECRET:-dev-secret-change-me-dev-secret-change-me}"
-  EMAIL_PASSWORD_AUTH="${EMAIL_PASSWORD_AUTH:-true}" NODE_ENV=development)
+  EMAIL_PASSWORD_AUTH="${EMAIL_PASSWORD_AUTH:-true}" NODE_ENV=development
+  # Every local tab and test runner shares 127.0.0.1, so the production
+  # anonymous limit (120/min) throttles normal development. Override to test 429s.
+  ANON_RATE_PER_MINUTE="${ANON_RATE_PER_MINUTE:-1000}")
 
 engine_tsx() { (cd "$ENGINE_DIR" && env "${ENGINE_ENV[@]}" ./node_modules/.bin/tsx "$@"); }
 gateway_tsx() { (cd "$ROOT" && env "${GATEWAY_ENV[@]}" ./node_modules/.bin/tsx --env-file-if-exists=.env "$@"); }
@@ -115,7 +118,14 @@ start_bg() {
   local pidfile="$STATE/$name.pid"
   if [[ -f "$pidfile" ]] && kill -0 "$(cat "$pidfile")" 2>/dev/null; then return; fi
   say "starting $name"
-  (cd "$dir" && nohup "$@" >"$STATE/$name.log" 2>&1 & echo $! >"$pidfile")
+  # `cd` is its own statement: in `cd && nohup ... &` the & would background
+  # the whole list, leaving a subshell that holds the caller's stdout open and
+  # recording that subshell's PID instead of the server's.
+  (
+    cd "$dir" || exit 1
+    nohup "$@" </dev/null >"$STATE/$name.log" 2>&1 &
+    echo $! >"$pidfile"
+  )
 }
 
 wait_for() {

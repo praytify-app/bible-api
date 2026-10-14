@@ -69,9 +69,11 @@ const today = await bible.daily({ version: "WEB" });
 
 It retries 429 and 5xx with `Retry-After`, times out requests, caches scripture reads in memory, and normalises search rows to camelCase. The global 429 backoff in `convex/lib/bibleGateway.ts` becomes unnecessary.
 
+One behaviour change to plan for: a `?ref=` lookup that matches nothing in a single version now returns a `404` error instead of a `200` with `data.error`. The SDK surfaces it as `PraytifyBibleError` with `isNotFound`.
+
 ## 4. Feature by feature
 
-- **Offline download (mobile and web):** currently broken because the clients expect an array of books (`apps/web/lib/bible-db-web.ts:33-42`, `apps/web/lib/bible-api-web.ts:196`, `apps/mobile/lib/bible-api.ts:364`). The engine's download now returns `{ data: { version, books: [...] } }` with cleaned text in one or two queries. Call it server-side with the secret key and cache the result per version; it carries a strong `ETag`, so re-checks are a 304.
+- **Offline download (mobile and web):** broken today because the clients expect an array of books (`apps/web/lib/bible-db-web.ts:33-42`, `apps/web/lib/bible-api-web.ts:196`, `apps/mobile/lib/bible-api.ts:364`). The engine's download now returns `{ data: { version, name, languageCode, books: [{ bookCode, code, name, position, testament, chapters: [{ number, verses: [{ number, text }] }] }] } }` with cleaned text, built in two queries. `name`, `languageCode`, and `books[].code` are kept as aliases because they are exactly what the current Praytify clients read, so offline download should work again without an app release once the engine ships (not yet verified from the app). New code should call `bible.download(version)` server-side with the secret key; the response carries a strong `ETag`, so re-checks are a 304.
 - **Version allowlist:** `convex/lib/bibleApi.ts:22-30` lists NIV, ESV, NLT, NKJV, and NASB, none of which are in the corpus (their licences do not allow redistribution). Drive the picker from `GET /v1/versions?language=eng` instead.
 - **Verse of the day:** `convex/homeFeed.ts:206-219` hardcodes James 5:13 (wording suspected to be NIV, unverified). Use `bible.daily({ version })`, which now honours the requested version and rotates at midnight UTC.
 - **Devotional ingest:** `scripts/devotional-ingest/shared.ts:252-275` fetches passages from bible-api.com. `bible.passage(ref, { version })` returns the same text with attribution fields from this platform.
