@@ -352,6 +352,21 @@
     linear-gradient(145deg, var(--sd-indigo-600), var(--sd-indigo-800) 55%, var(--sd-indigo-950));
 }
 
+/* Extends the hit area of a compact control to 44x44 (brand guidelines §7) without
+   changing its layout. Do not combine with overflow-hidden or a custom ::after. */
+@utility touch-target {
+  position: relative;
+  &::after {
+    content: "";
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: max(100%, 44px);
+    height: max(100%, 44px);
+    transform: translate(-50%, -50%);
+  }
+}
+
 @layer base {
   html {
     background-color: var(--surface-base);
