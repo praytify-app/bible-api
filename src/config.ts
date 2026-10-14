@@ -35,6 +35,9 @@ const schema = z.object({
   GITHUB_CLIENT_SECRET: z.string().optional(),
   GOOGLE_CLIENT_ID: z.string().optional(),
   GOOGLE_CLIENT_SECRET: z.string().optional(),
+  // Email and password sign-in. Off by default for the hosted service; on for
+  // self-hosters who do not want to register OAuth apps.
+  EMAIL_PASSWORD_AUTH: bool.default(false),
 
   // Deprecated: first-party apps should use an internal-tier secret key.
   MASTER_API_KEY: z.string().min(24).optional(),
@@ -77,9 +80,26 @@ export function assertProductionReady(cfg: Config): void {
     if (!cfg.BETTER_AUTH_SECRET || cfg.BETTER_AUTH_SECRET.length < 32) {
       problems.push("BETTER_AUTH_SECRET must be at least 32 characters in production");
     }
-    if (!cfg.GATEWAY_TOKEN) problems.push("GATEWAY_TOKEN is required in production");
   }
   if (problems.length) throw new Error(`Refusing to start:\n  ${problems.join("\n  ")}`);
+}
+
+/** Settings that work but deserve a loud note at boot. */
+export function configWarnings(cfg: Config): string[] {
+  const out: string[] = [];
+  if (cfg.NODE_ENV === "production" && !cfg.GATEWAY_TOKEN) {
+    out.push("GATEWAY_TOKEN is unset: the engine will apply its own per-IP limit on top of the gateway's");
+  }
+  if (cfg.MASTER_API_KEY) {
+    out.push("MASTER_API_KEY is deprecated: give first-party apps an internal-tier secret key instead");
+  }
+  if (cfg.NODE_ENV === "production" && cfg.TRUST_PROXY_HOPS === 0) {
+    out.push("TRUST_PROXY_HOPS=0 in production: behind Traefik every client shares the proxy's IP for rate limiting");
+  }
+  if (!cfg.EMAIL_PASSWORD_AUTH && !(cfg.GITHUB_CLIENT_ID && cfg.GITHUB_CLIENT_SECRET) && !(cfg.GOOGLE_CLIENT_ID && cfg.GOOGLE_CLIENT_SECRET)) {
+    out.push("no sign-in method is configured: set GitHub or Google OAuth credentials, or EMAIL_PASSWORD_AUTH=true");
+  }
+  return out;
 }
 
 let cached: Config | undefined;

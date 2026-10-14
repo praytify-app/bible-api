@@ -354,6 +354,13 @@ describe("hardening", () => {
     expect(await r.json()).toEqual({ error: { code: "NOT_FOUND", message: expect.any(String) } });
   });
 
+  it("lists only the sign-in methods that are configured", async () => {
+    const { app } = setup({ GITHUB_CLIENT_ID: "id", GITHUB_CLIENT_SECRET: "secret", EMAIL_PASSWORD_AUTH: "true" });
+    const r = await app.request("/api/auth-methods", { headers: { origin: "https://praytify.bible" } });
+    expect(await r.json()).toEqual({ github: true, google: false, emailPassword: true });
+    expect(r.headers.get("access-control-allow-origin")).toBe("https://praytify.bible");
+  });
+
   it("reports readiness from the database probe", async () => {
     const { app } = setup();
     expect((await app.request("/health/ready")).status).toBe(200);

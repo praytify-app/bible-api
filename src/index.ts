@@ -1,5 +1,5 @@
 import { serve } from "@hono/node-server";
-import { assertProductionReady, config } from "./config.js";
+import { assertProductionReady, config, configWarnings } from "./config.js";
 import { apiError } from "./lib/errors.js";
 import { log, setLogLevel } from "./lib/logger.js";
 import { createApp } from "./app.js";
@@ -13,9 +13,7 @@ async function main() {
   setLogLevel(cfg.LOG_LEVEL);
   assertProductionReady(cfg);
 
-  if (cfg.MASTER_API_KEY) {
-    log.warn("MASTER_API_KEY is deprecated: give first-party apps an internal-tier secret key instead");
-  }
+  for (const warning of configWarnings(cfg)) log.warn(warning);
 
   if (cfg.MIGRATE_ON_BOOT) {
     const { runMigrations } = await import("./db/migrate.js");

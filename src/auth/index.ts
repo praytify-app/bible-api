@@ -24,6 +24,11 @@ const socialProviders = {
 export const auth = betterAuth({
   database: drizzleAdapter(db, { provider: "pg" }),
   socialProviders,
+  emailAndPassword: {
+    enabled: cfg.EMAIL_PASSWORD_AUTH,
+    minPasswordLength: 12,
+    maxPasswordLength: 256,
+  },
   secret: cfg.BETTER_AUTH_SECRET,
   baseURL: cfg.BETTER_AUTH_URL,
   trustedOrigins: [...cfg.PORTAL_URL, cfg.BETTER_AUTH_URL],

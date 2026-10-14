@@ -174,6 +174,19 @@ export function createApp(deps: AppDeps): Hono<GatewayEnv> {
     })
   );
 
+  // Which sign-in methods exist, so the portal renders only real options.
+  app.get("/api/auth-methods", portalCors, (c) =>
+    c.json(
+      {
+        github: Boolean(cfg.GITHUB_CLIENT_ID && cfg.GITHUB_CLIENT_SECRET),
+        google: Boolean(cfg.GOOGLE_CLIENT_ID && cfg.GOOGLE_CLIENT_SECRET),
+        emailPassword: cfg.EMAIL_PASSWORD_AUTH,
+      },
+      200,
+      { "cache-control": "public, max-age=300" }
+    )
+  );
+
   // --- Account routes (BetterAuth + dashboard) ------------------------------
   deps.mountAccountRoutes?.(app);
 
