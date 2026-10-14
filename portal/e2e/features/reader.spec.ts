@@ -80,6 +80,36 @@ test.describe("reader", () => {
     await expect(page.getByText("Public Domain", { exact: false }).first()).toBeVisible();
   });
 
+  test("Enter in the translation search picks the match before the server answers", async ({ page, isMobile }) => {
+    test.skip(isMobile, "keyboard path");
+    await openChapter(page, "/read/WEB/JHN/3", "John 3");
+    const picker = page.getByRole("button", { name: /^Translation/ });
+    const box = page.getByRole("combobox", { name: "Search translations" });
+
+    // Inside the 250 ms debounce: no request has gone out yet.
+    const catalog = page.waitForResponse((r) => r.url().endsWith("/v1/versions?limit=2000"));
+    await picker.click();
+    await catalog;
+    await box.fill("King");
+    await page.keyboard.press("Enter");
+    await expect(page).toHaveURL(/\/read\/KJV\/JHN\/3$/);
+
+    // Waiting on the server: its answer is held (a real response, delayed) so Enter lands first.
+    await page.route(
+      (url) => url.searchParams.get("search") === "World",
+      async (route) => {
+        await new Promise((resolve) => setTimeout(resolve, 1500));
+        await route.continue();
+      },
+    );
+    await picker.click();
+    const held = page.waitForRequest((r) => new URL(r.url()).searchParams.get("search") === "World");
+    await box.fill("World");
+    await held;
+    await page.keyboard.press("Enter");
+    await expect(page).toHaveURL(/\/read\/WEB\/JHN\/3$/);
+  });
+
   test("a selected range copies with attribution and shares a link that highlights it", async ({
     page,
     context,

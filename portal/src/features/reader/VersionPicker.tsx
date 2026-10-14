@@ -62,16 +62,22 @@ export function VersionPicker({ version, currentLabel, onSelect, disabled, class
     enabled: opened && serverSearch,
   });
 
-  const active = serverSearch ? search : catalog;
-  const options = useMemo(() => (active.data ?? []).map(toOption), [active.data]);
-  const selected = options.find((o) => o.value.toUpperCase() === version)?.value ?? version;
   const typingAhead = query.trim() !== debounced;
+  // Server results are shown as given only when they answer exactly what is in
+  // the box. Until then (typing inside the debounce, or waiting on the server)
+  // the loaded catalog is filtered here, so Enter never picks row 0 of a list
+  // that has not been narrowed to the query yet.
+  const serverAnswered = serverSearch && !typingAhead && search.isSuccess;
+  const source = serverAnswered ? search : catalog;
+  const options = useMemo(() => (source.data ?? []).map(toOption), [source.data]);
+  const selected = options.find((o) => o.value.toUpperCase() === version)?.value ?? version;
+  const waitingOnServer = query.trim().length >= MIN_SERVER_QUERY && !serverAnswered && !search.isError;
 
   let emptyMessage = "No translations match that search.";
-  if (active.isError) {
+  if (source.isError) {
     emptyMessage =
-      active.error instanceof ApiError && active.error.status === 429
-        ? rateLimitMessage(active.error)
+      source.error instanceof ApiError && source.error.status === 429
+        ? rateLimitMessage(source.error)
         : "Couldn't load translations. Close the list and try again.";
   }
 
@@ -89,9 +95,8 @@ export function VersionPicker({ version, currentLabel, onSelect, disabled, class
         searchPlaceholder="Name or abbreviation"
         emptyMessage={emptyMessage}
         onQueryChange={handleQueryChange}
-        // One character filters the loaded catalog here; two or more go to the server.
-        filterOptions={!serverSearch && !typingAhead}
-        loading={active.isPending || active.isFetching || (typingAhead && query.trim().length >= MIN_SERVER_QUERY)}
+        filterOptions={!serverAnswered}
+        loading={catalog.isPending || source.isFetching || waitingOnServer}
         disabled={disabled}
       />
     </div>
