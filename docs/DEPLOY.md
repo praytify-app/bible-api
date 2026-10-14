@@ -66,4 +66,5 @@ Re-pin the previous tags (`gateway 0.4.0-17ea66f`, `engine 1.4.0-b0835ca`, `port
 - Move Praytify off `MASTER_API_KEY` as described in [integrations/praytify.md](integrations/praytify.md), then remove the variable.
 - Optional: a publishable key restricted to `https://praytify.bible`, passed to the portal build as `VITE_PUBLIC_SEARCH_KEY`, turns on search in the reader.
 - Optional: run Redis and set `REDIS_URL` before running more than one gateway replica.
+- HSTS is sent as `max-age=31536000; includeSubDomains` from the gateway and portal. Adding `preload` and submitting praytify.bible to hstspreload.org would protect even first visits, but it is hard to reverse and binds every subdomain to HTTPS; decide it deliberately.
 - Point uptime monitoring at `https://api.praytify.bible/health/ready`, which returns `503` when the database is unreachable.

@@ -76,7 +76,9 @@ export function createApp(deps: AppDeps): Hono<GatewayEnv> {
   });
 
   const sharedHeaders = {
-    strictTransportSecurity: "max-age=63072000; includeSubDomains; preload",
+    // No "preload": submitting the domain to browser preload lists is hard to undo,
+    // so it is an owner decision (docs/DEPLOY.md), not a default.
+    strictTransportSecurity: "max-age=31536000; includeSubDomains",
     referrerPolicy: "no-referrer",
     crossOriginOpenerPolicy: "same-origin",
     removePoweredBy: true,
