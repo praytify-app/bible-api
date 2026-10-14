@@ -79,10 +79,12 @@ if [ "$BUILD_PORTAL" = true ]; then
   docker buildx build \
     --platform linux/amd64 \
     --build-arg VITE_API_URL="${VITE_API_URL:-https://api.praytify.bible}" \
+    --build-arg VITE_PUBLIC_SEARCH_KEY="${VITE_PUBLIC_SEARCH_KEY:-}" \
+    --file "${PORTAL_DIR}/Dockerfile" \
     --tag "${PORTAL_IMAGE}:${TAG}" \
     --tag "${PORTAL_IMAGE}:latest" \
     --push \
-    "${PORTAL_DIR}"
+    "${GATEWAY_DIR}"
   echo ">>> Pushed ${PORTAL_IMAGE}:${TAG}"
   echo ""
 fi

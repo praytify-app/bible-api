@@ -22,3 +22,6 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Generated from packages/embed by scripts/copy-embed.mjs or the Docker build.
+public/embed/

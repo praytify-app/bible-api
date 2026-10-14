@@ -112,7 +112,8 @@ services:
   portal:
     <<: *hardening
     build:
-      context: ./portal
+      context: .
+      dockerfile: portal/Dockerfile
       args:
         VITE_API_URL: ${PUBLIC_API_URL:-http://localhost:3200}
     restart: unless-stopped

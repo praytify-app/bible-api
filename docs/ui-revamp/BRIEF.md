@@ -17,7 +17,7 @@ App dir `portal/`. Vite 8, React 19, TanStack Router (code-based routes) and Tan
 | Fonts | `@fontsource-variable/plus-jakarta-sans`, `@fontsource-variable/source-serif-4` (roman and italic) | Self-hosted: removes the render-blocking Google Fonts request and the third-party call |
 | Theme | a small `ThemeProvider` setting `data-theme` on `<html>`, persisted in `localStorage`, defaulting to the OS | Template uses `next-themes`; this is Vite |
 | Tests | `vitest` + `@testing-library/react` (unit), `@playwright/test` + `@axe-core/playwright` (e2e, a11y) | Portal has zero tests today |
-| Embed preview | the built `packages/embed/dist/embed.js`, copied to `portal/public/embed/v1.js` at build time | The builder must preview the real widget |
+| Embed preview | the built `packages/embed/dist/embed.js` served at `/embed/v1.js`. `portal/public/embed/` is gitignored. In Docker the image's embed stage writes `public/embed/v1.js` before `pnpm build` (lead-owned `portal/Dockerfile`, repo-root context). Locally, `scripts/copy-embed.mjs` (feature-builder: embed) builds `../packages/embed` with its own `tsc` if needed and copies the file; it must skip quietly when `public/embed/v1.js` already exists and the package is absent, which is the Docker case. Wire it as `prebuild` and `predev` scripts | The builder must preview the real widget |
 
 **Forbidden:** `next`, `next-themes`, `@headlessui/react` (Radix instead), `framer-motion` and `react-animate-height` (CSS transitions), `@tiptap/*`, `emoji-picker-react`, `react-datepicker`, `date-fns` (use `Intl`), `swiper`, `react-slider`, `react-tagsinput`, `react-number-format` and `millify` (use `Intl.NumberFormat`), `react-use`, `react-tooltip`, `sharp`, any CSS-in-JS. Anything else needs a line in `BOARD.md` Decisions first.
 
@@ -131,7 +131,7 @@ unit tests:  cd portal && ./node_modules/.bin/vitest run
 build:       cd portal && ./node_modules/.bin/vite build   (must also emit dist/embed/v1.js)
 e2e:         start the local stack with `scripts/dev-stack.sh up` from the repo root (native Postgres, engine, gateway with a sample of public-domain translations), then
              cd portal && ./node_modules/.bin/playwright test
-static:      python3 ~/.claude/skills/core2-revamp/scripts/check_gates.py --root portal --src src --ds src/components/ds --identity "Core 2" --identity UI8
+static:      python3 ~/.claude/skills/core2-revamp/scripts/check_gates.py --root portal --src src --ds src/components/ds --primitive-lib radix-ui --identity "Core 2" --identity UI8
 axe pages:   /, /read/WEB/JHN/3, /embed, /docs/quickstart, /docs/translations, /dashboard, /dashboard/keys, /dashboard/usage, /dashboard/settings (light and dark)
 ```
 

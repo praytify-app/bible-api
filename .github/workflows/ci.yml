@@ -133,7 +133,8 @@ jobs:
       - name: Portal image
         uses: docker/build-push-action@v7
         with:
-          context: portal
+          context: .
+          file: portal/Dockerfile
           push: false
           cache-from: type=gha,scope=portal
           cache-to: type=gha,mode=max,scope=portal
