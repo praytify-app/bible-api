@@ -396,6 +396,7 @@ describe("public API reference", () => {
     const cfg = JSON.parse(attr);
     expect(cfg).toMatchObject({ url: "/v1/openapi.json", forceDarkModeState: "dark", hideDarkModeToggle: true });
     expect(cfg.customCss).toContain("--scalar-color-accent");
+    expect(cfg.withDefaultFonts).toBe(false);
     const free = await (await app.request("/docs?theme=<script>")).text();
     expect(free).not.toContain("forceDarkModeState");
     expect(free).not.toContain("<script>\"");
