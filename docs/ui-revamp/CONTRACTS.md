@@ -10,7 +10,7 @@ Owner: design-system. Consumers read this instead of the source. Source of truth
 - Indigo **text** is `text-accent-text`, never `text-accent` (`accent` is the fill colour and is off-spec as text).
 - `text-ink-faint` is decoration only: it fails AA for text by design.
 - Inputs, checkboxes and switch tracks use `border-control` (3:1 edge). `border-hairline` and `border-border` are decorative and fail 3:1 by design.
-- Focus is global: every focusable element gets a 2px `--focus` outline at 2px offset on `:focus-visible`. Do not remove it; do not add a second ring.
+- Focus is global: every focusable element gets a 2px `--focus` outline at 2px offset on `:focus-visible`. Do not remove it; do not add a second ring. Inside `bg-committed` surfaces `--focus` switches to the on-accent white (6.29:1, 5.15:1 under the highlight), so nothing extra is needed there.
 - Charts (recharts): SVG attributes do not reliably resolve `var()`. Read colours with `readToken("--chart-1")` from `lib/theme.tsx` and recompute when `resolvedTheme` from `useTheme()` changes.
 - Breakpoints are Tailwind's mobile-first defaults (`sm` 640, `md` 768, `lg` 1024, `xl` 1280). The template is desktop-first (`max-md:` with `md` = 767px): translate each responsive class, do not copy it.
 - Reduced motion is handled globally. Anything that signals progress and must keep moving sets `data-motion="essential"` (Spinner does).
@@ -140,6 +140,8 @@ Thresholds: 4.5:1 for text (WCAG 1.4.3), 3:1 for control edges, focus indicators
 | focus | surface-overlay | 7.90 | 6.72 | 3:1 | pass | focus outline |
 | accent | surface-base | 5.84 | 3.34 | 3:1 | pass | primary button edge on page |
 | accent | surface-raised | 6.29 | 3.07 | 3:1 | pass | primary button edge on card |
+| ink-on-accent | sd-indigo-600 | 6.29 | 6.29 | 4.5:1 | pass | label and focus outline on committed panel |
+| ink-on-accent | sd-committed-highlight | 5.15 | 5.15 | 4.5:1 | pass | same, under the panel highlight |
 | chart-1 | surface-raised | 6.29 | 7.44 | 3:1 | pass | chart series 1 |
 | chart-2 | surface-raised | 6.54 | 8.27 | 3:1 | pass | chart series 2 |
 | ink-faint | surface-base | 2.82 | 3.43 | none | decorative | ornament, disabled glyph |
@@ -166,10 +168,10 @@ Every interactive primitive has hover, a visible `focus-visible` outline (global
 | Dialog | `Dialog`, `DialogTrigger`, `DialogClose`, `DialogContent` | `title` (required), `description`, `footer`, `size` sm, md, lg | open, closing. Focus trapped and starts on the first field (Close is last in DOM order, top-right visually); Escape and the labelled Close button close it. Footer stacks full width on phones | components/Modal |
 | ConfirmDialog | `ConfirmDialog` | `open`, `onOpenChange`, `title`, **`subject` (the exact thing affected)**, `description`, `confirmLabel` (a verb), `cancelLabel`, `tone` danger or default, `onConfirm`, `pending`, `error`, `onCloseAutoFocus` (redirect focus when the action removed the trigger) | idle (focus on Cancel), pending (confirm busy, Cancel disabled, Escape blocked), error (danger Alert, stays open), success (closes) | components/Modal |
 | Sheet | `Sheet`, `SheetTrigger`, `SheetClose`, `SheetContent` | `title` (required), `hideTitle`, `description`, `side` left or right, `header` (e.g. a Logo) | open, closing. Focus trapped, Escape closes, width min(22rem, 88vw) | components/Modal (`isSlidePanel`) |
-| DropdownMenu | `DropdownMenu`, `…Trigger`, `…Content`, `…Item`, `…RadioGroup`, `…RadioItem`, `…Label`, `…Separator`, `…Group` | `DropdownMenuItem`: `icon`, `tone` default or danger, `asChild` for links; content `align` defaults to end | closed, open, highlighted, disabled, checked (radio). Arrow keys, type-ahead, Escape | components/Dropdown |
+| DropdownMenu | `DropdownMenu`, `…Trigger`, `…Content`, `…Item`, `…RadioGroup`, `…RadioItem`, `…Label`, `…Separator`, `…Group` | `DropdownMenuItem`: `icon`, `tone` default or danger, `asChild` to render a TanStack `Link` as the item (real href; works with or without `icon`); content `align` defaults to end | closed, open, highlighted, disabled, checked (radio). Arrow keys, type-ahead, Escape | components/Dropdown |
 | Tooltip | `Tooltip` | `content`, one focusable child, `side`, `delayDuration` | hidden, shown on hover and focus. Never put essential information in a tooltip; it does not show on touch | components/Tooltip |
 | Popover | `Popover`, `PopoverTrigger`, `PopoverContent`, `PopoverAnchor`, `PopoverClose` | Radix popover props | closed, open | components/Dropdown |
-| Card | `Card`, `CardHeader` | `Card`: `variant` raised, outline, sunken, committed; `padding` none, sm, md, lg; `as` div, section, article, li. `CardHeader`: `title`, `description`, `actions`, `titleAs` h2 or h3 | static. Never nest a Card in a Card | components/Card |
+| Card | `Card`, `CardHeader` | `Card`: `variant` raised, outline, sunken, committed (focus outline turns white inside; put a `variant="secondary"` Button there, never primary indigo on indigo); `padding` none, sm, md, lg; `as` div, section, article, li. `CardHeader`: `title`, `description`, `actions`, `titleAs` h2 or h3 | static. Never nest a Card in a Card | components/Card |
 | Table | `Table`, `TableHead`, `TableBody`, `TableRow`, `TableHeaderCell`, `TableCell` | `Table`: **`caption` (required)**, `showCaption`, `stackOnMobile`. `TableCell`: `label` (column name shown when stacked) | default; overflowing (becomes a named, focusable scroll region); stacked below md (divided rows, ARIA table roles restated) | components/Table |
 | Badge | `Badge` | `tone` neutral, accent, success, warning, danger, info | static. The words carry the meaning; colour reinforces | template `.label-*` classes |
 | Alert | `Alert` | `tone` info, success, warning, danger; `title`, `children`, `action`, `onDismiss`, `role` | danger and warning default to `role="alert"`, info and success to `role="status"`; `role="none"` for notes present at page load | new |
@@ -219,4 +221,6 @@ Helpers also exported: `cx()` (class join, no conflict resolution: prefer props 
 | 2026-10-14 | SearchSelect clears its search on close (Escape, outside click, or a choice) and calls `onQueryChange("")` when there was a query; new optional `selectedLabel`. Additive | embed, reader |
 | 2026-10-14 | SearchSelect: optional `onOpenChange`; `dir="auto"` on option text, trigger value and search input. Additive | reader, embed |
 | 2026-10-14 | ConfirmDialog gains optional `onCloseAutoFocus`, forwarded to Radix. Additive | keys |
+| 2026-10-14 | `DropdownMenuItem asChild` no longer throws without an `icon` (Slottable). Fix | ia-navigation |
+| 2026-10-14 | `bg-committed` sets `--focus` to on-accent; contrast pairs for committed panels added (57 gated). Fix | ia-navigation, anyone using committed panels |
 | 2026-10-14 | No-flash theme script is `public/theme-init.js` (CSP `script-src 'self'`); it and `resolveTheme()` in `lib/theme.tsx` must stay in step | lead |
