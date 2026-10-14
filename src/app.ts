@@ -120,6 +120,9 @@ export function createApp(deps: AppDeps): Hono<GatewayEnv> {
     credentials: true,
     allowMethods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
     allowHeaders: ["Content-Type"],
+    // The data export names its file in Content-Disposition, which browsers
+    // hide from cross-origin scripts unless it is exposed.
+    exposeHeaders: ["Content-Disposition", "X-Request-Id"],
     maxAge: 600,
   });
   app.use("/api/auth/*", portalCors);
