@@ -5,3 +5,4 @@ dist/
 bible-data.sql.gz
 
 .env.production
+.pnpm-store/
