@@ -1,4 +1,4 @@
-import type { Limits } from "@/lib/api";
+import type { Limits, Tier } from "@/lib/api";
 
 /**
  * The limits README.md publishes ("Use the hosted API"). Public pages show
@@ -14,3 +14,5 @@ export const PUBLISHED_LIMITS = {
 
 /** The SDK's default, and the hosted API's address. */
 export const HOSTED_API_URL = "https://api.praytify.bible";
+
+export const TIER_NAMES: Record<Tier, string> = { free: "Free", partner: "Partner", internal: "Internal" };

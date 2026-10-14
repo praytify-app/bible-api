@@ -1,19 +1,17 @@
 import { useQuery } from "@tanstack/react-query";
 import { Alert, SkeletonText, Table, TableBody, TableCell, TableHead, TableHeaderCell, TableRow } from "@/components/ds";
-import { plan, type Limits, type Tier } from "@/lib/api";
+import { plan, type Limits } from "@/lib/api";
 import { useSession } from "@/lib/auth";
-import { PUBLISHED_LIMITS } from "./published-limits";
+import { PUBLISHED_LIMITS, TIER_NAMES as tierNames } from "./published-limits";
 
 const count = new Intl.NumberFormat();
 
-const tierNames: Record<Tier, string> = { free: "Free", partner: "Partner", internal: "Internal" };
-
-interface Row {
+export interface LimitsRow {
   who: string;
   limits: Limits;
 }
 
-function LimitsTable({ caption, rows }: { caption: string; rows: Row[] }) {
+export function LimitsTable({ caption, rows }: { caption: string; rows: LimitsRow[] }) {
   return (
     <Table caption={caption} stackOnMobile>
       <TableHead>
@@ -40,7 +38,7 @@ function LimitsTable({ caption, rows }: { caption: string; rows: Row[] }) {
   );
 }
 
-const publishedRows: Row[] = [
+const publishedRows: LimitsRow[] = [
   { who: "Anonymous, per IP", limits: PUBLISHED_LIMITS.anonymous },
   { who: "Free account, per key kind", limits: PUBLISHED_LIMITS.free },
   { who: "Partner, per key kind", limits: PUBLISHED_LIMITS.partner },
