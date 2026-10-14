@@ -37,6 +37,12 @@ export interface SearchSelectProps {
   filterOptions?: boolean;
   /** Results are being fetched. Announced in the status line. */
   loading?: boolean;
+  /**
+   * Trigger text for the current value. Needed in server mode, where the
+   * selected option may not be in the current `options`. Falls back to the
+   * matching option's label.
+   */
+  selectedLabel?: string;
   disabled?: boolean;
   id?: string;
   /** Needed when not inside a Field. */
@@ -63,6 +69,7 @@ export function SearchSelect({
   onQueryChange,
   filterOptions = true,
   loading = false,
+  selectedLabel,
   disabled,
   id,
   className,
@@ -94,7 +101,7 @@ export function SearchSelect({
     return needle ? index.filter((entry) => entry.haystack.includes(needle)).map((entry) => entry.option) : options;
   }, [filterOptions, index, options, query]);
   const visible = matches.slice(0, maxResults);
-  const selected = options.find((option) => option.value === value) ?? null;
+  const selectedText = selectedLabel ?? options.find((option) => option.value === value)?.label ?? null;
 
   // Keep the keyboard-active row on screen. DOM-only, no state.
   useEffect(() => {
@@ -102,18 +109,30 @@ export function SearchSelect({
     listRef.current?.querySelector("[data-active]")?.scrollIntoView?.({ block: "nearest" });
   }, [active, open]);
 
-  function handleOpenChange(next: boolean) {
-    setOpen(next);
-    if (next) {
+  // Clear the search when the picker closes, however it closes (Escape, outside
+  // click, a choice), so a server-mode caller drops its filtered results and
+  // the next open starts from the full list.
+  function close() {
+    setOpen(false);
+    if (query !== "") {
       setQuery("");
-      const selectedIndex = value ? options.findIndex((option) => option.value === value) : -1;
-      setActive(selectedIndex >= 0 && selectedIndex < maxResults ? selectedIndex : 0);
+      onQueryChange?.("");
     }
+  }
+
+  function handleOpenChange(next: boolean) {
+    if (!next) {
+      close();
+      return;
+    }
+    setOpen(true);
+    const selectedIndex = value ? options.findIndex((option) => option.value === value) : -1;
+    setActive(selectedIndex >= 0 && selectedIndex < maxResults ? selectedIndex : 0);
   }
 
   function choose(option: SearchSelectOption) {
     onValueChange(option.value);
-    setOpen(false);
+    close();
   }
 
   function handleKeyDown(event: KeyboardEvent<HTMLInputElement>) {
@@ -143,7 +162,7 @@ export function SearchSelect({
   // reader hears "Version, World English Bible" rather than the label alone.
   const labelling = field
     ? { "aria-labelledby": `${field.labelId} ${valueId}` }
-    : { "aria-label": aria["aria-label"] ? `${aria["aria-label"]}: ${selected?.label ?? placeholder}` : undefined };
+    : { "aria-label": aria["aria-label"] ? `${aria["aria-label"]}: ${selectedText ?? placeholder}` : undefined };
 
   return (
     <RadixPopover.Root open={open} onOpenChange={handleOpenChange}>
@@ -156,8 +175,8 @@ export function SearchSelect({
         {...labelling}
         className={cx(controlBase, "flex items-center justify-between gap-2 text-left", className)}
       >
-        <span id={valueId} className={cx("min-w-0 truncate", !selected && "text-ink-muted")}>
-          {selected?.label ?? placeholder}
+        <span id={valueId} className={cx("min-w-0 truncate", !selectedText && "text-ink-muted")}>
+          {selectedText ?? placeholder}
         </span>
         <ChevronDown aria-hidden className="size-4 shrink-0 text-ink-muted" />
       </RadixPopover.Trigger>

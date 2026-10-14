@@ -97,3 +97,73 @@ describe("SearchSelect with server-side search", () => {
     expect(screen.getByRole("listbox")).toHaveAttribute("aria-busy", "true");
   });
 });
+
+describe("SearchSelect resets the search when it closes", () => {
+  const results = [{ value: "KJV", label: "King James Version" }];
+
+  it("tells a server-mode caller to clear its results after Escape, and reopens empty", async () => {
+    const user = userEvent.setup();
+    const onQueryChange = vi.fn();
+    render(
+      <SearchSelect
+        aria-label="Version"
+        options={results}
+        value={null}
+        onValueChange={vi.fn()}
+        onQueryChange={onQueryChange}
+        filterOptions={false}
+      />,
+    );
+    await user.click(screen.getByRole("button", { name: /Version/ }));
+    await user.keyboard("kj{Escape}");
+    expect(screen.queryByRole("listbox")).not.toBeInTheDocument();
+    expect(onQueryChange).toHaveBeenLastCalledWith("");
+
+    await user.click(screen.getByRole("button", { name: /Version/ }));
+    expect(screen.getByRole("combobox", { name: "Search" })).toHaveValue("");
+  });
+
+  it("also clears after a choice", async () => {
+    const user = userEvent.setup();
+    const onQueryChange = vi.fn();
+    render(
+      <SearchSelect
+        aria-label="Version"
+        options={results}
+        value={null}
+        onValueChange={vi.fn()}
+        onQueryChange={onQueryChange}
+        filterOptions={false}
+      />,
+    );
+    await user.click(screen.getByRole("button", { name: /Version/ }));
+    await user.keyboard("king{Enter}");
+    expect(onQueryChange).toHaveBeenLastCalledWith("");
+  });
+
+  it("does not call onQueryChange when there was no search to clear", async () => {
+    const user = userEvent.setup();
+    const onQueryChange = vi.fn();
+    render(<SearchSelect aria-label="Version" options={results} value={null} onValueChange={vi.fn()} onQueryChange={onQueryChange} />);
+    await user.click(screen.getByRole("button", { name: /Version/ }));
+    await user.keyboard("{Escape}");
+    expect(onQueryChange).not.toHaveBeenCalled();
+  });
+});
+
+describe("SearchSelect selectedLabel", () => {
+  it("names the trigger even when the selected option is not in the current results", () => {
+    render(
+      <Field label="Version">
+        <SearchSelect
+          options={[{ value: "KJV", label: "King James Version" }]}
+          value="WEB"
+          selectedLabel="World English Bible"
+          onValueChange={vi.fn()}
+          filterOptions={false}
+        />
+      </Field>,
+    );
+    expect(screen.getByRole("button", { name: "Version World English Bible" })).toBeInTheDocument();
+  });
+});
