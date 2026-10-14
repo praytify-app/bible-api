@@ -108,7 +108,10 @@ Protections that must not be weakened: everything in `AUDIT.md` "Must not regres
 | feature-builder: embed | `src/pages/EmbedPage.tsx`, `src/features/embed/**`, `public/embed/**`, `scripts/copy-embed.mjs` |
 | page-migration | `src/pages/LoginPage.tsx`, `DocsPage.tsx`, `QuickStartPage.tsx`, `TranslationsPage.tsx`, `UsagePage.tsx`, `SettingsPage.tsx`, `src/components/CodeBlock.tsx` (moves to `ds/` via design-system), any legal pages |
 | lead | `src/lib/api.ts`, `src/lib/auth.ts`, `src/main.tsx`, `Dockerfile`, `docs/ui-revamp/BRIEF.md`, `BOARD.md` |
-| qa-critic | `e2e/**`, `playwright.config.ts`, `docs/ui-revamp/screens/**`, `docs/ui-revamp/REVIEW.md` |
+| qa-critic | `e2e/**` (except the feature specs below), `docs/ui-revamp/screens/**`, `docs/ui-revamp/REVIEW.md`. The lead created `playwright.config.ts` and `e2e/support/fixtures.ts` (axe check, theme forcing, real sign-up); extend fixtures through qa-critic |
+| each feature-builder and ia-navigation | its own spec at `e2e/features/<feature>.spec.ts` (reader, keys, embed, navigation), written alongside the build |
+
+Dev servers: each agent runs Vite on its own port so they do not collide (ia-navigation 5181, reader 5182, keys 5183, embed 5184, page-migration 5185, Playwright 5199), with `VITE_API_URL=http://localhost:3200`. Binding a port needs the Bash sandbox disabled for that command.
 
 Agents commit only their own paths with explicit pathspecs (`git add <paths> && git commit -m … -- <paths>`), never `git add -A` or `git commit -a`, because several agents share this worktree.
 
