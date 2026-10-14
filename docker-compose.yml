@@ -30,9 +30,14 @@ services:
       POSTGRES_USER: bible
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-bible}
       POSTGRES_DB: praytify_bible
+      # Each service gets its own role that owns only its own tables.
+      ENGINE_DB_PASSWORD: ${ENGINE_DB_PASSWORD:-engine-db-password-change-me}
+      GATEWAY_DB_PASSWORD: ${GATEWAY_DB_PASSWORD:-gateway-db-password-change-me}
     volumes:
       - bible_data:/var/lib/postgresql/data
       - ./scripts/init-db.sql:/docker-entrypoint-initdb.d/01-init.sql:ro
+      - ./scripts/db-roles-init.sh:/docker-entrypoint-initdb.d/02-roles.sh:ro
+      - ./scripts/db-roles.sql:/opt/praytify/db-roles.sql:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U bible -d praytify_bible"]
       interval: 5s
@@ -46,7 +51,7 @@ services:
       context: ${ENGINE_CONTEXT:-https://github.com/praytify-app/open-bible-api.git#main}
     restart: unless-stopped
     environment:
-      DATABASE_URL: postgresql://bible:${POSTGRES_PASSWORD:-bible}@postgres:5432/praytify_bible
+      DATABASE_URL: postgresql://bible_engine:${ENGINE_DB_PASSWORD:-engine-db-password-change-me}@postgres:5432/praytify_bible
       GATEWAY_TOKEN: ${GATEWAY_TOKEN:-self-host-gateway-token-change-me}
       ADMIN_TOKEN: ${ADMIN_TOKEN:-self-host-admin-token-change-me}
       MIGRATE_ON_BOOT: "true"
@@ -70,7 +75,7 @@ services:
       context: ${ENGINE_CONTEXT:-https://github.com/praytify-app/open-bible-api.git#main}
     command: ["node", "dist/seeder/cli.js", "seed-sample"]
     environment:
-      DATABASE_URL: postgresql://bible:${POSTGRES_PASSWORD:-bible}@postgres:5432/praytify_bible
+      DATABASE_URL: postgresql://bible_engine:${ENGINE_DB_PASSWORD:-engine-db-password-change-me}@postgres:5432/praytify_bible
       EBIBLE_CACHE_DIR: /cache
     volumes:
       - ebible_cache:/cache
@@ -87,7 +92,7 @@ services:
       - "3200:3200"
     environment:
       NODE_ENV: production
-      DATABASE_URL: postgresql://bible:${POSTGRES_PASSWORD:-bible}@postgres:5432/praytify_bible
+      DATABASE_URL: postgresql://bible_gateway:${GATEWAY_DB_PASSWORD:-gateway-db-password-change-me}@postgres:5432/praytify_bible
       MIGRATE_ON_BOOT: "true"
       BIBLE_API_URL: http://engine:3100
       GATEWAY_TOKEN: ${GATEWAY_TOKEN:-self-host-gateway-token-change-me}
