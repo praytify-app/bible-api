@@ -217,6 +217,26 @@ export const limits = {
   get: () => fetchPublic<PublicLimits>("/api/limits"),
 };
 
+// --- Account rights --------------------------------------------------------------
+
+export const account = {
+  /** Everything held about the signed-in developer, as a JSON file (no credentials). */
+  exportData: async (): Promise<{ blob: Blob; filename: string }> => {
+    const res = await fetch(`${API_URL}/api/dashboard/account/export`, { credentials: "include" });
+    if (!res.ok) throw await toApiError(res);
+    const disposition = res.headers.get("content-disposition") ?? "";
+    const filename = /filename="([^"]+)"/.exec(disposition)?.[1] ?? "praytify-bible-account.json";
+    return { blob: await res.blob(), filename };
+  },
+
+  /** Erase the account and everything tied to it. `confirmEmail` must match the account email. */
+  remove: (confirmEmail: string) =>
+    fetchAPI<{ deleted: true }>("/api/dashboard/account", {
+      method: "DELETE",
+      body: JSON.stringify({ confirmEmail }),
+    }),
+};
+
 // --- Profile -------------------------------------------------------------------
 
 export interface DeveloperProfile {

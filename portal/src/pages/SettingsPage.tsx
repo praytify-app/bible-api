@@ -1,9 +1,10 @@
 import type { ReactNode } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { AppWindow, Gauge, UserRound } from "lucide-react";
+import { AppWindow, Gauge, ShieldCheck, UserRound } from "lucide-react";
 import { Alert, Button, Card, CardHeader, PageHeader, SkeletonText } from "@/components/ds";
 import { SectionNav, type SectionLink } from "@/features/docs/SectionNav";
 import { AccountSummary } from "@/features/settings/AccountSummary";
+import { DataRights } from "@/features/settings/DataRights";
 import { PlanSummary } from "@/features/settings/PlanSummary";
 import { ProfileForm } from "@/features/settings/ProfileForm";
 import { profile } from "@/lib/api";
@@ -12,6 +13,7 @@ const sections = [
   { id: "profile", title: "App profile", description: "What you are building", icon: <AppWindow /> },
   { id: "plan", title: "Plan", description: "Tier and rate limits", icon: <Gauge /> },
   { id: "account", title: "Account", description: "Name, email, sign out", icon: <UserRound /> },
+  { id: "your-data", title: "Your data", description: "Download or delete", icon: <ShieldCheck /> },
 ] satisfies SectionLink[];
 
 function Section({ id, title, description, children }: { id: string; title: string; description: string; children: ReactNode }) {
@@ -64,6 +66,10 @@ export function SettingsPage() {
 
           <Section id="account" title="Account" description="The account you signed in with.">
             <AccountSummary />
+          </Section>
+
+          <Section id="your-data" title="Your data" description="A copy of everything we hold, or deletion.">
+            <DataRights />
           </Section>
         </div>
       </div>
