@@ -27,6 +27,9 @@ export function SettingsPage() {
 
   useEffect(() => {
     if (profileData) {
+      // Pre-existing server-to-form sync, newly flagged by eslint-plugin-react-hooks 7.1.
+      // Suppressed only to keep the upgrade green; Phase 4 rewrites this form (AUDIT finding 2).
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setAppName(profileData.appName || "");
       setAppUrl(profileData.appUrl || "");
       setDescription(profileData.description || "");

@@ -129,7 +129,7 @@ export interface Translation {
 
 export const translations = {
   list: () =>
-    fetchPublic<{ data: Translation[]; meta?: any }>(
+    fetchPublic<{ data: Translation[]; meta?: unknown }>(
       "/v1/versions?limit=2000"
     ).then((r) => r.data || []),
 };
