@@ -88,9 +88,10 @@ Dashboard API (credentialed `fetchAPI`, session cookie):
 - `GET /api/dashboard/usage/summary` → `{ summary: { totalRequests, totalErrors, avgResponseTimeMs, requestsToday, activeKeys, periodDays } }`
 - `GET /api/dashboard/usage/keys?days=30` → `{ keys: { keyId, name, kind, requests, errors }[] }`
 - `GET /api/dashboard/plan` → `{ tier, limits: { secret: { perMinute, perDay }, publishable: { perMinute, perDay }, anonymous: { perMinute } } }`. All plan and limit copy comes from here.
-- `GET/PUT /api/dashboard/profile` unchanged. A failed `GET` must block the form (fixes the blank-save finding).
+- `GET/PUT /api/dashboard/profile`. `PUT` is now a partial update (only fields sent change). A failed `GET` must still block the form (fixes the blank-save finding).
+- `GET /api/auth-methods` (public, no credentials needed) → `{ github, google, emailPassword }`. The login page renders only the methods that are `true`. When `emailPassword` is true, show an email and password form (sign in and sign up) using the BetterAuth client (`signIn.email`, `signUp.email`; minimum 12 characters). When every method is false, show an honest "sign-in is not configured on this server" state.
 
-Errors: new envelope `{ error: { code, message } }`. Keep accepting the legacy `{ error: string, message }` in `fetchAPI`.
+Errors: new envelope `{ error: { code, message } }`. `lib/api.ts` (lead, done) throws `ApiError` with `status`, `code`, and `retryAfter`, and parses both envelopes. It also exposes `keys.update/roll`, `usage.byKey`, `plan.get`, `authMethods.get`, `bible.passage/daily/search/languages`, and `PUBLIC_SEARCH_KEY`. Build against those functions; do not call `fetch` from pages.
 
 Public API (anonymous `fetchPublic`, never credentials): all current public routes, plus `GET /v1/verses?ref=&version=` which becomes public. Its `data` gains `bookCode` and `chapter`. `GET /v1/search` needs a key (a publishable key works from an allowed origin). Responses carry `ETag` and `Cache-Control`; rate-limited responses are `429` with `Retry-After`.
 
