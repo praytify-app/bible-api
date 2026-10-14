@@ -43,6 +43,8 @@ export interface SearchSelectProps {
    * matching option's label.
    */
   selectedLabel?: string;
+  /** Opened or closed, however it happened. Use it to fetch a large catalog only when the picker opens. */
+  onOpenChange?: (open: boolean) => void;
   disabled?: boolean;
   id?: string;
   /** Needed when not inside a Field. */
@@ -70,6 +72,7 @@ export function SearchSelect({
   filterOptions = true,
   loading = false,
   selectedLabel,
+  onOpenChange,
   disabled,
   id,
   className,
@@ -114,6 +117,7 @@ export function SearchSelect({
   // the next open starts from the full list.
   function close() {
     setOpen(false);
+    onOpenChange?.(false);
     if (query !== "") {
       setQuery("");
       onQueryChange?.("");
@@ -126,6 +130,7 @@ export function SearchSelect({
       return;
     }
     setOpen(true);
+    onOpenChange?.(true);
     const selectedIndex = value ? options.findIndex((option) => option.value === value) : -1;
     setActive(selectedIndex >= 0 && selectedIndex < maxResults ? selectedIndex : 0);
   }
@@ -175,7 +180,8 @@ export function SearchSelect({
         {...labelling}
         className={cx(controlBase, "flex items-center justify-between gap-2 text-left", className)}
       >
-        <span id={valueId} className={cx("min-w-0 truncate", !selectedText && "text-ink-muted")}>
+        {/* dir="auto": translation names can be Arabic, Hebrew, Farsi or Urdu inside an LTR page. */}
+        <span id={valueId} dir="auto" className={cx("min-w-0 truncate", !selectedText && "text-ink-muted")}>
           {selectedText ?? placeholder}
         </span>
         <ChevronDown aria-hidden className="size-4 shrink-0 text-ink-muted" />
@@ -194,6 +200,7 @@ export function SearchSelect({
             <Search aria-hidden className="pointer-events-none absolute left-5 top-1/2 size-4 -translate-y-1/2 text-ink-muted" />
             <input
               type="text"
+              dir="auto"
               role="combobox"
               aria-label={searchLabel}
               aria-expanded
@@ -239,10 +246,14 @@ export function SearchSelect({
                   )}
                 >
                   <span className="flex min-w-0 flex-1 flex-col">
-                    <span className={cx("truncate text-body-sm", isActive ? "text-accent-text" : "text-ink")}>
+                    <span dir="auto" className={cx("truncate text-body-sm", isActive ? "text-accent-text" : "text-ink")}>
                       {option.label}
                     </span>
-                    {option.description && <span className="truncate text-caption text-ink-muted">{option.description}</span>}
+                    {option.description && (
+                      <span dir="auto" className="truncate text-caption text-ink-muted">
+                        {option.description}
+                      </span>
+                    )}
                   </span>
                   {isSelected && <Check aria-hidden className="size-4 shrink-0 text-accent-text" />}
                 </li>

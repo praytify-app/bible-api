@@ -167,3 +167,38 @@ describe("SearchSelect selectedLabel", () => {
     expect(screen.getByRole("button", { name: "Version World English Bible" })).toBeInTheDocument();
   });
 });
+
+describe("SearchSelect onOpenChange and bidirectional text", () => {
+  const catalog = [
+    { value: "SVD", label: "الكتاب المقدس (SVD)", description: "العربية" },
+    { value: "WEB", label: "World English Bible", description: "English" },
+  ];
+
+  it("reports opening and every way of closing", async () => {
+    const user = userEvent.setup();
+    const onOpenChange = vi.fn();
+    render(<SearchSelect aria-label="Version" options={catalog} value={null} onValueChange={vi.fn()} onOpenChange={onOpenChange} />);
+
+    await user.click(screen.getByRole("button", { name: /Version/ }));
+    expect(onOpenChange).toHaveBeenLastCalledWith(true);
+    await user.keyboard("{Escape}");
+    expect(onOpenChange).toHaveBeenLastCalledWith(false);
+
+    await user.click(screen.getByRole("button", { name: /Version/ }));
+    await user.keyboard("{Enter}");
+    expect(onOpenChange).toHaveBeenLastCalledWith(false);
+    expect(onOpenChange).toHaveBeenCalledTimes(4);
+  });
+
+  it("lets each name and the search box choose their own direction", async () => {
+    const user = userEvent.setup();
+    render(<SearchSelect aria-label="Version" options={catalog} value="SVD" onValueChange={vi.fn()} />);
+    expect(screen.getByText("الكتاب المقدس (SVD)")).toHaveAttribute("dir", "auto");
+
+    await user.click(screen.getByRole("button", { name: /Version/ }));
+    expect(screen.getByRole("combobox", { name: "Search" })).toHaveAttribute("dir", "auto");
+    const option = within(screen.getByRole("listbox")).getAllByRole("option")[0];
+    expect(within(option).getByText("الكتاب المقدس (SVD)")).toHaveAttribute("dir", "auto");
+    expect(within(option).getByText("العربية")).toHaveAttribute("dir", "auto");
+  });
+});

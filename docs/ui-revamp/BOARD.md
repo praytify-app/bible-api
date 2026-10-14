@@ -44,6 +44,7 @@
 | 2026-10-14 | No-flash theme script moved from inline to `public/theme-init.js` so it passes the `script-src 'self'` CSP. Keep any future CSP change compatible with a same-origin classic script in `<head>` | lead (nginx.conf) | design-system |
 | 2026-10-14 | ConfirmDialog: optional `onCloseAutoFocus` (requested by keys) so focus can move to a surviving element after roll or revoke removes the trigger row. Additive | keys | design-system |
 | 2026-10-14 | SearchSelect (requested by embed): the search clears on close and server-mode callers get `onQueryChange("")`, so reopening never shows stale filtered results; optional `selectedLabel` names the trigger when the selected option is outside the current results. Additive | embed, reader | design-system |
+| 2026-10-14 | SearchSelect (requested by reader): `onOpenChange` so the 1,288-version catalog loads only when the picker opens; `dir="auto"` on option text, trigger value and search input so Arabic, Hebrew, Farsi and Urdu names lay out correctly. `selectedLabel` already landed in b8fe7e9. Additive | reader, embed | design-system |
 | 2026-10-14 | `src/features/reader/last-read.ts` exists (commit 15cbf0d): `readerHomeTarget(): { version, book, chapter }` (stored location, else WEB/JHN/3; never throws) and `rememberLocation()`. Storage key `pb-reader-last`. The reader page reads `?v=` with `useSearch({ strict: false })`, so the route's `validateSearch` only needs `v?: string` | ia-navigation (`/read` redirect, reader route) | reader |
 
 ## Gaps and blockers
