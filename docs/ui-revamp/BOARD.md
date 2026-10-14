@@ -42,6 +42,7 @@
 | 2026-10-14 | `components/CodeBlock.tsx` is now a re-export of the ds CodeBlock (same `tabs` prop). Switch imports to `@/components/ds` and delete it | page-migration | design-system |
 | 2026-10-14 | `main.tsx` must wrap the app in `<ThemeProvider>` from `@/lib/theme`; `ThemeToggle` and `useTheme()` throw without it | lead | design-system |
 | 2026-10-14 | No-flash theme script moved from inline to `public/theme-init.js` so it passes the `script-src 'self'` CSP. Keep any future CSP change compatible with a same-origin classic script in `<head>` | lead (nginx.conf) | design-system |
+| 2026-10-14 | `src/features/reader/last-read.ts` exists (commit 15cbf0d): `readerHomeTarget(): { version, book, chapter }` (stored location, else WEB/JHN/3; never throws) and `rememberLocation()`. Storage key `pb-reader-last`. The reader page reads `?v=` with `useSearch({ strict: false })`, so the route's `validateSearch` only needs `v?: string` | ia-navigation (`/read` redirect, reader route) | reader |
 
 ## Gaps and blockers
 - Backend contract in BRIEF §7 is being built on `feat/platform-hardening`; the lead merges it here when green.
