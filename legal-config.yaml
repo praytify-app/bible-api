@@ -1,0 +1,279 @@
+meta:
+  skill_version: 2
+  generated_at: '2026-10-14'
+  generated_by: legal-doc-generator
+  config_hash: ''
+  english_variant: american
+  locales:
+  - en
+  primary_locale: en
+  output:
+    base_dir: docs/legal
+    filename_pattern: '{slug}.md'
+    review_packet: REVIEW-PACKET.md
+    titles:
+      terms_of_service: Terms of Service
+    documents:
+      privacy_policy: true
+      terms_of_service: true
+      cookie_policy: true
+      eula: false
+      dpa: false
+      acceptable_use_policy: true
+entity:
+  legal_name: TODO_legal_name
+  dba: null
+  formation:
+    type: TODO_formation_type
+    jurisdiction: TODO_formation_state
+  contact:
+    privacy_email: TODO_privacy_email
+    general_email: TODO_general_email
+    phone: null
+    fax: null
+  addresses:
+    registered:
+      street: TODO_street
+      city: TODO_city
+      state: TODO_state
+      postal_code: TODO_postal_code
+      country: TODO_country
+    operating: null
+  representatives:
+    eea_representative: null
+    uk_representative: null
+    dpo: null
+product:
+  name: Praytify Bible
+  short_name: null
+  websites:
+  - https://praytify.bible
+  - https://api.praytify.bible
+  ai_features: false
+  marketplace: false
+  api_access: true
+  apps:
+    web:
+      enabled: true
+    ios:
+      enabled: false
+      app_name: null
+      bundle_id: null
+      app_store_account_holder: null
+    android:
+      enabled: false
+      app_name: null
+      package_name: null
+      play_store_account_holder: null
+    facebook:
+      enabled: false
+      app_id: null
+      app_name: null
+jurisdictions:
+  us: TODO_bool
+  us_california_ccpa: TODO_bool
+  us_virginia_cdpa: TODO_bool
+  us_other_state_laws: []
+  eu_uk_eea: TODO_bool
+  canada_pipeda: TODO_bool
+  canada_quebec_law25: false
+  brazil_lgpd: false
+  australia_privacy_act: false
+  governing_law: TODO_governing_law
+  venue: TODO_venue
+data_collection:
+  identifiers:
+  - Your name and email address, entered by you or supplied by GitHub or Google when you sign in with them
+  - Your profile picture address, if your sign-in provider supplies one
+  - A salted password hash, only if you create an account with email and password (we never store the password itself)
+  - The link between your account and your GitHub or Google identity, including the access tokens those providers
+    issue to us
+  authentication:
+    methods:
+    - GitHub
+    - Google
+    - Email and password, where the operator has enabled it
+    stores_passwords: true
+  commercial: []
+  internet_activity:
+  - The IP address and browser user agent of each signed-in session
+  - 'For API requests made with your keys: the key, time, method, path, status code, response time, user agent,
+    and IP address. These request logs are kept for 90 days and then summarized into daily totals per key'
+  - 'For API requests made without a key: the IP address (IPv6 addresses are grouped by their first 64 bits), held
+    only in short-lived rate-limit counters that reset within a day. These requests are not logged individually'
+  geolocation:
+    collected: false
+    precise: false
+  user_content:
+  - The app name, app address, and description you add to your developer profile
+  - The names and allowed website origins you give your API keys
+  inferences: []
+  sensitive_personal_information:
+    collected: false
+    categories: []
+  childrens_data:
+    collected: false
+    age_gate: false
+data_uses:
+  legal_bases:
+  - contract
+  - legitimate_interests
+  - legal_obligation
+  purposes:
+    contract:
+    - Create and secure your account and let you sign in
+    - Issue, validate, and rate limit your API keys
+    - Show you your usage, plan, and limits
+    - Respond to your requests for your data or for deletion
+    legitimate_interests:
+    - Protect the service and its users from abuse, fraud, and attacks, including rate limiting
+    - Operate, troubleshoot, and improve the service
+    consent: []
+    legal_obligation:
+    - Comply with legal obligations and lawful requests from authorities
+  marketing:
+    sends_marketing: false
+    unsubscribe_methods: []
+third_parties:
+  disclosure_mode: list_each_by_name
+  sells_or_shares: false
+  has_dpas_in_place: false
+  business_affiliates: []
+  business_partners: []
+  vendors:
+  - name: GitHub, Inc.
+    category: auth
+    purpose: Sign in with GitHub
+    privacy_url: https://docs.github.com/en/site-policy/privacy-policies/github-general-privacy-statement
+  - name: Google LLC
+    category: auth
+    purpose: Sign in with Google
+    privacy_url: https://policies.google.com/privacy
+  - name: netcup GmbH
+    category: hosting
+    purpose: Hosts the servers and database
+    privacy_url: https://www.netcup.com/en/contact/privacy-policy
+  - name: jsDelivr
+    category: cdn
+    purpose: Delivers the API reference viewer to visitors of the API documentation page
+    privacy_url: https://www.jsdelivr.com/terms/privacy-policy-jsdelivr-net
+  payment_vendors: []
+retention:
+  default_account_data: Until you delete your account (Settings, Your data). Deletion removes it from the live database
+    at once
+  logs: 'Per-request logs of keyed API calls: 90 days, then daily totals per key until you delete your account.
+    Server process logs: [TBD: confirm the host''s log rotation]'
+  backups: '[TBD: confirm the production backup schedule and how long backups are kept]'
+  financial_records: null
+  marketing_consent: 'Not applicable: we do not send marketing email'
+  security_event_logs: null
+  custom: {}
+security:
+  has_appropriate_measures: true
+  controls:
+  - All traffic to the website and API is encrypted with TLS, and browsers are told to use HTTPS only (HSTS)
+  - API keys are stored only as SHA-256 hashes; the full key is shown to you once
+  - Sessions use HttpOnly cookies, and a strict Content Security Policy is applied to the website
+  - Rate limits and request size limits protect the service from abuse
+  - Services run in containers without root privileges and with read-only file systems
+  - '[TBD: confirm encryption at rest on the production server, backup practice, and incident response process]'
+  breach_notification_understood: true
+cookies:
+  uses_cookies: true
+  uses_google_maps: false
+  categories:
+    strictly_necessary:
+    - name: better-auth.session_token (named __Secure-better-auth.session_token over HTTPS)
+      provider: Praytify Bible
+      purpose: Keeps you signed in to the developer dashboard
+      duration: 30 days, renewed while you use it
+    - name: better-auth.state
+      provider: Praytify Bible
+      purpose: Ties a GitHub or Google sign-in attempt to your browser to prevent forgery
+      duration: About 10 minutes, during sign-in only
+    functional:
+    - name: pb-theme (local storage)
+      provider: Praytify Bible
+      purpose: Remembers your light or dark theme choice
+      duration: Until you clear it
+    - name: pb-reader-settings (local storage)
+      provider: Praytify Bible
+      purpose: Remembers your reading preferences, such as text size and verse numbers
+      duration: Until you clear it
+    - name: pb-reader-last (local storage)
+      provider: Praytify Bible
+      purpose: Remembers the last chapter you read so the reader can resume
+      duration: Until you clear it
+    analytics: []
+    advertising: []
+  consent_tool: null
+  consent_mechanism: none
+international_transfers:
+  transfers_outside_eu_uk: false
+  server_locations: []
+  third_party_locations: []
+  mechanisms: []
+  scc_dpa_link: null
+privacy_shield:
+  adheres: false
+consent_management:
+  account_self_service: true
+  account_deletion_self_service: true
+  request_intake_url: https://praytify.bible/dashboard/settings
+ccpa:
+  enabled: false
+  do_not_sell_share_link_text: Do Not Sell or Share My Personal Information
+  authorized_agent_process: standard
+  metrics:
+    publish_annual_metrics: false
+terms_of_service:
+  pricing_model: free
+  free_trial: false
+  refund_policy: 'Not applicable: the service is free'
+  auto_renewal: false
+  user_generated_content: false
+  ugc_license_grant: standard
+  prohibited_uses_severity: standard
+  arbitration:
+    enabled: false
+    administrator: AAA
+    venue: null
+    class_action_waiver: false
+    opt_out_window_days: 30
+  termination_for_breach: true
+  modifications_notice_days: 30
+acceptable_use_policy:
+  scope:
+  - label: no_illegal_activity
+  - label: no_harassment_or_hate
+  - label: no_malware_or_security_attacks
+  - label: no_spam_or_unsolicited_messaging
+  - label: no_intellectual_property_infringement
+  - label: no_impersonation
+  - label: no_scraping_without_permission
+  - label: respect_rate_limits
+  reporting_channel: '[TBD: abuse contact email]'
+  enforcement: standard
+eula:
+  applies: false
+  store_terms:
+    apple_eula_addendum: false
+    google_play_terms: true
+  in_app_purchases: false
+  push_notifications: false
+  permissions: []
+dpa:
+  applies: false
+  role: controller
+  sub_processors_list_url: null
+  audit_rights: standard
+disclaimers:
+  not_legal_advice: 'These documents were generated from a template based on signals from the
+
+    codebase and answers provided by the operator. They are not legal advice.
+
+    An attorney should review before publication, and at minimum quarterly
+
+    thereafter or after material product changes.
+
+    '
