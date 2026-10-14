@@ -278,7 +278,7 @@ abstract class PraytifyElement extends HTMLElement {
       const a = el("a", "Read the chapter");
       a.href = `${this.reader}/read/${encodeURIComponent(passage.version)}/${encodeURIComponent(passage.bookCode)}/${passage.chapter}`;
       a.target = "_blank";
-      a.rel = "noopener";
+      a.rel = "noopener noreferrer";
       left.append(document.createTextNode(" · "), a);
     }
     caption.append(left);
@@ -293,7 +293,7 @@ abstract class PraytifyElement extends HTMLElement {
         const a = el("a", label);
         a.href = href;
         a.target = "_blank";
-        a.rel = "noopener";
+        a.rel = "noopener noreferrer";
         attr.append(a);
       } else {
         attr.textContent = label;
