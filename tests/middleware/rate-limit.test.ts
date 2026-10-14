@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { MemoryStore, RateLimiter, rateLimitHeaders } from "../../src/middleware/rate-limit.js";
+import { anonymousBucket, MemoryStore, RateLimiter, rateLimitHeaders } from "../../src/middleware/rate-limit.js";
 
 const LIMITS = { perMinute: 3, perDay: 5 };
 const T0 = Date.UTC(2026, 9, 14, 12, 0, 0);
@@ -58,5 +58,25 @@ describe("rateLimitHeaders", () => {
     const blocked = rateLimitHeaders({ allowed: false, limit: 60, remaining: 0, resetAt: T0 + 30_000, window: "minute" }, T0);
     expect(blocked["Retry-After"]).toBe("30");
     expect(blocked["RateLimit-Policy"]).toBe("60;w=60");
+  });
+});
+
+describe("anonymousBucket", () => {
+  it.each([
+    ["203.0.113.9", "203.0.113.9"],
+    ["::ffff:203.0.113.9", "203.0.113.9"],
+    ["2001:db8:abcd:12:1:2:3:4", "2001:db8:abcd:12::/64"],
+    ["2001:db8:abcd:12:ffff:ffff:ffff:ffff", "2001:db8:abcd:12::/64"],
+    ["2001:db8::1", "2001:db8:0:0::/64"],
+    ["[2001:DB8:abcd:0012::7]", "2001:db8:abcd:12::/64"],
+    ["fe80::1%en0", "fe80:0:0:0::/64"],
+    [null, "unknown"],
+  ])("buckets %s as %s", (ip, expected) => {
+    expect(anonymousBucket(ip)).toBe(expected);
+  });
+
+  it("puts every address in one IPv6 /64 in the same bucket", () => {
+    expect(anonymousBucket("2001:db8:1:2::a")).toBe(anonymousBucket("2001:db8:1:2:dead:beef:0:1"));
+    expect(anonymousBucket("2001:db8:1:2::a")).not.toBe(anonymousBucket("2001:db8:1:3::a"));
   });
 });
