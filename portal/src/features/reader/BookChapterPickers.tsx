@@ -68,7 +68,8 @@ export function ChapterPicker({ book, chapter, onSelect, className }: ChapterPic
       <Select
         aria-label="Chapter"
         options={options}
-        value={valid ? String(chapter) : undefined}
+        // "" keeps the Select controlled while showing the placeholder.
+        value={valid ? String(chapter) : ""}
         placeholder={String(chapter)}
         onValueChange={(value) => onSelect(Number(value))}
         disabled={!book}

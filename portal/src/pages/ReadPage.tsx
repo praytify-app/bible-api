@@ -7,7 +7,7 @@ import { PUBLIC_SEARCH_KEY, bible, type BibleBook } from "@/lib/api";
 import { BookChapterPickersRow } from "@/features/reader/BookChapterPickers";
 import { ChapterBody } from "@/features/reader/ChapterBody";
 import { adjacentChapters, resolveVersionSwitch, sortBooks } from "@/features/reader/chapter-nav";
-import { isNotFound, isRateLimited, rateLimitMessage, retryUnlessFinal } from "@/features/reader/errors";
+import { isNotFound, isRateLimited, rateLimitMessage, retryUnlessFinal, toLangTag } from "@/features/reader/errors";
 import { useChapterShortcuts } from "@/features/reader/keyboard";
 import { rememberLocation } from "@/features/reader/last-read";
 import { ReaderSearch } from "@/features/reader/ReaderSearch";
@@ -69,7 +69,7 @@ export function ReadPage() {
   const bookName = currentBook?.name ?? cachedBookName(queryClient, bookCode) ?? bookCode;
   const versionName = detail?.name ?? version;
   const dir = detail?.textDirection === "rtl" ? "rtl" : "ltr";
-  const lang = detail?.languageCode ?? undefined;
+  const lang = toLangTag(detail?.languageCode);
   const { prev, next } = useMemo(
     () => (books ? adjacentChapters(books, bookCode, chapter) : { prev: null, next: null }),
     [books, bookCode, chapter],

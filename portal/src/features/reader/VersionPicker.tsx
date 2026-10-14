@@ -79,11 +79,13 @@ export function VersionPicker({ version, currentLabel, onSelect, disabled, class
   const selected = options.find((o) => o.value.toUpperCase() === version)?.value ?? version;
 
   // SearchSelect empties its box each time it opens but has no open callback,
-  // so the search resets whenever focus lands anywhere but that box (the
-  // trigger regains focus on close). Portal events bubble here through React.
+  // so the search resets when focus returns to the trigger on close. Only the
+  // trigger is a DOM child here: the list is portalled, and its events reach
+  // this handler through React alone. Resetting on those would re-render the
+  // list between mousedown and click and lose the click.
   function handleFocus(event: FocusEvent<HTMLDivElement>) {
     setPrimed(true);
-    if ((event.target as Element).getAttribute("role") !== "combobox") {
+    if (event.currentTarget.contains(event.target as Node)) {
       setQuery("");
       setDebounced("");
     }

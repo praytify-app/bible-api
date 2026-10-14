@@ -94,8 +94,13 @@ export function ChapterBody({
 
   function handleTextClick(event: MouseEvent<HTMLSpanElement>, verse: number) {
     // Dragging to select text for a manual copy should not also toggle the verse.
-    if (window.getSelection()?.toString()) return;
+    if (!event.shiftKey && window.getSelection()?.toString()) return;
     toggle(verse, event.shiftKey);
+  }
+
+  // Shift-click would otherwise extend the browser's text selection as well.
+  function handleTextMouseDown(event: MouseEvent<HTMLSpanElement>) {
+    if (event.shiftKey) event.preventDefault();
   }
 
   function handleVerseKeyDown(event: KeyboardEvent<HTMLButtonElement>, verse: number) {
@@ -149,6 +154,7 @@ export function ChapterBody({
                 key={v.id ?? v.number}
                 data-verse={v.number}
                 data-selected={selected || undefined}
+                onMouseDown={handleTextMouseDown}
                 onClick={(event) => handleTextClick(event, v.number)}
                 className={cx(
                   "cursor-pointer rounded-[3px] py-0.5 transition-colors duration-150 box-decoration-clone",

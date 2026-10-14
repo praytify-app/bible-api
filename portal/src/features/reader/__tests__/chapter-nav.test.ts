@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { BibleBook } from "@/lib/api";
 import { adjacentChapters, isOldTestament, resolveVersionSwitch } from "../chapter-nav";
+import { toLangTag } from "../errors";
 
 const book = (bookCode: string, position: number, chapterCount: number, testament = "NT"): BibleBook => ({
   id: bookCode,
@@ -64,5 +65,18 @@ describe("isOldTestament", () => {
     ["", false],
   ])("%s", (testament, expected) => {
     expect(isOldTestament(book("X", 1, 1, testament))).toBe(expected);
+  });
+});
+
+describe("toLangTag", () => {
+  it.each([
+    ["eng", "en"],
+    ["arb", "ar"],
+    ["pes", "fa"],
+    ["en", "en"],
+    [null, undefined],
+    ["not a code", undefined],
+  ])("%s -> %s", (code, expected) => {
+    expect(toLangTag(code)).toBe(expected);
   });
 });
