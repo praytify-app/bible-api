@@ -1,0 +1,10 @@
+# The portal is its own pnpm root. Without this file pnpm walks up the tree and
+# can adopt an unrelated workspace (a stray ~/pnpm-workspace.yaml breaks installs).
+packages:
+  - "."
+
+# pnpm 12 blocks dependency install scripts unless listed under allowBuilds.
+# None are listed because none are needed: Vite 8 bundles with Rolldown, and it
+# and lightningcss ship prebuilt binaries as optional dependencies (no esbuild,
+# no postinstall). If an install ever reports an ignored build, review the
+# package before adding it here.

@@ -3,14 +3,16 @@
   "private": true,
   "version": "0.0.0",
   "type": "module",
+  "packageManager": "pnpm@12.11.2",
   "engines": {
     "node": ">=22.13.0"
   },
   "scripts": {
     "dev": "vite",
-    "build": "tsc -b && vite build",
+    "typecheck": "tsc -b",
     "lint": "eslint .",
     "test": "vitest run",
+    "build": "tsc -b && vite build",
     "contrast": "node scripts/contrast-check.mjs",
     "preview": "vite preview"
   },
@@ -20,7 +22,7 @@
     "@tanstack/react-query": "^5.104.2",
     "@tanstack/react-router": "^1.170.44",
     "better-auth": "^1.7.7",
-    "lucide-react": "^1.57.0",
+    "lucide-react": "^1.56.0",
     "radix-ui": "^1.8.1",
     "react": "^19.3.0",
     "react-dom": "^19.3.0",
