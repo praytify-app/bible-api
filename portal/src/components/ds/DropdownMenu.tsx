@@ -1,5 +1,5 @@
 import { Check } from "lucide-react";
-import { DropdownMenu as RadixMenu } from "radix-ui";
+import { DropdownMenu as RadixMenu, Slot } from "radix-ui";
 import type { ComponentProps, ReactNode } from "react";
 import { cx } from "./cx";
 import { menuItem, overlaySurface } from "./styles";
@@ -34,6 +34,11 @@ export interface DropdownMenuItemProps extends ComponentProps<typeof RadixMenu.I
   tone?: "default" | "danger";
 }
 
+/**
+ * With `asChild`, the child (a TanStack <Link>) becomes the menu item, so menus
+ * navigate with real hrefs. Slottable merges the icon into that child, with or
+ * without an icon.
+ */
 export function DropdownMenuItem({ icon, tone = "default", className, children, ...props }: DropdownMenuItemProps) {
   return (
     <RadixMenu.Item
@@ -44,8 +49,12 @@ export function DropdownMenuItem({ icon, tone = "default", className, children, 
         className,
       )}
     >
-      {icon && <span aria-hidden className="inline-flex">{icon}</span>}
-      {children}
+      {icon ? (
+        <span aria-hidden className="inline-flex">
+          {icon}
+        </span>
+      ) : null}
+      <Slot.Slottable>{children}</Slot.Slottable>
     </RadixMenu.Item>
   );
 }
