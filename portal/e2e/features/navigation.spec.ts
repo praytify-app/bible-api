@@ -148,7 +148,11 @@ test("the sidebar reaches every dashboard page and marks one current item", asyn
     const again = await openDashboardNav(page, isMobile);
     await expect(again.getByRole("link", { name: target.name, exact: true })).toHaveAttribute("aria-current", "page");
     await expect(again.locator('[aria-current="page"]')).toHaveCount(1);
-    if (isMobile) await page.keyboard.press("Escape");
+    if (isMobile) {
+      await page.keyboard.press("Escape");
+      // Let the sheet finish closing before the next pass reopens it.
+      await expect(page.getByRole("dialog")).toHaveCount(0);
+    }
   }
 
   // Back on the public site, the header offers the dashboard instead of Sign in.
@@ -206,6 +210,9 @@ test("an unknown address gets an honest page with a way home", async ({ page }) 
 
 test("the skip link moves focus to the main content", async ({ page }) => {
   await page.goto("/");
+  // Keys go to whatever has rendered: wait for the page before tabbing (QA saw
+  // Tab land on an empty document in 2 of 16 loads).
+  await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
   await page.keyboard.press("Tab");
   const skip = page.getByRole("link", { name: "Skip to main content" });
   await expect(skip).toBeFocused();
