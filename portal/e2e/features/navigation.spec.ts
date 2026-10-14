@@ -1,5 +1,5 @@
 import type { Locator, Page } from "@playwright/test";
-import { expect, expectAccessible, signUp, test, useTheme, type Theme } from "../support/fixtures";
+import { API_URL, expect, expectAccessible, signUp, test, useTheme, type Theme } from "../support/fixtures";
 
 // The shell and IA against the real local stack (BRIEF §5): every public route
 // is reachable from the header on desktop and from the menu sheet on phones,
@@ -7,7 +7,11 @@ import { expect, expectAccessible, signUp, test, useTheme, type Theme } from "..
 // the guard and sign-out keep their contract (AUDIT must-not-regress 1, 15),
 // and the theme choice survives a reload.
 
-const GITHUB = "https://github.com/praytify-app/bible-api";
+// Source links render only when the build sets VITE_SOURCE_URL (BRIEF §11).
+// Playwright's web server inherits this process's environment, so the spec
+// expects whatever the build under test was given.
+const SOURCE_URL = process.env.VITE_SOURCE_URL?.trim().replace(/\/+$/, "").replace(/\.git$/, "") || undefined;
+const SOURCE_LABEL = SOURCE_URL && new URL(SOURCE_URL).hostname === "github.com" ? "GitHub" : "Source";
 
 /** The public "Main" nav: the header on desktop, the menu sheet on phones. */
 async function openPublicNav(page: Page, isMobile: boolean): Promise<Locator> {
@@ -72,19 +76,30 @@ for (const target of publicTargets) {
   });
 }
 
-async function expectSafeExternal(link: Locator) {
-  await expect(link).toHaveAttribute("href", GITHUB);
+async function expectSafeExternal(link: Locator, href: string) {
+  await expect(link).toHaveAttribute("href", href);
   await expect(link).toHaveAttribute("target", "_blank");
   await expect(link).toHaveAttribute("rel", /noopener/);
   await expect(link).toHaveAttribute("rel", /noreferrer/);
 }
 
-test("GitHub links open the repository in a new tab without an opener", async ({ page, isMobile }) => {
+test("source links appear only when a public source is configured, and open safely", async ({ page, isMobile }) => {
   await page.goto("/");
-  // Footer first: an open sheet hides the rest of the page from assistive technology.
-  await expectSafeExternal(page.getByRole("contentinfo").getByRole("link", { name: /^Source on GitHub/ }));
+  await expect(page.getByRole("heading", { name: "Verse of the day" })).toBeVisible();
+  if (!SOURCE_URL) {
+    // Nothing may point at a private or missing repository.
+    await expect(page.locator('a[href*="github.com"]')).toHaveCount(0);
+    await expect(page.getByRole("heading", { name: "Run the whole thing yourself." })).toHaveCount(0);
+    const nav = await openPublicNav(page, isMobile);
+    await expect(nav.getByRole("link", { name: /^(GitHub|Source)/ })).toHaveCount(0);
+    return;
+  }
+  // Footer and landing first: an open sheet hides the rest of the page from assistive technology.
+  await expectSafeExternal(page.getByRole("contentinfo").getByRole("link", { name: /^Source (on GitHub|code)/ }), SOURCE_URL);
+  await expectSafeExternal(page.getByRole("main").getByRole("link", { name: /^Source (on GitHub|code)/ }), SOURCE_URL);
+  await expect(page.getByRole("region", { name: "Terminal example" })).toContainText(`git clone ${SOURCE_URL}.git`);
   const nav = await openPublicNav(page, isMobile);
-  await expectSafeExternal(nav.getByRole("link", { name: /^GitHub/ }));
+  await expectSafeExternal(nav.getByRole("link", { name: new RegExp(`^${SOURCE_LABEL}`) }), SOURCE_URL);
 });
 
 test("a signed-out visitor is offered Sign in, which opens the login page", async ({ page, isMobile }) => {
@@ -204,22 +219,65 @@ test("a shared verse selection stays a plain query string", async ({ page }) => 
   await expect(page).toHaveURL(/\/read\/WEB\/JHN\/3\?v=16$/);
 });
 
+// Chunk names are hashed in a production build, so look inside the scripts for
+// a class name recharts renders: string literals survive minification.
+const CHART_MARKER = "recharts-wrapper";
+
 test("charts load only on the usage page", async ({ page, baseURL }) => {
-  const chartRequests: string[] = [];
-  page.on("request", (req) => {
-    if (/recharts/i.test(req.url())) chartRequests.push(req.url());
+  const chartScripts: string[] = [];
+  let reading = 0;
+  page.on("response", async (res) => {
+    if (res.request().resourceType() !== "script") return;
+    reading++;
+    const body = await res.text().catch(() => "");
+    if (body.includes(CHART_MARKER)) chartScripts.push(res.url());
+    reading--;
   });
   await page.goto("/");
   await settled(page);
   await page.goto("/read/WEB/JHN/3");
   await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
-  expect(chartRequests, "recharts requested on a public page").toEqual([]);
+  await expect.poll(() => reading).toBe(0);
+  expect(chartScripts, "chart code loaded on a public page").toEqual([]);
 
   await signUp(page, baseURL!);
   // The usage route's validator keeps a non-default period in the URL.
   await page.goto("/dashboard/usage?days=7");
-  await expect.poll(() => chartRequests.length).toBeGreaterThan(0);
+  await expect.poll(() => chartScripts.length).toBeGreaterThan(0);
   await expect(page).toHaveURL(/\/dashboard\/usage\?days=7$/);
+});
+
+test("every page has its own title and the reader keeps its chapter title", async ({ page, baseURL }) => {
+  await page.goto("/");
+  await expect(page).toHaveTitle("Praytify Bible: scripture for every screen");
+  await page.goto("/docs/quickstart");
+  await expect(page).toHaveTitle("Quick start · Praytify Bible");
+  await page.goto("/no-such-page");
+  await expect(page).toHaveTitle("Page not found · Praytify Bible");
+  await page.goto("/read/WEB/JHN/3");
+  await expect(page).toHaveTitle(/^John 3 \(WEB\) · Praytify Bible$/);
+  // Leaving the reader client-side hands the title back to the route.
+  await page.getByRole("contentinfo").getByRole("link", { name: "Translations", exact: true }).click();
+  await expect(page).toHaveTitle("Translations · Praytify Bible");
+
+  await signUp(page, baseURL!);
+  await page.goto("/dashboard/keys");
+  await expect(page).toHaveTitle("API keys · Praytify Bible");
+});
+
+test("the landing page's catalog counts are the API's own numbers", async ({ page, request }) => {
+  const versions = await (await request.get(`${API_URL}/v1/versions?limit=1`)).json();
+  const languages = await (await request.get(`${API_URL}/v1/languages`)).json();
+  const total: number | undefined = versions.meta?.total;
+  const languageCount = (languages.data as { versionCount: number }[]).filter((l) => l.versionCount > 0).length;
+  const n = new Intl.NumberFormat("en-US").format;
+
+  await page.goto("/");
+  const line =
+    typeof total === "number"
+      ? `${n(total)} translations in ${n(languageCount)} languages.`
+      : `Scripture in ${n(languageCount)} languages.`;
+  await expect(page.getByText(line)).toBeVisible();
 });
 
 for (const theme of ["light", "dark"] as Theme[]) {
