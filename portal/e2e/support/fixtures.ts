@@ -5,15 +5,47 @@ export const API_URL = process.env.E2E_API_URL ?? "http://localhost:3200";
 
 export type Theme = "light" | "dark";
 
-/** Force a theme before the app boots (the no-flash script reads pb-theme). */
+/**
+ * Force a theme before the app boots (the no-flash script reads pb-theme).
+ * Top frame only: Firefox also runs init scripts in a child frame's initial
+ * about:blank, which shares the portal's origin, so writing there fired a
+ * storage event that the app follows like another tab's theme change.
+ */
 export async function useTheme(page: Page, theme: Theme): Promise<void> {
   await page.addInitScript((t) => {
+    if (window !== window.top) return;
     try {
       localStorage.setItem("pb-theme", t);
     } catch {
       /* storage blocked: the app falls back to the OS preference */
     }
   }, theme);
+}
+
+/**
+ * Read back what the app copied, in every engine. Call before the first
+ * navigation. Chromium reads the real clipboard once granted. Firefox reads it
+ * without a grant (and rejects clipboard permissions as unknown). WebKit writes
+ * for real but never lets a page read the clipboard back, so there an init
+ * script wraps navigator.clipboard.writeText: the real write still runs and
+ * decides success or failure, and the text is recorded only once it resolves.
+ */
+export async function clipboardReader(page: Page, browserName: string, origin: string): Promise<() => Promise<string>> {
+  if (browserName === "chromium") {
+    await page.context().grantPermissions(["clipboard-read", "clipboard-write"], { origin });
+  }
+  if (browserName !== "webkit") return () => page.evaluate(() => navigator.clipboard.readText());
+
+  await page.addInitScript(() => {
+    const clipboard = navigator.clipboard;
+    if (!clipboard?.writeText) return;
+    const write = clipboard.writeText.bind(clipboard);
+    clipboard.writeText = async (text: string) => {
+      await write(text);
+      (window as unknown as { __e2eClipboard?: string }).__e2eClipboard = text;
+    };
+  });
+  return () => page.evaluate(() => (window as unknown as { __e2eClipboard?: string }).__e2eClipboard ?? "");
 }
 
 /** Fail on serious or critical axe violations, listing each with its targets. */

@@ -208,12 +208,14 @@ test("an unknown address gets an honest page with a way home", async ({ page }) 
   await expect(page).toHaveURL(/\/$/);
 });
 
-test("the skip link moves focus to the main content", async ({ page }) => {
+test("the skip link moves focus to the main content", async ({ page, browserName }) => {
   await page.goto("/");
   // Keys go to whatever has rendered: wait for the page before tabbing (QA saw
   // Tab land on an empty document in 2 of 16 loads).
   await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
-  await page.keyboard.press("Tab");
+  // Safari's Tab skips links unless "Press Tab to highlight each item" is on;
+  // Option+Tab is its link-inclusive Tab, so that is what a keyboard user presses.
+  await page.keyboard.press(browserName === "webkit" ? "Alt+Tab" : "Tab");
   const skip = page.getByRole("link", { name: "Skip to main content" });
   await expect(skip).toBeFocused();
   await page.keyboard.press("Enter");
@@ -221,9 +223,15 @@ test("the skip link moves focus to the main content", async ({ page }) => {
 });
 
 test("a shared verse selection stays a plain query string", async ({ page }) => {
+  // Check the URL once the reader has applied the selection, so the router has
+  // booted and had its chance to rewrite it. Leaving earlier also let the
+  // router's late replaceState interrupt the next goto in WebKit.
+  const verse16 = page.getByRole("button", { name: "Verse 16", exact: true });
   await page.goto("/read/WEB/JHN/3?v=16-18");
+  await expect(verse16).toHaveAttribute("aria-pressed", "true");
   await expect(page).toHaveURL(/\/read\/WEB\/JHN\/3\?v=16-18$/);
   await page.goto("/read/WEB/JHN/3?v=16");
+  await expect(verse16).toHaveAttribute("aria-pressed", "true");
   await expect(page).toHaveURL(/\/read\/WEB\/JHN\/3\?v=16$/);
 });
 

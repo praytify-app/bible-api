@@ -1,5 +1,5 @@
 import type { Page } from "@playwright/test";
-import { expect, expectAccessible, signUp, test, useTheme, type Theme } from "../support/fixtures";
+import { clipboardReader, expect, expectAccessible, signUp, test, useTheme, type Theme } from "../support/fixtures";
 
 // The embed builder end to end against the real local gateway: the preview is
 // the shipped /embed/v1.js, and the snippet it hands out must render the same
@@ -40,9 +40,9 @@ test("accepts the reader's Embed link, which uses the book code", async ({ page 
   await expect(page.getByRole("region", { name: "HTML example" })).toContainText('reference="JHN 3:16-18"');
 });
 
-test("copies a snippet that renders the same passage on a blank page", async ({ page, context, baseURL }) => {
+test("copies a snippet that renders the same passage on a blank page", async ({ page, context, baseURL, browserName }) => {
   const portal = new URL(baseURL!);
-  await context.grantPermissions(["clipboard-read", "clipboard-write"], { origin: portal.origin });
+  const readClipboard = await clipboardReader(page, browserName, portal.origin);
   await openBuilder(page);
   await expect(preview(page).locator("cite")).toHaveText("John 3:16 (WEB)");
 
@@ -54,7 +54,7 @@ test("copies a snippet that renders the same passage on a blank page", async ({ 
 
   await page.getByRole("button", { name: "Copy HTML code" }).click();
   await expect(page.getByRole("status").filter({ hasText: "Copied to clipboard" })).toBeAttached();
-  const snippet = await page.evaluate(() => navigator.clipboard.readText());
+  const snippet = await readClipboard();
   expect(snippet).toContain(`<script type="module" src="${portal.origin}/embed/v1.js"></script>`);
   expect(snippet).toContain('theme="dark"');
 
@@ -63,8 +63,11 @@ test("copies a snippet that renders the same passage on a blank page", async ({ 
   // site. The routed page has no address of its own, so Chrome treats it as
   // public and asks before it reaches loopback; production hosts are public
   // and praytify.bible is too, so granting that here changes nothing real.
+  // Firefox and WebKit have no local network access prompt to grant.
   const host = `http://127.0.0.1:${portal.port}/__embed-host`;
-  await context.grantPermissions(["local-network-access"], { origin: new URL(host).origin });
+  if (browserName === "chromium") {
+    await context.grantPermissions(["local-network-access"], { origin: new URL(host).origin });
+  }
   await page.route(host, (route) =>
     route.fulfill({ contentType: "text/html", body: "<!doctype html><title>Blank</title>" }),
   );

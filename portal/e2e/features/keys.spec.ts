@@ -1,5 +1,5 @@
 import type { Locator, Page } from "@playwright/test";
-import { API_URL, expect, expectAccessible, signUp, test, useTheme, type Theme } from "../support/fixtures";
+import { API_URL, clipboardReader, expect, expectAccessible, signUp, test, useTheme, type Theme } from "../support/fixtures";
 
 // The key manager end to end against the real local gateway: a key made in the
 // UI must work against /v1, show its use in the list, and stop working the
@@ -74,8 +74,8 @@ async function rowAction(page: Page, name: string, action: RegExp) {
 }
 
 test.describe("key manager", () => {
-  test("secret key: create, copy, use, last used, roll, revoke", async ({ page, baseURL, context }) => {
-    await context.grantPermissions(["clipboard-read", "clipboard-write"], { origin: baseURL! });
+  test("secret key: create, copy, use, last used, roll, revoke", async ({ page, baseURL, browserName }) => {
+    const readClipboard = await clipboardReader(page, browserName, baseURL!);
     await signUp(page, baseURL!);
     await openKeys(page);
     await expect(page.getByText("No API keys yet")).toBeVisible();
@@ -86,7 +86,7 @@ test.describe("key manager", () => {
     // Honest copy: the label changes only after the clipboard write resolves.
     await page.getByRole("button", { name: "Copy key" }).click();
     await expect(page.getByRole("button", { name: "Key copied" })).toBeVisible();
-    expect(await page.evaluate(() => navigator.clipboard.readText())).toBe(key);
+    expect(await readClipboard()).toBe(key);
 
     // Show-once (AUDIT must-not-regress 4): never in storage, gone after dismissal.
     const stored = await page.evaluate(() => JSON.stringify({ ...localStorage }) + JSON.stringify({ ...sessionStorage }));

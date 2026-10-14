@@ -1,5 +1,5 @@
 import type { Page } from "@playwright/test";
-import { expect, expectAccessible, test, useTheme, type Theme } from "../support/fixtures";
+import { clipboardReader, expect, expectAccessible, test, useTheme, type Theme } from "../support/fixtures";
 
 // The public reader against the real local stack (BRIEF §6.1): chapter
 // navigation across books, switching translation in place, verse selection
@@ -112,11 +112,11 @@ test.describe("reader", () => {
 
   test("a selected range copies with attribution and shares a link that highlights it", async ({
     page,
-    context,
     isMobile,
     baseURL,
+    browserName,
   }) => {
-    await context.grantPermissions(["clipboard-read", "clipboard-write"], { origin: baseURL });
+    const readClipboard = await clipboardReader(page, browserName, baseURL!);
     await openChapter(page, "/read/WEB/JHN/3", "John 3");
 
     await pressVerseText(page, 16, isMobile);
@@ -132,7 +132,7 @@ test.describe("reader", () => {
     await expect(copyText).toHaveAccessibleName("Copy");
     await copyText.click();
     await expect(copyText).toHaveAccessibleName("Copied");
-    const copied = await page.evaluate(() => navigator.clipboard.readText());
+    const copied = await readClipboard();
     expect(copied).toMatch(/^16 For God so loved the world/);
     expect(copied).toContain("John 3:16-18 (WEB)");
     expect(copied).toContain("Public Domain");
@@ -140,7 +140,7 @@ test.describe("reader", () => {
     await expect(copyLink).toHaveAccessibleName("Copy link");
     await copyLink.click();
     await expect(copyLink).toHaveAccessibleName("Copied");
-    const link = await page.evaluate(() => navigator.clipboard.readText());
+    const link = await readClipboard();
     expect(link).toBe(`${baseURL}/read/WEB/JHN/3?v=16-18`);
 
     await expect(toolbar(page).getByRole("link", { name: "Embed" })).toHaveAttribute(
