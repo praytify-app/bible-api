@@ -136,6 +136,21 @@ function el<K extends keyof HTMLElementTagNameMap>(tag: K, text?: string): HTMLE
   return node;
 }
 
+/**
+ * The API reports ISO 639-3 codes ("eng", "arb"). HTML lang wants BCP 47, which
+ * prefers the two-letter code when one exists, or screen readers may not
+ * switch voice. Canonicalising maps eng to en and arb to ar and keeps codes
+ * with no shorter form (grc, hbo). Invalid input leaves lang unset.
+ */
+export function toLangTag(code: string | null | undefined): string | null {
+  if (!code) return null;
+  try {
+    return Intl.getCanonicalLocales(code)[0] ?? null;
+  } catch {
+    return null;
+  }
+}
+
 function safeHttpUrl(value: string | null | undefined): string | null {
   if (!value) return null;
   try {
@@ -245,7 +260,8 @@ abstract class PraytifyElement extends HTMLElement {
   private figure(passage: PassageResponse, info: VersionInfo | null): HTMLElement {
     const figure = el("figure");
     const quote = el("blockquote");
-    if (info?.languageCode) quote.lang = info.languageCode;
+    const lang = toLangTag(info?.languageCode);
+    if (lang) quote.lang = lang;
     if (info?.textDirection === "rtl") quote.dir = "rtl";
 
     const showNumbers = passage.verses.length > 1;

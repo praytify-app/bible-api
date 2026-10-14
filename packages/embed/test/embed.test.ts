@@ -58,7 +58,7 @@ describe("praytify embeds", () => {
     expect(root.querySelector("blockquote")?.textContent).toContain("For God so loved the world,");
     expect([...root.querySelectorAll("sup")].map((s) => s.textContent)).toEqual(["16", "17"]);
     expect(root.querySelector("cite")?.textContent).toBe("John 3:16-17 (WEB)");
-    expect(root.querySelector("blockquote")?.getAttribute("lang")).toBe("eng");
+    expect(root.querySelector("blockquote")?.getAttribute("lang")).toBe("en");
     const links = [...root.querySelectorAll("a")].map((a) => a.getAttribute("href"));
     expect(links).toContain("https://praytify.bible/read/WEB/JHN/3");
     expect(links).toContain("https://ebible.org/web/");
@@ -159,5 +159,13 @@ describe("praytify embeds", () => {
     await settle();
     expect([...root.querySelectorAll("a")].some((a) => a.textContent === "Read the chapter")).toBe(false);
   });
-});
 
+  it("maps ISO 639-3 codes to valid BCP 47 language tags", async () => {
+    const { toLangTag } = await import("../src/embed.js");
+    expect(toLangTag("eng")).toBe("en");
+    expect(toLangTag("arb")).toBe("ar");
+    expect(toLangTag("grc")).toBe("grc");
+    expect(toLangTag("not a code")).toBeNull();
+    expect(toLangTag(null)).toBeNull();
+  });
+});
