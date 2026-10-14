@@ -170,4 +170,26 @@ describe("praytify embeds", () => {
     expect(toLangTag("not a code")).toBeNull();
     expect(toLangTag(null)).toBeNull();
   });
+
+  it("keeps its macrolanguage aliases in step with CLDR", async () => {
+    const { MACROLANGUAGE_ALIASES } = await import("../src/embed.js");
+    // Node's ICU applies CLDR's language aliases, so it is the reference here.
+    for (const [from, to] of Object.entries(MACROLANGUAGE_ALIASES)) {
+      expect(Intl.getCanonicalLocales(from)[0], from).toBe(to);
+    }
+  });
+
+  it("maps macrolanguage members where Intl does not (WebKit)", async () => {
+    const { toLangTag } = await import("../src/embed.js");
+    // WebKit returns arb, cmn and swh unchanged from Intl.getCanonicalLocales.
+    const spy = vi.spyOn(Intl, "getCanonicalLocales").mockImplementation((locales) => [String(locales)]);
+    try {
+      expect(toLangTag("arb")).toBe("ar");
+      expect(toLangTag("cmn")).toBe("zh");
+      expect(toLangTag("swh-KE")).toBe("sw-KE");
+      expect(toLangTag("grc")).toBe("grc");
+    } finally {
+      spy.mockRestore();
+    }
+  });
 });

@@ -137,6 +137,45 @@ function el<K extends keyof HTMLElementTagNameMap>(tag: K, text?: string): HTMLE
 }
 
 /**
+ * CLDR's macrolanguage aliases whose replacement is a bare language (Standard
+ * Arabic arb to ar, Mandarin cmn to zh, and so on). Chromium and Firefox apply
+ * them inside Intl.getCanonicalLocales; WebKit (Safari) does not, so the widget
+ * declared lang="arb" there. Kept in step with portal/src/lib/lang.ts; the
+ * unit test checks every entry against CLDR.
+ */
+export const MACROLANGUAGE_ALIASES: Readonly<Record<string, string>> = {
+  arb: "ar",
+  ayr: "ay",
+  azj: "az",
+  cmn: "zh",
+  ekk: "et",
+  fat: "ak",
+  fuc: "ff",
+  gaz: "om",
+  gug: "gn",
+  ike: "iu",
+  khk: "mn",
+  kmr: "ku",
+  knc: "kr",
+  kng: "kg",
+  kpv: "kv",
+  lvs: "lv",
+  npi: "ne",
+  ojg: "oj",
+  ory: "or",
+  pbu: "ps",
+  pes: "fa",
+  plt: "mg",
+  quz: "qu",
+  src: "sc",
+  swh: "sw",
+  uzn: "uz",
+  ydd: "yi",
+  zsm: "ms",
+  zyb: "za",
+};
+
+/**
  * The API reports ISO 639-3 codes ("eng", "arb"). HTML lang wants BCP 47, which
  * prefers the two-letter code when one exists, or screen readers may not
  * switch voice. Canonicalising maps eng to en and arb to ar and keeps codes
@@ -145,7 +184,11 @@ function el<K extends keyof HTMLElementTagNameMap>(tag: K, text?: string): HTMLE
 export function toLangTag(code: string | null | undefined): string | null {
   if (!code) return null;
   try {
-    return Intl.getCanonicalLocales(code)[0] ?? null;
+    const tag = Intl.getCanonicalLocales(code)[0];
+    if (!tag) return null;
+    const [language, ...rest] = tag.split("-");
+    const alias = MACROLANGUAGE_ALIASES[language];
+    return alias ? [alias, ...rest].join("-") : tag;
   } catch {
     return null;
   }
