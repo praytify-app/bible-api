@@ -25,8 +25,10 @@ type OpenApiDoc = {
   [k: string]: unknown;
 };
 
-const DESCRIPTION = `
-Scripture in 1,200+ translations over a plain JSON API.
+function description(translations: number | null): string {
+  const count = translations ? `${translations.toLocaleString("en-US")} translations` : "Bible translations";
+  return `
+Scripture in ${count} over a plain JSON API.
 
 **No key needed** to read the catalog, chapters, references (\`/v1/verses?ref=\`), or the daily verse. Anonymous requests share a per-IP limit.
 
@@ -40,13 +42,14 @@ Free plan: ${PLAN_LIMITS.free.secret.perMinute} requests per minute and ${PLAN_L
 
 Scripture responses are cacheable: honour \`ETag\` and \`Cache-Control\`.
 `.trim();
+}
 
 /**
  * The engine documents its internal surface (`/api/v1`). The public contract is
  * the gateway's (`/v1`, bearer keys, public versus keyed routes), so the
  * gateway publishes its own rewrite of the engine's spec.
  */
-export function toPublicSpec(engine: OpenApiDoc, publicUrl: string): OpenApiDoc {
+export function toPublicSpec(engine: OpenApiDoc, publicUrl: string, translations: number | null = null): OpenApiDoc {
   const paths: NonNullable<OpenApiDoc["paths"]> = {};
   for (const [path, item] of Object.entries(engine.paths ?? {})) {
     if (HIDDEN_PATHS.some((re) => re.test(path))) continue;
@@ -71,7 +74,7 @@ export function toPublicSpec(engine: OpenApiDoc, publicUrl: string): OpenApiDoc 
   const components = (engine.components ?? {}) as Record<string, unknown>;
   return {
     ...engine,
-    info: { ...(engine.info ?? {}), title: "Praytify Bible API", description: DESCRIPTION },
+    info: { ...(engine.info ?? {}), title: "Praytify Bible API", description: description(translations) },
     servers: [{ url: publicUrl.replace(/\/+$/, ""), description: "Praytify Bible gateway" }],
     paths,
     components: {
@@ -88,6 +91,39 @@ export function toPublicSpec(engine: OpenApiDoc, publicUrl: string): OpenApiDoc 
   };
 }
 
+// Sacred Dawn colours for Scalar, so the reference passes AA in both themes
+// and matches the portal that frames it. Values mirror portal/src/index.css.
+const SCALAR_CSS = `
+.light-mode {
+  --scalar-background-1: #faf6f1; --scalar-background-2: #f4eee6; --scalar-background-3: #ffffff;
+  --scalar-color-1: #2c1810; --scalar-color-2: #66564f; --scalar-color-3: #74665f;
+  --scalar-color-accent: #4338ca; --scalar-background-accent: #e8e6fd;
+  --scalar-border-color: rgba(44, 24, 16, 0.14);
+}
+.dark-mode {
+  --scalar-background-1: #1a1411; --scalar-background-2: #241c18; --scalar-background-3: #2e2420;
+  --scalar-color-1: #f3ebe1; --scalar-color-2: #bdb5ad; --scalar-color-3: #9c958e;
+  --scalar-color-accent: #a8a4f8; --scalar-background-accent: #2a2550;
+  --scalar-border-color: rgba(243, 235, 225, 0.14);
+}
+`.trim();
+
+function escapeAttr(value: string): string {
+  return value.replace(/&/g, "&amp;").replace(/"/g, "&quot;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+}
+
+/** `?theme=dark|light` pins the reference to the portal's theme; otherwise it follows the OS. */
+export function scalarConfiguration(theme: string | undefined): Record<string, unknown> {
+  const pinned = theme === "dark" || theme === "light" ? theme : undefined;
+  return {
+    url: "/v1/openapi.json",
+    theme: "none",
+    customCss: SCALAR_CSS,
+    hideClientButton: false,
+    ...(pinned ? { forceDarkModeState: pinned, hideDarkModeToggle: true } : {}),
+  };
+}
+
 export function docsRouter(opts: { engineUrl: string; publicUrl: string; gatewayToken?: string }) {
   const router = new Hono<GatewayEnv>();
   let cached: { spec: OpenApiDoc; at: number } | null = null;
@@ -96,12 +132,17 @@ export function docsRouter(opts: { engineUrl: string; publicUrl: string; gateway
   router.get("/v1/openapi.json", async (c) => {
     if (!cached || Date.now() - cached.at > TTL) {
       try {
-        const res = await fetch(`${opts.engineUrl}/api/v1/openapi.json`, {
-          headers: opts.gatewayToken ? { "x-gateway-token": opts.gatewayToken } : {},
-          signal: AbortSignal.timeout(10_000),
-        });
+        const headers = opts.gatewayToken ? { "x-gateway-token": opts.gatewayToken } : {};
+        const [res, versions] = await Promise.all([
+          fetch(`${opts.engineUrl}/api/v1/openapi.json`, { headers, signal: AbortSignal.timeout(10_000) }),
+          // The live count, so the reference never quotes a stale number.
+          fetch(`${opts.engineUrl}/api/v1/versions?limit=1`, { headers, signal: AbortSignal.timeout(10_000) })
+            .then((r) => (r.ok ? (r.json() as Promise<{ meta?: { total?: number } }>) : null))
+            .catch(() => null),
+        ]);
         if (!res.ok) throw new Error(`engine returned ${res.status}`);
-        cached = { spec: toPublicSpec((await res.json()) as OpenApiDoc, opts.publicUrl), at: Date.now() };
+        const total = versions?.meta?.total ?? null;
+        cached = { spec: toPublicSpec((await res.json()) as OpenApiDoc, opts.publicUrl, total), at: Date.now() };
       } catch (err) {
         log.error("openapi fetch failed", { err });
         if (!cached) return apiError(c, 502, "SPEC_UNAVAILABLE", "The API reference is temporarily unavailable.");
@@ -122,7 +163,7 @@ export function docsRouter(opts: { engineUrl: string; publicUrl: string; gateway
   <meta name="description" content="Reference for the Praytify Bible API: 1,200+ translations, chapters, references, search, and the daily verse.">
 </head>
 <body>
-  <script id="api-reference" data-url="/v1/openapi.json"></script>
+  <script id="api-reference" data-configuration="${escapeAttr(JSON.stringify(scalarConfiguration(c.req.query("theme"))))}"></script>
   <script src="${SCALAR_SRC}" integrity="${SCALAR_SRI}" crossorigin="anonymous"></script>
 </body>
 </html>`);
