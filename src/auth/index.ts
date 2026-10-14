@@ -37,7 +37,9 @@ export const auth = betterAuth({
     updateAge: 60 * 60 * 24,
   },
   advanced: {
-    useSecureCookies: cfg.NODE_ENV === "production",
+    // Follow the public URL, not NODE_ENV: a self-hosted instance served over
+    // plain HTTP would otherwise set cookies the browser never sends back.
+    useSecureCookies: cfg.BETTER_AUTH_URL.startsWith("https://"),
   },
 });
 

@@ -93,7 +93,10 @@ seed_engine() {
   ensure_deps "$ENGINE_DIR"
   say "migrating engine schema"
   engine_tsx src/db/migrate.ts
-  if [[ -x "$ENGINE_DIR/scripts/seed-sample.sh" ]]; then
+  if grep -q '"seed-sample"' "$ENGINE_DIR/src/seeder/cli.ts" 2>/dev/null; then
+    say "seeding sample translations, daily verses, and search indexes"
+    engine_tsx src/seeder/cli.ts seed-sample
+  elif [[ -x "$ENGINE_DIR/scripts/seed-sample.sh" ]]; then
     say "seeding sample translations (engine scripts/seed-sample.sh)"
     (cd "$ENGINE_DIR" && env "${ENGINE_ENV[@]}" ./scripts/seed-sample.sh)
   else

@@ -87,6 +87,16 @@ It works in browsers, Node, Bun, Deno, and React Native; retries on `429` and `5
 
 You need Docker, or Node 24 with Postgres 16 or newer.
 
+**With Docker:**
+
+```bash
+git clone https://github.com/praytify-app/bible-api.git praytify-bible && cd praytify-bible
+docker compose up -d                            # Postgres, engine, gateway, portal
+docker compose --profile seed run --rm seed     # once: sample public-domain translations
+```
+
+The portal is at http://localhost:8080 and the API at http://localhost:3200 (reference at `/docs`). Email and password sign-in is on by default for self-hosted instances; add GitHub or Google OAuth credentials in `.env` if you prefer. Change every `*-change-me` default before exposing the stack to a network.
+
 **Local development without Docker:**
 
 ```bash
