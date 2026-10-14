@@ -21,13 +21,15 @@ async function main() {
   }
 
   // Imported after the config check: these modules open the database pool.
-  const [{ client }, { auth }, { keysRouter }, { usageRouter }, { profileRouter, planRouter }] = await Promise.all([
-    import("./db/client.js"),
-    import("./auth/index.js"),
-    import("./routes/keys.js"),
-    import("./routes/usage.js"),
-    import("./routes/profile.js"),
-  ]);
+  const [{ client }, { auth }, { keysRouter }, { usageRouter }, { profileRouter, planRouter }, { accountRouter }] =
+    await Promise.all([
+      import("./db/client.js"),
+      import("./auth/index.js"),
+      import("./routes/keys.js"),
+      import("./routes/usage.js"),
+      import("./routes/profile.js"),
+      import("./routes/account.js"),
+    ]);
 
   const store = await createRateLimitStore(cfg.REDIS_URL);
   const resolver = new KeyResolver(dbKeyLookup, cfg.KEY_CACHE_TTL_SECONDS * 1000);
@@ -65,6 +67,10 @@ async function main() {
       a.route("/api/dashboard/usage", usageRouter());
       a.route("/api/dashboard/profile", profileRouter());
       a.route("/api/dashboard/plan", planRouter({ anonymous, maxKeysPerUser: cfg.MAX_KEYS_PER_USER }));
+      a.route(
+        "/api/dashboard/account",
+        accountRouter({ onKeysRemoved: (ids) => ids.forEach((id) => resolver.invalidateKeyId(id)) })
+      );
     },
   });
 
