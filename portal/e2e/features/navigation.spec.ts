@@ -250,7 +250,7 @@ test("charts load only on the usage page", async ({ page, baseURL }) => {
 
 test("every page has its own title and the reader keeps its chapter title", async ({ page, baseURL }) => {
   await page.goto("/");
-  await expect(page).toHaveTitle("Praytify Bible: scripture for every screen");
+  await expect(page).toHaveTitle("Praytify Bible: scripture for every app");
   await page.goto("/docs/quickstart");
   await expect(page).toHaveTitle("Quick start · Praytify Bible");
   await page.goto("/no-such-page");

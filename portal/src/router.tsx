@@ -40,7 +40,7 @@ const publicRoute = createRoute({
 const indexRoute = createRoute({
   getParentRoute: () => publicRoute,
   path: "/",
-  staticData: { title: `${SITE_NAME}: scripture for every screen` },
+  staticData: { title: `${SITE_NAME}: scripture for every app` },
   component: lazyRouteComponent(() => import("./pages/LandingPage"), "LandingPage"),
 });
 
