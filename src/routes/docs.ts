@@ -99,12 +99,17 @@ const SCALAR_CSS = `
   --scalar-color-1: #2c1810; --scalar-color-2: #66564f; --scalar-color-3: #74665f;
   --scalar-color-accent: #4338ca; --scalar-background-accent: #e8e6fd;
   --scalar-border-color: rgba(44, 24, 16, 0.14);
+  /* Method labels and syntax colours, each at least 4.5:1 on every light surface. */
+  --scalar-color-blue: #1d4ed8; --scalar-color-green: #166534; --scalar-color-red: #b91c1c;
+  --scalar-color-orange: #9a3412; --scalar-color-yellow: #854d0e; --scalar-color-purple: #6d28d9;
 }
 .dark-mode {
   --scalar-background-1: #1a1411; --scalar-background-2: #241c18; --scalar-background-3: #2e2420;
   --scalar-color-1: #f3ebe1; --scalar-color-2: #bdb5ad; --scalar-color-3: #9c958e;
   --scalar-color-accent: #a8a4f8; --scalar-background-accent: #2a2550;
   --scalar-border-color: rgba(243, 235, 225, 0.14);
+  --scalar-color-blue: #93c5fd; --scalar-color-green: #86efac; --scalar-color-red: #fca5a5;
+  --scalar-color-orange: #fdba74; --scalar-color-yellow: #fde68a; --scalar-color-purple: #c4b5fd;
 }
 `.trim();
 
