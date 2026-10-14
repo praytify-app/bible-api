@@ -148,18 +148,71 @@ Thresholds: 4.5:1 for text (WCAG 1.4.3), 3:1 for control edges, focus indicators
 
 ## Primitives
 
-Import everything from `@/components/ds`. Rows are added as each primitive lands.
+Import everything from `@/components/ds`; never from `radix-ui` directly (run the static gate with `--primitive-lib radix-ui` to enforce this). A dev-only gallery renders every primitive in both themes: `pnpm dev`, then open `/src/components/ds/gallery/index.html` (`?theme=dark`, `?open=confirm|dialog`).
+
+Every interactive primitive has hover, a visible `focus-visible` outline (global), active where it applies, and disabled. Primary controls are 44px tall; compact ones (`size="sm"`, checkbox, switch, pill tabs) keep a 44px hit area through the `touch-target` utility.
 
 | Primitive | Import | Props | States | Adapted from |
 |---|---|---|---|---|
+| Button | `Button` | `variant` primary, secondary, ghost, danger, link; `size` sm (36px, 44px hit), md (44px), lg (52px); `loading`; `leadingIcon`, `trailingIcon`; `asChild` (wrap a TanStack `Link`); native button props. Defaults to `type="button"` | default, hover, focus-visible, active, disabled, loading (spinner, `aria-busy`, clicks ignored, stays focusable) | components/Button |
+| IconButton | `IconButton` | **`label` (required, the accessible name)**, `icon`, `variant` ghost, secondary, primary, danger; `size` sm, md; `loading`; `showTooltip` | as Button | components/Button (`isCircle`) |
+| Field | `Field` | `label`, `hint`, `error`, `required`, `disabled`, `hideLabel`, `id`; one control as child | valid, invalid (`aria-invalid`, error announced via live region), required (asterisk plus native `required`), disabled | components/Field |
+| Input, TextArea | `Input`, `TextArea` | native props; `Input` adds `leadingIcon`. Inside a Field they take id, describedby, invalid, required and disabled from it; their own props win | default, hover, focus-visible, invalid, disabled, placeholder | components/Field |
+| Select | `Select` | `options: { value, label, disabled? }[]`, `value`/`defaultValue`, `onValueChange`, `placeholder`, `name`, `required`, `disabled`, `invalid`, `aria-label` outside a Field | closed, open, highlighted row (tint plus indigo text), selected (check), disabled option, invalid. Arrow keys, Home, End, type-ahead, Escape | components/Select |
+| SearchSelect | `SearchSelect` | `options: { value, label, description?, keywords? }[]`, `value`, `onValueChange`, `maxResults` (50), `placeholder`, `searchLabel`, `emptyMessage`; server search: `onQueryChange`, `filterOptions={false}`, `loading` | closed, open, active row, selected, empty, capped ("Showing 50 of 1,288"), searching. Arrow keys move, Enter picks, Escape closes and returns focus. Accent- and case-insensitive | components/Select + components/Search |
+| Checkbox | `Checkbox` | Radix checkbox props (`checked` may be `"indeterminate"`); `label` and `description`, or `aria-label` when unlabelled | unchecked, checked, indeterminate, focus-visible, disabled | components/Checkbox |
+| Switch | `Switch` | Radix switch props; `label` and `description`, or `aria-label` | off, on, focus-visible, disabled | components/Switch |
+| Tabs | `Tabs`, `TabsList`, `TabsTrigger`, `TabsContent` | Radix tabs props; `TabsList variant` pill or underline; give `TabsList` an `aria-label` | inactive, hover, active, focus-visible, disabled. Arrow keys, Home, End | components/Tabs |
+| Dialog | `Dialog`, `DialogTrigger`, `DialogClose`, `DialogContent` | `title` (required), `description`, `footer`, `size` sm, md, lg | open, closing. Focus trapped and starts on the first field (Close is last in DOM order, top-right visually); Escape and the labelled Close button close it. Footer stacks full width on phones | components/Modal |
+| ConfirmDialog | `ConfirmDialog` | `open`, `onOpenChange`, `title`, **`subject` (the exact thing affected)**, `description`, `confirmLabel` (a verb), `cancelLabel`, `tone` danger or default, `onConfirm`, `pending`, `error` | idle (focus on Cancel), pending (confirm busy, Cancel disabled, Escape blocked), error (danger Alert, stays open), success (closes) | components/Modal |
+| Sheet | `Sheet`, `SheetTrigger`, `SheetClose`, `SheetContent` | `title` (required), `hideTitle`, `description`, `side` left or right, `header` (e.g. a Logo) | open, closing. Focus trapped, Escape closes, width min(22rem, 88vw) | components/Modal (`isSlidePanel`) |
+| DropdownMenu | `DropdownMenu`, `…Trigger`, `…Content`, `…Item`, `…RadioGroup`, `…RadioItem`, `…Label`, `…Separator`, `…Group` | `DropdownMenuItem`: `icon`, `tone` default or danger, `asChild` for links; content `align` defaults to end | closed, open, highlighted, disabled, checked (radio). Arrow keys, type-ahead, Escape | components/Dropdown |
+| Tooltip | `Tooltip` | `content`, one focusable child, `side`, `delayDuration` | hidden, shown on hover and focus. Never put essential information in a tooltip; it does not show on touch | components/Tooltip |
+| Popover | `Popover`, `PopoverTrigger`, `PopoverContent`, `PopoverAnchor`, `PopoverClose` | Radix popover props | closed, open | components/Dropdown |
+| Card | `Card`, `CardHeader` | `Card`: `variant` raised, outline, sunken, committed; `padding` none, sm, md, lg; `as` div, section, article, li. `CardHeader`: `title`, `description`, `actions`, `titleAs` h2 or h3 | static. Never nest a Card in a Card | components/Card |
+| Table | `Table`, `TableHead`, `TableBody`, `TableRow`, `TableHeaderCell`, `TableCell` | `Table`: **`caption` (required)**, `showCaption`, `stackOnMobile`. `TableCell`: `label` (column name shown when stacked) | default; overflowing (becomes a named, focusable scroll region); stacked below md (divided rows, ARIA table roles restated) | components/Table |
+| Badge | `Badge` | `tone` neutral, accent, success, warning, danger, info | static. The words carry the meaning; colour reinforces | template `.label-*` classes |
+| Alert | `Alert` | `tone` info, success, warning, danger; `title`, `children`, `action`, `onDismiss`, `role` | danger and warning default to `role="alert"`, info and success to `role="status"`; `role="none"` for notes present at page load | new |
+| EmptyState | `EmptyState` | `title`, `description`, `icon`, `action`, `titleAs` | static. Only for a confirmed empty result, never for loading or a failed fetch | new |
+| Spinner | `Spinner` | `size` sm, md, lg; `label` ("Loading"); `decorative` | spinning; keeps turning under reduced motion (`data-motion="essential"`) | components/Spinner |
+| Skeleton | `Skeleton`, `SkeletonText` | sizing via `className`; `SkeletonText lines` | shimmering; static under reduced motion. Hidden from assistive technology: mark the region `aria-busy` | new |
+| CopyButton | `CopyButton` | `value` (string or function read at click), `label`, `copiedLabel`, `failedLabel`, `display` button or icon, `size`, `variant`, `onCopied`, `onFailed` | idle, copied (only after `writeText` resolves, 2s), failed (rejected or missing API, 5s, visible text plus live announcement "Select the text and copy it manually") | new (replaces the portal's silent copy) |
+| CodeBlock | `CodeBlock` | `tabs: { label, language, code }[]`, or `code`, `language`, `label` | single snippet, tabbed (Radix tablist), copy via CopyButton, long lines scroll in a focusable named region. No syntax highlighting | portal `components/CodeBlock.tsx` (moved) |
+| Eyebrow | `Eyebrow` | `children`, `index` ("01"), `tone` muted or accent, `as` | static | DESIGN.md eyebrow |
+| Stat | `Stat` | `label`, **`value` (number, string, or null/undefined for unknown)**, `hint`, `unavailableReason`, `loading`, `format` | value (locale-grouped), zero shown as 0, missing (dash plus reason, never 0), loading (skeleton, `aria-busy`) | new (AUDIT must-not-regress 9) |
+| PageHeader | `PageHeader` | `title` (sans line), `serifLine` (italic serif line), `eyebrow`, `description`, `actions`, `size` page or hero | static. Renders the page's one `h1`. Two-voice headline is for page-level headers only | DESIGN.md signature headline |
+| Kbd | `Kbd` | native kbd props | static | new |
+| VisuallyHidden | `VisuallyHidden` | native span props | static | new |
+| Logo | `Logo` | `variant` wordmark or mark, `height` (px), `product` (appends "Bible" as real text) | light and dark wordmarks swap with the theme (the brand forbids indigo on dark and white on light) | components/Logo (dark variant now wired) |
+| ThemeToggle | `ThemeToggle` | `className` | Light, Dark, Match device as a radio menu; the trigger names the current choice ("Theme: match device (now dark)") | components/ThemeButton |
+
+Helpers also exported: `cx()` (class join, no conflict resolution: prefer props over overriding utilities), `writeClipboard()` (throws unless the write is confirmed), `useFieldControl()` (wire a custom control into a Field). From `@/lib/theme`: `ThemeProvider`, `useTheme()` (`theme`, `resolvedTheme`, `setTheme`), `readToken()`, `THEME_STORAGE_KEY`.
+
+### Integration notes for other roles
+
+- **lead (`main.tsx`):** wrap the app in `<ThemeProvider>` from `@/lib/theme`. `index.css` is already imported there. Until then `useTheme()` and `ThemeToggle` throw by design.
+- **keys:** show the new key once with `CopyButton` (never a toast, never the query cache: must-not-regress 4). Keep the key text selectable beside the button so a failed copy is recoverable. Revoke and roll go through `ConfirmDialog` with `subject` set to the key's name and prefix; pass `() => mutation.mutateAsync(id)` to get pending, error and close-on-success for free.
+- **reader:** the version picker is `SearchSelect` (client filtering over the full list, or `onQueryChange` plus `filterOptions={false}` to keep the server-side debounced search). Scripture uses `font-serif text-scripture`; set `--reader-scale` on the reading column for the text-size setting. Verse highlight is `bg-highlight`. Set `lang` and `dir` on the scripture container.
+- **usage, overview:** render every metric through `Stat`, passing `null` on error. Chart colours come from `readToken("--chart-1")` and friends, re-read when `resolvedTheme` changes.
+- **ia-navigation:** mobile navigation is `Sheet` + `SheetContent side="left"`; `Logo product` and `ThemeToggle` go in both shells. Nav links are TanStack `Link`s styled with tokens (`text-ink-secondary`, active `text-accent-text`); use `Button asChild` only for button-shaped links.
+- **page-migration:** `components/CodeBlock.tsx` is now a one-line re-export of the ds CodeBlock; switch the imports to `@/components/ds` and delete it. Forms use a native `<form onSubmit>` with `Button type="submit"` (AUDIT finding 18).
 
 ## Not provided
 
-- **Stock Tailwind palette** (`gray-*`, `indigo-*`, `white`, `black`). Use the semantic utilities. The palette stays compiled only until Phase 4 finishes, then `--color-*: initial` removes it.
+- **Stock Tailwind palette** (`gray-*`, `indigo-*`, `white`, `black`). Use the semantic utilities. The palette stays compiled only until Phase 4 finishes, then `--color-*: initial` removes it. Same for the deprecated `primary-*` aliases.
 - **Space Grotesk and IBM Plex Mono.** Not loaded; eyebrows use Plus Jakarta Sans with tracking (BRIEF §4).
+- **Syntax highlighting.** CodeBlock shows the language as a label. A highlighter is a new dependency and needs a BOARD decision.
+- **Toasts.** Feedback stays next to the action (CopyButton, Alert, Field errors). A toast that outlives the banner must never carry a show-once key.
+- **Link primitive.** Use TanStack `Link` with token classes, or `Button asChild` when it should look like a button. External links keep `rel="noopener noreferrer"`.
+- **Pagination, breadcrumbs, avatars, date pickers, sliders, tag inputs, rich text.** None is needed by BRIEF §5 and §6, and several would need forbidden dependencies (BRIEF §2). Ask design-system first if a page needs one.
+- **Charts.** recharts stays on the usage route, lazy-loaded; theme it with `readToken`.
+- **Virtualised lists.** SearchSelect caps rendered rows instead. If the translations catalog needs all 1,288 rows on one page, page-migration paginates with Buttons; ask before adding a virtualisation dependency.
 
 ## Change log
 
 | Date | Change | Consumers affected |
 |---|---|---|
 | 2026-10-14 | Token layers, translation table and contrast pairs published | everyone |
+| 2026-10-14 | 30 primitives, `ThemeProvider`, `readToken`, `touch-target` utility, and the dev gallery published | everyone |
+| 2026-10-14 | `components/CodeBlock.tsx` replaced by a re-export of the ds CodeBlock (same `tabs` prop). Not breaking | page-migration (LandingPage, QuickStartPage) |
+| 2026-10-14 | SearchSelect gains server-side search (`onQueryChange`, `filterOptions`, `loading`) | reader |
