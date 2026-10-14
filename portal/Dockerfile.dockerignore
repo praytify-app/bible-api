@@ -1,0 +1,14 @@
+# BuildKit uses this instead of /.dockerignore for `-f portal/Dockerfile`.
+# The root ignore file is written for the gateway image and excludes portal/.
+*
+!portal
+!packages/embed
+**/node_modules
+**/dist
+**/.env
+**/.env.*
+!**/.env.example
+**/.pnpm-store
+portal/e2e/results
+portal/playwright-report
+portal/test-results
