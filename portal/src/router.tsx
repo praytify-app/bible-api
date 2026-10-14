@@ -3,11 +3,12 @@ import {
   createRoute,
   createRouter,
   lazyRouteComponent,
-  Outlet,
   parseSearchWith,
   stringifySearchWith,
 } from "@tanstack/react-router";
+import { AppRoot } from "./components/shell/AppRoot";
 import { DashboardShell } from "./components/shell/DashboardShell";
+import { pageTitle, SITE_NAME } from "./components/shell/document-title";
 import { PublicShell } from "./components/shell/PublicShell";
 import { ReaderHome } from "./components/shell/ReaderHome";
 import { validateLoginSearch } from "./features/auth/redirect";
@@ -19,7 +20,7 @@ import { NotFoundPage, RouteErrorPage, RoutePending } from "./components/shell/R
 // chunk, so recharts reaches the browser only on /dashboard/usage.
 
 const rootRoute = createRootRoute({
-  component: Outlet,
+  component: AppRoot,
   // Unknown URLs outside the dashboard get the public frame, so the nav still works.
   notFoundComponent: () => (
     <PublicShell>
@@ -39,12 +40,14 @@ const publicRoute = createRoute({
 const indexRoute = createRoute({
   getParentRoute: () => publicRoute,
   path: "/",
+  staticData: { title: `${SITE_NAME}: scripture for every screen` },
   component: lazyRouteComponent(() => import("./pages/LandingPage"), "LandingPage"),
 });
 
 const loginRoute = createRoute({
   getParentRoute: () => publicRoute,
   path: "/login",
+  staticData: { title: pageTitle("Sign in") },
   // `?redirect=` brings a bounced visitor back to the dashboard page they asked for.
   validateSearch: validateLoginSearch,
   component: lazyRouteComponent(() => import("./pages/LoginPage"), "LoginPage"),
@@ -53,28 +56,33 @@ const loginRoute = createRoute({
 const docsRoute = createRoute({
   getParentRoute: () => publicRoute,
   path: "/docs",
+  staticData: { title: pageTitle("API reference") },
   component: lazyRouteComponent(() => import("./pages/DocsPage"), "DocsPage"),
 });
 
 const quickstartRoute = createRoute({
   getParentRoute: () => publicRoute,
   path: "/docs/quickstart",
+  staticData: { title: pageTitle("Quick start") },
   component: lazyRouteComponent(() => import("./pages/QuickStartPage"), "QuickStartPage"),
 });
 
 const translationsRoute = createRoute({
   getParentRoute: () => publicRoute,
   path: "/docs/translations",
+  staticData: { title: pageTitle("Translations") },
   component: lazyRouteComponent(() => import("./pages/TranslationsPage"), "TranslationsPage"),
 });
 
 const embedRoute = createRoute({
   getParentRoute: () => publicRoute,
   path: "/embed",
+  staticData: { title: pageTitle("Embed builder") },
   component: lazyRouteComponent(() => import("./pages/EmbedPage"), "EmbedPage"),
 });
 
 // Resumes the last chapter read in this browser (features/reader/last-read).
+// No title on either reader route: the reader titles itself by chapter.
 const readIndexRoute = createRoute({
   getParentRoute: () => publicRoute,
   path: "/read",
@@ -109,18 +117,21 @@ const dashboardRoute = createRoute({
 const dashboardIndexRoute = createRoute({
   getParentRoute: () => dashboardRoute,
   path: "/",
+  staticData: { title: pageTitle("Dashboard") },
   component: lazyRouteComponent(() => import("./pages/DashboardOverview"), "DashboardOverview"),
 });
 
 const dashboardKeysRoute = createRoute({
   getParentRoute: () => dashboardRoute,
   path: "/keys",
+  staticData: { title: pageTitle("API keys") },
   component: lazyRouteComponent(() => import("./pages/ApiKeysPage"), "ApiKeysPage"),
 });
 
 const dashboardUsageRoute = createRoute({
   getParentRoute: () => dashboardRoute,
   path: "/usage",
+  staticData: { title: pageTitle("Usage") },
   // `?days=7|90` and `?keyId=`, so links from the key manager type-check.
   validateSearch: validateUsageSearch,
   component: lazyRouteComponent(() => import("./pages/UsagePage"), "UsagePage"),
@@ -129,12 +140,14 @@ const dashboardUsageRoute = createRoute({
 const dashboardEmbedRoute = createRoute({
   getParentRoute: () => dashboardRoute,
   path: "/embed",
+  staticData: { title: pageTitle("Embed builder") },
   component: lazyRouteComponent(() => import("./pages/EmbedPage"), "EmbedPage"),
 });
 
 const dashboardSettingsRoute = createRoute({
   getParentRoute: () => dashboardRoute,
   path: "/settings",
+  staticData: { title: pageTitle("Settings") },
   component: lazyRouteComponent(() => import("./pages/SettingsPage"), "SettingsPage"),
 });
 
@@ -175,5 +188,9 @@ export const router = createRouter({
 declare module "@tanstack/react-router" {
   interface Register {
     router: typeof router;
+  }
+  interface StaticDataRouteOption {
+    /** Full document title. Omit it where the page titles itself (the reader). */
+    title?: string;
   }
 }

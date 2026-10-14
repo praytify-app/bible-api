@@ -1,5 +1,6 @@
 import { Link, useRouter, type ErrorComponentProps } from "@tanstack/react-router";
 import { Button, PageHeader, Spinner } from "@/components/ds";
+import { pageTitle, useDocumentTitle } from "./document-title";
 
 /** Shown by the router while a lazy page's code loads (after its pending delay). */
 export function RoutePending() {
@@ -12,6 +13,8 @@ export function RoutePending() {
 
 export function NotFoundPage({ home = "/" }: { home?: "/" | "/dashboard" }) {
   const inDashboard = home === "/dashboard";
+  // No route matched, so there is no route title to apply; the page sets its own.
+  useDocumentTitle(pageTitle("Page not found"));
   return (
     <div className="mx-auto max-w-content px-4 py-16 sm:px-6 sm:py-24">
       <PageHeader
