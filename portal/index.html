@@ -20,27 +20,8 @@
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <link rel="icon" type="image/png" sizes="96x96" href="/favicon.png" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
-    <!--
-      Set data-theme before first paint so a dark-mode reader never sees a cream
-      flash. Mirrors resolveTheme() in src/lib/theme.tsx: keep the two in step.
-      If a Content-Security-Policy is added, allow this script by hash.
-    -->
-    <script>
-      (function () {
-        var pref = "system";
-        try {
-          var stored = localStorage.getItem("pb-theme");
-          if (stored === "light" || stored === "dark" || stored === "system") pref = stored;
-        } catch (e) {}
-        var dark =
-          pref === "dark" ||
-          (pref === "system" && !!window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches);
-        var theme = dark ? "dark" : "light";
-        document.documentElement.setAttribute("data-theme", theme);
-        var metas = document.querySelectorAll('meta[name="theme-color"]');
-        for (var i = 0; i < metas.length; i++) metas[i].setAttribute("content", dark ? "#1A1411" : "#FAF6F1");
-      })();
-    </script>
+    <!-- Blocking on purpose: sets data-theme before first paint. -->
+    <script src="/theme-init.js"></script>
   </head>
   <body>
     <div id="root"></div>

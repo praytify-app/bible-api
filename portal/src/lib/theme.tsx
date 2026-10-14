@@ -12,7 +12,7 @@ import {
 export type ThemePreference = "light" | "dark" | "system";
 export type ResolvedTheme = "light" | "dark";
 
-/** localStorage key. index.html reads the same key before first paint. */
+/** localStorage key. public/theme-init.js reads the same key before first paint. */
 export const THEME_STORAGE_KEY = "pb-theme";
 
 const DARK_QUERY = "(prefers-color-scheme: dark)";
@@ -21,7 +21,7 @@ function isPreference(value: unknown): value is ThemePreference {
   return value === "light" || value === "dark" || value === "system";
 }
 
-/** Same rule as the inline script in index.html. Keep the two in step. */
+/** Same rule as public/theme-init.js. Keep the two in step. */
 export function resolveTheme(preference: ThemePreference, systemPrefersDark: boolean): ResolvedTheme {
   if (preference === "system") return systemPrefersDark ? "dark" : "light";
   return preference;
