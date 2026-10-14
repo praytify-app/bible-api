@@ -8,10 +8,12 @@
     "node": ">=22.13.0"
   },
   "scripts": {
+    "predev": "node scripts/copy-embed.mjs",
     "dev": "vite",
     "typecheck": "tsc -b",
     "lint": "eslint .",
     "test": "vitest run",
+    "prebuild": "node scripts/copy-embed.mjs",
     "build": "tsc -b && vite build",
     "contrast": "node scripts/contrast-check.mjs",
     "preview": "vite preview",
