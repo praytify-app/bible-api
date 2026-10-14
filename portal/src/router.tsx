@@ -11,6 +11,7 @@ import { DashboardShell } from "./components/shell/DashboardShell";
 import { PublicShell } from "./components/shell/PublicShell";
 import { ReaderHome } from "./components/shell/ReaderHome";
 import { validateLoginSearch } from "./features/auth/redirect";
+import { validateUsageSearch } from "./features/usage/search";
 import { NotFoundPage, RouteErrorPage, RoutePending } from "./components/shell/RouteStates";
 
 // Code-based routes (AUDIT must-not-regress 16). Every URL from before the
@@ -85,15 +86,14 @@ export interface ReaderSearch {
   v?: string;
 }
 
-const VERSE_SELECTION = /^[1-9]\d{0,2}(?:-[1-9]\d{0,2})?$/;
-
 const readChapterRoute = createRoute({
   getParentRoute: () => publicRoute,
   path: "/read/$version/$book/$chapter",
-  // A malformed `v` is dropped rather than failing the page: the chapter still opens.
+  // The reader parses and validates `v` itself (features/reader), so the route
+  // only keeps it a string. Anything else is dropped and the chapter still opens.
   validateSearch: (search: Record<string, unknown>): ReaderSearch => {
     const v = typeof search.v === "number" ? String(search.v) : search.v;
-    return typeof v === "string" && VERSE_SELECTION.test(v) ? { v } : {};
+    return typeof v === "string" && v !== "" ? { v } : {};
   },
   component: lazyRouteComponent(() => import("./pages/ReadPage"), "ReadPage"),
 });
@@ -121,6 +121,8 @@ const dashboardKeysRoute = createRoute({
 const dashboardUsageRoute = createRoute({
   getParentRoute: () => dashboardRoute,
   path: "/usage",
+  // `?days=7|90` and `?keyId=`, so links from the key manager type-check.
+  validateSearch: validateUsageSearch,
   component: lazyRouteComponent(() => import("./pages/UsagePage"), "UsagePage"),
 });
 

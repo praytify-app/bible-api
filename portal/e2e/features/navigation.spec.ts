@@ -216,8 +216,10 @@ test("charts load only on the usage page", async ({ page, baseURL }) => {
   expect(chartRequests, "recharts requested on a public page").toEqual([]);
 
   await signUp(page, baseURL!);
-  await page.goto("/dashboard/usage");
+  // The usage route's validator keeps a non-default period in the URL.
+  await page.goto("/dashboard/usage?days=7");
   await expect.poll(() => chartRequests.length).toBeGreaterThan(0);
+  await expect(page).toHaveURL(/\/dashboard\/usage\?days=7$/);
 });
 
 for (const theme of ["light", "dark"] as Theme[]) {
