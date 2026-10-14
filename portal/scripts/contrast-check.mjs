@@ -65,9 +65,9 @@ function luminance({ r, g, b }) {
   return 0.2126 * lin(r) + 0.7152 * lin(g) + 0.0722 * lin(b);
 }
 
-function ratio(fgToken, bgToken, vars) {
-  // Translucent backgrounds sit on the page surface.
-  const page = parseColor(vars["--surface-base"], vars);
+function ratio(fgToken, bgToken, vars, baseToken = "--surface-base") {
+  // Translucent backgrounds sit on the page surface unless the pair names another base.
+  const page = parseColor(vars[baseToken], vars);
   const bgRaw = parseColor(vars[bgToken], vars);
   const bg = bgRaw.a < 1 ? over(bgRaw, page) : bgRaw;
   const fgRaw = parseColor(vars[fgToken], vars);
@@ -80,7 +80,7 @@ const SURFACES = ["--surface-base", "--surface-raised", "--surface-sunken", "--s
 const TEXT = 4.5; // WCAG 1.4.3 normal text
 const UI = 3; // WCAG 1.4.11 non-text: control edges, focus indicators, chart marks
 
-// [foreground, background, minimum, what the pair is used for]
+// [foreground, background, minimum, what the pair is used for, base for a translucent background]
 const pairs = [
   ...["--ink", "--ink-secondary", "--ink-muted", "--accent-text"].flatMap((fg) =>
     SURFACES.map((bg) => [fg, bg, TEXT, "text"]),
@@ -106,6 +106,10 @@ const pairs = [
   ...SURFACES.map((bg) => ["--focus", bg, UI, "focus outline"]),
   ["--accent", "--surface-base", UI, "primary button edge on page"],
   ["--accent", "--surface-raised", UI, "primary button edge on card"],
+  // bg-committed is the same indigo in both themes. Its lightest point is the
+  // 10% white highlight over indigo-600; labels and the focus outline sit on it.
+  ["--ink-on-accent", "--sd-indigo-600", TEXT, "label and focus outline on committed panel"],
+  ["--ink-on-accent", "--sd-committed-highlight", TEXT, "same, under the panel highlight", "--sd-indigo-600"],
   ["--chart-1", "--surface-raised", UI, "chart series 1"],
   ["--chart-2", "--surface-raised", UI, "chart series 2"],
 ];
@@ -120,9 +124,9 @@ const decorative = [
 const markdown = process.argv.includes("--markdown");
 const short = (t) => t.replace(/^--/, "");
 let failures = 0;
-const rows = pairs.map(([fg, bg, min, use]) => {
-  const l = ratio(fg, bg, themes.light);
-  const d = ratio(fg, bg, themes.dark);
+const rows = pairs.map(([fg, bg, min, use, base]) => {
+  const l = ratio(fg, bg, themes.light, base);
+  const d = ratio(fg, bg, themes.dark, base);
   const ok = l >= min && d >= min;
   if (!ok) failures++;
   return { fg: short(fg), bg: short(bg), l, d, min, use, verdict: ok ? "pass" : "FAIL" };

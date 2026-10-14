@@ -63,7 +63,7 @@ function Section({ title, children }: { title: string; children: ReactNode }) {
   );
 }
 
-export function Gallery({ open }: { open: string | null }) {
+export function Gallery({ open, focus }: { open: string | null; focus?: string | null }) {
   const [version, setVersion] = useState<string | null>("WEB");
   const [confirmOpen, setConfirmOpen] = useState(open === "confirm");
   const [dialogOpen, setDialogOpen] = useState(open === "dialog");
@@ -265,6 +265,10 @@ export function Gallery({ open }: { open: string | null }) {
             Get started
           </Eyebrow>
           <p className="mt-3 font-serif text-h2 font-medium italic">Make your first call in a minute.</p>
+          {/* On a committed panel the call to action is secondary (light), never primary indigo on indigo. */}
+          <Button variant="secondary" className="mt-5" autoFocus={focus === "committed"}>
+            Get an API key
+          </Button>
         </Card>
       </Section>
 

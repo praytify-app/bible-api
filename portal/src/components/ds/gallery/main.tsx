@@ -17,7 +17,10 @@ if (forced === "light" || forced === "dark") {
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
     <ThemeProvider>
-      <Gallery open={new URLSearchParams(location.search).get("open")} />
+      <Gallery
+        open={new URLSearchParams(location.search).get("open")}
+        focus={new URLSearchParams(location.search).get("focus")}
+      />
     </ThemeProvider>
   </StrictMode>,
 );
