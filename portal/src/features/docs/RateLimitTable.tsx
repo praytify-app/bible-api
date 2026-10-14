@@ -2,7 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Alert, SkeletonText, Table, TableBody, TableCell, TableHead, TableHeaderCell, TableRow } from "@/components/ds";
 import { plan, type Limits } from "@/lib/api";
 import { useSession } from "@/lib/auth";
-import { PUBLISHED_LIMITS, TIER_NAMES as tierNames } from "./published-limits";
+import { TIER_NAMES as tierNames, usePublishedLimits } from "./published-limits";
 
 const count = new Intl.NumberFormat();
 
@@ -38,11 +38,6 @@ export function LimitsTable({ caption, rows }: { caption: string; rows: LimitsRo
   );
 }
 
-const publishedRows: LimitsRow[] = [
-  { who: "Anonymous, per IP", limits: PUBLISHED_LIMITS.anonymous },
-  { who: "Free account, per key kind", limits: PUBLISHED_LIMITS.free },
-  { who: "Partner, per key kind", limits: PUBLISHED_LIMITS.partner },
-];
 
 /**
  * Visitors see the published limits. Signed-in developers see their own plan,
@@ -52,6 +47,12 @@ export function RateLimitTable() {
   const { data: session, isPending: sessionPending } = useSession();
   const signedIn = Boolean(session?.user);
   const current = useQuery({ queryKey: ["plan"], queryFn: plan.get, enabled: signedIn });
+  const shown = usePublishedLimits();
+  const publishedRows: LimitsRow[] = [
+    { who: "Anonymous, per IP", limits: shown.anonymous },
+    { who: "Free account, per key kind", limits: shown.free },
+    { who: "Partner, per key kind", limits: shown.partner },
+  ];
 
   if (sessionPending || (signedIn && current.isPending)) {
     return (
@@ -81,7 +82,10 @@ export function RateLimitTable() {
       {signedIn && current.isError && (
         <Alert tone="warning">We could not load your plan, so these are the published limits.</Alert>
       )}
-      <LimitsTable caption="Published rate limits" rows={publishedRows} />
+      <LimitsTable
+        caption={shown.source === "live" ? "Rate limits on this server" : "Published rate limits"}
+        rows={publishedRows}
+      />
     </div>
   );
 }

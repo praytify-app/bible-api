@@ -142,7 +142,7 @@ test.describe("docs", () => {
     await expect(browserSnippet).toContainText("pb_pk_");
     await expect(browserSnippet).not.toContainText("pb_sk_");
     // Signed out: the published limits.
-    await expect(page.getByRole("table", { name: "Published rate limits" })).toContainText("20,000");
+    await expect(page.getByRole("table", { name: /^(Rate limits on this server|Published rate limits)$/ })).toContainText("20,000");
   });
 
   test("quick start shows the signed-in developer's own plan", async ({ page, baseURL }) => {
@@ -286,7 +286,7 @@ test.describe("settings", () => {
 
 const publicPages: { path: string; ready: (page: Page) => Promise<void> }[] = [
   { path: "/login", ready: (p) => expect(p.getByRole("heading", { level: 1 })).toBeVisible() },
-  { path: "/docs/quickstart", ready: (p) => expect(p.getByRole("table", { name: "Published rate limits" })).toBeVisible() },
+  { path: "/docs/quickstart", ready: (p) => expect(p.getByRole("table", { name: /^(Rate limits on this server|Published rate limits)$/ })).toBeVisible() },
   { path: "/docs/translations", ready: (p) => expect(p.getByRole("table", { name: "Bible translations" })).toBeVisible() },
 ];
 

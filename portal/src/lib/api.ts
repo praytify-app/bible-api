@@ -206,6 +206,17 @@ export const plan = {
   get: () => fetchAPI<Plan>("/api/dashboard/plan"),
 };
 
+export interface PublicLimits {
+  anonymous: Limits;
+  tiers: Record<Tier, { secret: Limits; publishable: Limits }>;
+  maxKeysPerUser: number;
+}
+
+/** The limits this deployment enforces, for public pages. No credentials. */
+export const limits = {
+  get: () => fetchPublic<PublicLimits>("/api/limits"),
+};
+
 // --- Profile -------------------------------------------------------------------
 
 export interface DeveloperProfile {

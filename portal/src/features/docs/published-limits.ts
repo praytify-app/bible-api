@@ -1,10 +1,10 @@
-import type { Limits, Tier } from "@/lib/api";
+import { useQuery } from "@tanstack/react-query";
+import { limits, type Limits, type Tier } from "@/lib/api";
 
 /**
- * The limits README.md publishes ("Use the hosted API"). Public pages show
- * these to visitors who are not signed in; signed-in developers see their
- * live plan from GET /api/dashboard/plan instead. Keep in step with the
- * README and with src/plans.ts.
+ * The defaults README.md publishes. Public pages read the live values from
+ * GET /api/limits and fall back to these only when the API is unreachable,
+ * so a deployment that changes its limits never shows stale numbers.
  */
 export const PUBLISHED_LIMITS = {
   anonymous: { perMinute: 120, perDay: 20_000 },
@@ -16,3 +16,26 @@ export const PUBLISHED_LIMITS = {
 export const HOSTED_API_URL = "https://api.praytify.bible";
 
 export const TIER_NAMES: Record<Tier, string> = { free: "Free", partner: "Partner", internal: "Internal" };
+
+export interface ShownLimits {
+  anonymous: Limits;
+  free: Limits;
+  partner: Limits;
+  /** "live" when read from this deployment, "published" when falling back to the README defaults. */
+  source: "live" | "published";
+}
+
+/** Live limits from the gateway, or the published defaults while loading or if it is unreachable. */
+export function usePublishedLimits(): ShownLimits & { isPending: boolean } {
+  const q = useQuery({ queryKey: ["public-limits"], queryFn: limits.get, staleTime: 5 * 60_000 });
+  if (q.data) {
+    return {
+      anonymous: q.data.anonymous,
+      free: q.data.tiers.free.secret,
+      partner: q.data.tiers.partner.secret,
+      source: "live",
+      isPending: false,
+    };
+  }
+  return { ...PUBLISHED_LIMITS, source: "published", isPending: q.isPending };
+}

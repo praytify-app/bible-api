@@ -16,7 +16,7 @@ import {
   TableHeaderCell,
   TableRow,
 } from "@/components/ds";
-import { HOSTED_API_URL, PUBLISHED_LIMITS } from "@/features/docs/published-limits";
+import { HOSTED_API_URL, usePublishedLimits } from "@/features/docs/published-limits";
 import { RateLimitTable } from "@/features/docs/RateLimitTable";
 import { SectionNav, type SectionLink } from "@/features/docs/SectionNav";
 import { API_URL } from "@/lib/api";
@@ -76,6 +76,7 @@ export function QuickStartPage() {
   const signedIn = Boolean(session?.user);
   const selfHosted = API_URL !== HOSTED_API_URL;
   const portalOrigin = window.location.origin;
+  const shownLimits = usePublishedLimits();
   const sdkBase = selfHosted ? `{ baseUrl: "${API_URL}" }` : "";
   const sdkBaseKey = selfHosted ? `, baseUrl: "${API_URL}"` : "";
   const embedApi = selfHosted ? ` api="${API_URL}"` : "";
@@ -99,8 +100,8 @@ export function QuickStartPage() {
                 Every read route is public. Call it from a browser, a server, or the command line with no
                 Authorization header. Anonymous requests share a limit of{" "}
                 <strong>
-                  {count.format(PUBLISHED_LIMITS.anonymous.perMinute)} a minute and{" "}
-                  {count.format(PUBLISHED_LIMITS.anonymous.perDay)} a day per IP address
+                  {count.format(shownLimits.anonymous.perMinute)} a minute and{" "}
+                  {count.format(shownLimits.anonymous.perDay)} a day per IP address
                 </strong>
                 .
               </p>
