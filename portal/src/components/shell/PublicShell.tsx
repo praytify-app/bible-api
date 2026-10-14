@@ -15,7 +15,7 @@ import {
   SheetTrigger,
   ThemeToggle,
 } from "@/components/ds";
-import { docsNav, GITHUB_REPO_URL, PRAYTIFY_URL, publicNav, SELF_HOST_URL, type NavItem } from "@/lib/nav";
+import { docsNav, PRAYTIFY_URL, publicNav, SELF_HOST_URL, SOURCE_LABEL, SOURCE_URL, type NavItem } from "@/lib/nav";
 import { SessionAction } from "./SessionAction";
 import { MAIN_ID, SkipLink } from "./SkipLink";
 
@@ -60,11 +60,13 @@ function PublicHeader() {
             </Link>
           ))}
           <DocsMenu />
-          <a href={GITHUB_REPO_URL} target="_blank" rel="noopener noreferrer" className={headerLink}>
-            GitHub
-            <ArrowUpRight aria-hidden className="size-4" />
-            <span className="sr-only">(opens in a new tab)</span>
-          </a>
+          {SOURCE_URL && (
+            <a href={SOURCE_URL} target="_blank" rel="noopener noreferrer" className={headerLink}>
+              {SOURCE_LABEL}
+              <ArrowUpRight aria-hidden className="size-4" />
+              <span className="sr-only">(opens in a new tab)</span>
+            </a>
+          )}
         </nav>
         <div className="ml-auto flex items-center gap-2">
           <ThemeToggle />
@@ -147,15 +149,17 @@ function MobileMenu() {
                 ))}
               </ul>
             </div>
-            <ul className="flex flex-col gap-1 border-t border-hairline pt-4">
-              <li>
-                <a href={GITHUB_REPO_URL} target="_blank" rel="noopener noreferrer" className={sheetLink}>
-                  GitHub
-                  <ArrowUpRight aria-hidden className="size-5 text-ink-muted" />
-                  <span className="sr-only">(opens in a new tab)</span>
-                </a>
-              </li>
-            </ul>
+            {SOURCE_URL && (
+              <ul className="flex flex-col gap-1 border-t border-hairline pt-4">
+                <li>
+                  <a href={SOURCE_URL} target="_blank" rel="noopener noreferrer" className={sheetLink}>
+                    {SOURCE_LABEL}
+                    <ArrowUpRight aria-hidden className="size-5 text-ink-muted" />
+                    <span className="sr-only">(opens in a new tab)</span>
+                  </a>
+                </li>
+              </ul>
+            )}
           </nav>
           <SessionAction fullWidth />
         </div>
@@ -176,13 +180,18 @@ const footerColumns: { title: string; links: FooterLink[] }[] = [
     ],
   },
   { title: "Docs", links: docsNav.map(({ label, to }) => ({ label, to })) },
-  {
-    title: "Open source",
-    links: [
-      { label: "Source on GitHub", href: GITHUB_REPO_URL },
-      { label: "Self-host it", href: SELF_HOST_URL },
-    ],
-  },
+  // Only when the source is public: the column is nothing but links to it.
+  ...(SOURCE_URL && SELF_HOST_URL
+    ? [
+        {
+          title: "Open source",
+          links: [
+            { label: SOURCE_LABEL === "GitHub" ? "Source on GitHub" : "Source code", href: SOURCE_URL },
+            { label: "Self-host it", href: SELF_HOST_URL },
+          ],
+        },
+      ]
+    : []),
 ];
 
 function SiteFooter() {

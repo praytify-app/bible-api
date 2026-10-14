@@ -1,10 +1,10 @@
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import { ArrowRight, ArrowUpRight } from "lucide-react";
-import { useMemo, type ReactNode } from "react";
+import type { ReactNode } from "react";
 import { Button, Card, CodeBlock, Eyebrow, PageHeader, SkeletonText, type CodeSnippet } from "@/components/ds";
-import { API_URL, bible, translations } from "@/lib/api";
-import { GITHUB_REPO_URL, SELF_HOST_URL } from "@/lib/nav";
+import { API_URL, bible } from "@/lib/api";
+import { SELF_HOST_URL, SOURCE_LABEL, SOURCE_URL } from "@/lib/nav";
 
 // Home for the Visitor persona (BRIEF §5): what this is, then proof that it
 // works. Every number on the page is fetched; every claim matches README.md.
@@ -42,10 +42,12 @@ const passage = await bible.passage("John 3:16-18", { version: "WEB" });`,
   },
 ];
 
-// Verbatim from the README's self-host section.
-const selfHostSnippet = `git clone ${GITHUB_REPO_URL}.git praytify-bible && cd praytify-bible
+// The README's self-host steps, cloned from the configured public source.
+const selfHostSnippet = SOURCE_URL
+  ? `git clone ${SOURCE_URL}.git praytify-bible && cd praytify-bible
 docker compose up -d
-docker compose --profile seed run --rm seed`;
+docker compose --profile seed run --rm seed`
+  : null;
 
 const startingPassages = [
   { label: "Psalm 23", book: "PSA", chapter: "23" },
@@ -125,27 +127,31 @@ export function LandingPage() {
 
       <DecisionPanel />
 
-      <Section index="04" eyebrow="Open source" spacing="dense" flip>
-        <SectionText
-          title="Run the whole thing yourself."
-          body="The code is MIT licensed. One Docker Compose file brings up Postgres, the engine, the gateway, and this portal. Scripture is different: each translation keeps its own licence, recorded with its text."
-          action={
-            <div className="flex flex-wrap items-center gap-x-6 gap-y-3">
-              <Button asChild variant="secondary" trailingIcon={<ArrowUpRight aria-hidden />}>
-                <a href={GITHUB_REPO_URL} target="_blank" rel="noopener noreferrer">
-                  Source on GitHub<span className="sr-only"> (opens in a new tab)</span>
-                </a>
-              </Button>
-              <Button asChild variant="link" trailingIcon={<ArrowUpRight aria-hidden />}>
-                <a href={SELF_HOST_URL} target="_blank" rel="noopener noreferrer">
-                  Self-hosting guide<span className="sr-only"> (opens in a new tab)</span>
-                </a>
-              </Button>
-            </div>
-          }
-        />
-        <CodeBlock code={selfHostSnippet} language="bash" label="Terminal" />
-      </Section>
+      {/* Only with a public source to point at (VITE_SOURCE_URL); the section is its links. */}
+      {SOURCE_URL && SELF_HOST_URL && selfHostSnippet && (
+        <Section index="04" eyebrow="Open source" spacing="dense" flip>
+          <SectionText
+            title="Run the whole thing yourself."
+            body="The code is MIT licensed. One Docker Compose file brings up Postgres, the engine, the gateway, and this portal. Scripture is different: each translation keeps its own licence, recorded with its text."
+            action={
+              <div className="flex flex-wrap items-center gap-x-6 gap-y-3">
+                <Button asChild variant="secondary" trailingIcon={<ArrowUpRight aria-hidden />}>
+                  <a href={SOURCE_URL} target="_blank" rel="noopener noreferrer">
+                    {SOURCE_LABEL === "GitHub" ? "Source on GitHub" : "Source code"}
+                    <span className="sr-only"> (opens in a new tab)</span>
+                  </a>
+                </Button>
+                <Button asChild variant="link" trailingIcon={<ArrowUpRight aria-hidden />}>
+                  <a href={SELF_HOST_URL} target="_blank" rel="noopener noreferrer">
+                    Self-hosting guide<span className="sr-only"> (opens in a new tab)</span>
+                  </a>
+                </Button>
+              </div>
+            }
+          />
+          <CodeBlock code={selfHostSnippet} language="bash" label="Terminal" />
+        </Section>
+      )}
     </div>
   );
 }
@@ -176,23 +182,27 @@ function Hero() {
   );
 }
 
+const count = (value: number) => <strong className="text-h4 font-semibold tabular-nums text-ink">{numberFormat.format(value)}</strong>;
+
 /**
- * Live size of the catalog. Shares the translations page's query, so moving on
- * to /docs/translations is instant. Renders nothing until the numbers are real.
+ * Live size of the catalog from two small requests (a version count from
+ * pagination metadata, and the languages list), not a download of the whole
+ * catalog. Renders nothing while loading, on error, or when the catalog is empty.
  */
 function CatalogCounts() {
-  const { data } = useQuery({ queryKey: ["translations"], queryFn: () => translations.list() });
-  const counts = useMemo(() => {
-    if (!data || data.length === 0) return null;
-    const languages = new Set(data.map((t) => t.languageCode?.toLowerCase()).filter(Boolean));
-    return { versions: data.length, languages: languages.size };
-  }, [data]);
-  if (!counts) return null;
+  const { data } = useQuery({ queryKey: ["catalog-stats"], queryFn: () => bible.catalogStats(), staleTime: 60 * 60 * 1000 });
+  if (!data || data.languages === 0) return null;
   return (
     <p className="flex flex-wrap items-baseline gap-x-2 gap-y-1 border-t border-hairline pt-5 text-body-sm text-ink-secondary">
+      {/* The version total is optional in the API's metadata; say only what we know. */}
       <span>
-        <strong className="text-h4 font-semibold tabular-nums text-ink">{numberFormat.format(counts.versions)}</strong> translations
-        in <strong className="text-h4 font-semibold tabular-nums text-ink">{numberFormat.format(counts.languages)}</strong> languages.
+        {data.versions !== null ? (
+          <>
+            {count(data.versions)} translations in {count(data.languages)} languages.
+          </>
+        ) : (
+          <>Scripture in {count(data.languages)} languages.</>
+        )}
       </span>
       <Link to="/docs/translations" className="font-semibold text-accent-text underline-offset-4 hover:underline">
         Browse the catalog

@@ -4,9 +4,23 @@ import { BookOpen, ChartColumn, CodeXml, KeyRound, LayoutDashboard, Settings, ty
 // dashboard sidebar), organised by what each persona does (BRIEF §5). Every
 // item points at a registered route or a real external page.
 
-/** Target of the GitHub links. BRIEF §11: show only while the repository is public. */
-export const GITHUB_REPO_URL = "https://github.com/praytify-app/bible-api";
-export const SELF_HOST_URL = `${GITHUB_REPO_URL}#self-host`;
+/**
+ * Public source repository, from the VITE_SOURCE_URL build argument. Every
+ * source link (header, menu, footer, landing) renders only when it is set, so
+ * no build points visitors at a private or missing repository (BRIEF §11).
+ */
+export const SOURCE_URL: string | undefined =
+  import.meta.env.VITE_SOURCE_URL?.trim().replace(/\/+$/, "").replace(/\.git$/, "") || undefined;
+export const SELF_HOST_URL = SOURCE_URL ? `${SOURCE_URL}#self-host` : undefined;
+
+/** "GitHub" when the source lives there, otherwise the neutral "Source". */
+export const SOURCE_LABEL = (() => {
+  try {
+    return SOURCE_URL && new URL(SOURCE_URL).hostname === "github.com" ? "GitHub" : "Source";
+  } catch {
+    return "Source";
+  }
+})();
 export const PRAYTIFY_URL = "https://praytify.app";
 
 export interface NavItem {
