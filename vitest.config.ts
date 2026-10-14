@@ -10,6 +10,9 @@ export default defineConfig({
   cacheDir: "node_modules/.vite",
   test: {
     include: ["tests/**/*.test.ts"],
+    // Integration suites create and drop databases; give them room.
+    testTimeout: 30_000,
+    hookTimeout: 60_000,
     exclude: ["**/node_modules/**", ".worktrees/**", "portal/**", "packages/**"],
     fsModuleCachePath: "node_modules/.vitest-cache",
     env: { LOG_LEVEL: process.env.LOG_LEVEL ?? "silent" },

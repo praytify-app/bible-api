@@ -5,12 +5,14 @@
   "description": "Praytify Bible gateway: public API, developer accounts, API keys, quotas, and caching in front of the Open Bible API engine",
   "type": "module",
   "scripts": {
-    "dev": "tsx watch --env-file=.env src/index.ts",
+    "dev": "tsx watch --env-file-if-exists=.env src/index.ts",
     "build": "tsc",
-    "start": "node --env-file=.env dist/index.js",
+    "start": "node --enable-source-maps dist/index.js",
+    "typecheck": "tsc --noEmit",
     "db:generate": "drizzle-kit generate",
-    "db:migrate": "tsx --env-file=.env src/db/migrate.ts",
+    "db:migrate": "tsx --env-file-if-exists=.env src/db/migrate.ts",
     "test": "vitest run",
+    "test:int": "vitest run tests/integration",
     "test:watch": "vitest"
   },
   "dependencies": {

@@ -84,7 +84,8 @@ export async function dbUsageSink(rows: UsageEntry[]): Promise<void> {
         response_time_ms: r.responseTimeMs,
         user_agent: r.userAgent?.slice(0, 300) ?? null,
         ip_address: r.ipAddress?.slice(0, 45) ?? null,
-        created_at: r.createdAt,
+        // ISO string: postgres-js's bulk helper cannot serialise Date values.
+        created_at: r.createdAt.toISOString(),
       }))
     )}
   `;
