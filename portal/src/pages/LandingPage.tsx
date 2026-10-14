@@ -294,20 +294,10 @@ function SectionText({ title, body, action }: { title: string; body: string; act
   );
 }
 
-/**
- * The one committed panel: the point where a Visitor becomes an Integrator.
- * The global focus colour is indigo, invisible on this fill, so the panel
- * switches it to white for everything inside.
- */
+/** The one committed panel: the point where a Visitor becomes an Integrator. */
 function DecisionPanel() {
   return (
-    <Card
-      as="section"
-      variant="committed"
-      padding="lg"
-      aria-labelledby="decision-title"
-      className="my-8 [--focus:var(--ink-on-accent)] sm:my-12"
-    >
+    <Card as="section" variant="committed" padding="lg" aria-labelledby="decision-title" className="my-8 sm:my-12">
       <div className="flex flex-col gap-8 lg:flex-row lg:items-end lg:justify-between">
         <div className="flex max-w-measure flex-col gap-3">
           <h2 id="decision-title" className="text-h1 font-bold text-balance">

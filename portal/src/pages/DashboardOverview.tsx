@@ -145,13 +145,7 @@ const curlExample = `curl "${API_URL}/v1/verses?ref=Psalm%2023:1-4&version=WEB"`
 function FirstRun() {
   return (
     <>
-      <Card
-        as="section"
-        variant="committed"
-        padding="lg"
-        aria-labelledby="first-key-title"
-        className="[--focus:var(--ink-on-accent)]"
-      >
+      <Card as="section" variant="committed" padding="lg" aria-labelledby="first-key-title">
         <div className="flex max-w-measure flex-col gap-3">
           <h2 id="first-key-title" className="text-h2 font-bold">
             Create your first key.
