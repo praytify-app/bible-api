@@ -17,7 +17,7 @@ import {
   type SearchSelectOption,
 } from "@/components/ds";
 import { useTheme } from "@/lib/theme";
-import { API_URL, bible, type BibleVersion } from "@/lib/api";
+import { API_URL, ApiError, bible, type BibleVersion } from "@/lib/api";
 import { AccentField } from "./AccentField";
 import {
   configFromSearch,
@@ -57,8 +57,11 @@ function versionOption(version: BibleVersion): SearchSelectOption {
   };
 }
 
+// ApiError carries the API's own words. Anything else is the network (fetch
+// throws a bare TypeError), which reads better in plain language.
 function errorMessage(error: unknown): string {
-  return error instanceof Error ? error.message : "Something went wrong.";
+  if (error instanceof ApiError) return error.message;
+  return "Could not reach the Bible API. Check the connection and try again.";
 }
 
 const verseCount = (n: number) => `${n} ${n === 1 ? "verse" : "verses"}`;
@@ -85,7 +88,9 @@ export function EmbedBuilder({ inDashboard = false }: EmbedBuilderProps) {
   // preview and the URL do not fire on every keystroke.
   const reference = normalizeReference(useDebouncedValue(referenceDraft, REFERENCE_DEBOUNCE_MS));
   const settledVersionQuery = useDebouncedValue(versionQuery.trim(), VERSION_SEARCH_DEBOUNCE_MS);
-  // The engine searches from two characters; shorter queries filter the full list in the picker.
+  // The engine searches from two characters; shorter queries filter the full
+  // list in the picker. So do results still on their way: until they land, the
+  // previous list is on screen, and Enter must not pick an unfiltered row.
   const serverQuery = settledVersionQuery.length >= 2 ? settledVersionQuery : "";
 
   const versionInfo = useQuery({
@@ -220,7 +225,7 @@ export function EmbedBuilder({ inDashboard = false }: EmbedBuilderProps) {
                     searchPlaceholder="Name, language or abbreviation"
                     emptyMessage="No translation matches that search."
                     onQueryChange={setVersionQuery}
-                    filterOptions={serverQuery === ""}
+                    filterOptions={serverQuery === "" || versions.isPlaceholderData}
                     loading={versions.isFetching}
                   />
                 </Field>

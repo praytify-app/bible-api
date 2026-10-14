@@ -33,6 +33,13 @@ test("prefills from the reader's link and previews the real widget", async ({ pa
   );
 });
 
+test("accepts the reader's Embed link, which uses the book code", async ({ page }) => {
+  await openBuilder(page, "/embed?ref=JHN%203%3A16-18&version=WEB");
+  await expect(page.getByRole("textbox", { name: "Reference" })).toHaveValue("JHN 3:16-18");
+  await expect(preview(page).locator("sup")).toHaveText(["16", "17", "18"]);
+  await expect(page.getByRole("region", { name: "HTML example" })).toContainText('reference="JHN 3:16-18"');
+});
+
 test("copies a snippet that renders the same passage on a blank page", async ({ page, context, baseURL }) => {
   const portal = new URL(baseURL!);
   await context.grantPermissions(["clipboard-read", "clipboard-write"], { origin: portal.origin });
@@ -74,8 +81,19 @@ test("copies a snippet that renders the same passage on a blank page", async ({ 
 test("searches the catalog by keyboard and switches translation", async ({ page }) => {
   await openBuilder(page);
   await page.getByRole("button", { name: /^Translation World English Bible/ }).click();
+  await expect(page.getByRole("option", { name: /World English Bible \(WEB\)/ })).toBeVisible();
+
+  // Hold the server's answer so Enter lands while it is in flight: the rows on
+  // screen must already be filtered, never the full catalog from before.
+  const kingSearch = /\/v1\/versions\?.*search=king/;
+  await page.route(kingSearch, async (route) => {
+    await new Promise((resolve) => setTimeout(resolve, 1_500));
+    await route.continue();
+  });
+  const searched = page.waitForRequest(kingSearch);
   const search = page.getByRole("combobox", { name: "Search translations" });
   await search.fill("king");
+  await searched;
   await expect(page.getByRole("option", { name: /King James Version \(KJV\)/ })).toBeVisible();
   await search.press("Enter");
   await expect(preview(page).locator("cite")).toHaveText("John 3:16 (KJV)");
