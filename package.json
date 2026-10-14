@@ -1,8 +1,8 @@
 {
   "name": "praytify-bible",
-  "version": "0.3.0",
+  "version": "0.5.0",
   "private": true,
-  "description": "Developer platform gateway for the Open Bible API",
+  "description": "Praytify Bible gateway: public API, developer accounts, API keys, quotas, and caching in front of the Open Bible API engine",
   "type": "module",
   "scripts": {
     "dev": "tsx watch --env-file=.env src/index.ts",
@@ -14,24 +14,24 @@
     "test:watch": "vitest"
   },
   "dependencies": {
-    "@better-auth/drizzle-adapter": "^1.5.5",
-    "@hono/node-server": "^1.19.11",
-    "better-auth": "^1.5.5",
-    "drizzle-orm": "^0.45.1",
-    "hono": "^4.12.8",
-    "postgres": "^3.4.8",
-    "zod": "^4.3.6"
+    "@better-auth/drizzle-adapter": "^1.7.7",
+    "@hono/node-server": "^2.1.5",
+    "better-auth": "^1.7.7",
+    "drizzle-orm": "^0.45.4",
+    "hono": "^4.13.13",
+    "postgres": "^3.4.9",
+    "zod": "^4.6.7"
   },
   "devDependencies": {
-    "@types/node": "^25.5.0",
-    "drizzle-kit": "^0.31.9",
-    "tsx": "^4.21.0",
-    "typescript": "^5.9.3",
-    "vitest": "^4.1.0"
+    "@types/node": "^24.19.2",
+    "drizzle-kit": "^0.31.11",
+    "tsx": "^4.23.15",
+    "typescript": "^7.0.2",
+    "vitest": "^5.0.4"
   },
-  "pnpm": {
-    "peerDependencyRules": {
-      "ignoreMissing": ["drizzle-kit", "vitest"]
-    }
-  }
+  "license": "MIT",
+  "engines": {
+    "node": ">=22"
+  },
+  "packageManager": "pnpm@12.11.2"
 }
