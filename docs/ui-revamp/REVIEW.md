@@ -117,7 +117,7 @@ How it was checked: `e2e/qa/inert-controls.spec.ts` visits 16 routes on both pro
 - **Terms and Privacy text** (BRIEF §11, BOARD "Decisions needed"). Working default holds: no claim on the login page.
 - **Production search key** (BRIEF §11): create the publishable key and pass `VITE_PUBLIC_SEARCH_KEY` at build time.
 - **Public repository** (BRIEF §11): make it public and set `VITE_SOURCE_URL`, or keep the source links hidden.
-- **HSTS `preload`** (raised in this pass): the lead dropped `preload` in `300366d`; the portal now sends `max-age=31536000; includeSubDomains`. Adding it back and submitting to the preload list is the owner's call, recorded in `docs/DEPLOY.md`.
+- **HSTS `preload`** (raised in this pass): the lead dropped `preload` in `300366d`; the portal now sends `max-age=31536000; includeSubDomains`. Adding it back and submitting to the preload list is the owner's call. The note is in `docs/DEPLOY.md` on `feat/platform-hardening`, not yet on this branch.
 
 ## Not verified
 
