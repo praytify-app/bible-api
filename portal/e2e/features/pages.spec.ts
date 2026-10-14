@@ -1,4 +1,3 @@
-import AxeBuilder from "@axe-core/playwright";
 import type { Page } from "@playwright/test";
 import { API_URL, expect, expectAccessible, signUp, test, useTheme, type Theme } from "../support/fixtures";
 
@@ -108,12 +107,20 @@ test.describe("login", () => {
 // --- Docs and quick start ----------------------------------------------------------
 
 test.describe("docs", () => {
-  test("API reference loads in a sandboxed frame with a direct link", async ({ page }) => {
+  test("API reference loads in a sandboxed frame pinned to the portal theme", async ({ page }) => {
+    await useTheme(page, "dark");
     await page.goto("/docs");
     const frame = page.locator('iframe[title="Praytify Bible API reference"]');
     await expect(frame).toHaveAttribute("sandbox", /allow-scripts/);
+    await expect(frame).toHaveAttribute("src", `${API_URL}/docs?theme=dark`);
     await expect(frame).toBeVisible();
     await expect(page.getByRole("link", { name: /Open in a new tab/ })).toHaveAttribute("href", `${API_URL}/docs`);
+
+    // Switching the portal theme reloads the reference in the new theme.
+    await page.getByRole("button", { name: /^Theme:/ }).first().click();
+    await page.getByRole("menuitemradio", { name: "Light" }).click();
+    await expect(frame).toHaveAttribute("src", `${API_URL}/docs?theme=light`);
+    await expect(frame).toBeVisible();
   });
 
   test("API reference shows an error, not a blank frame, when the spec fails", async ({ page }) => {
@@ -308,17 +315,14 @@ for (const theme of ["light", "dark"] as Theme[]) {
     });
   }
 
-  // The reference inside the frame is Scalar, served by the gateway; its own
-  // contrast is tracked separately. This checks the portal's page around it.
-  test(`axe /docs page chrome (${theme})`, async ({ page }) => {
+  // Includes the cross-origin Scalar frame: Playwright's axe runs inside it.
+  test(`axe /docs (${theme})`, async ({ page }) => {
     await useTheme(page, theme);
     await page.goto("/docs");
-    await expect(page.getByRole("heading", { level: 1, name: "API reference" })).toBeVisible();
-    const results = await new AxeBuilder({ page })
-      .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa"])
-      .exclude("iframe")
-      .analyze();
-    const blocking = results.violations.filter((v) => v.impact === "serious" || v.impact === "critical");
-    expect(blocking.map((v) => `${v.id}: ${v.nodes.map((n) => n.target.join(" ")).join(", ")}`)).toEqual([]);
+    await expect(page.locator('iframe[title="Praytify Bible API reference"]')).toBeVisible();
+    await expect(
+      page.frameLocator('iframe[title="Praytify Bible API reference"]').getByRole("heading", { name: /Praytify Bible API/ }).first(),
+    ).toBeVisible();
+    await expectAccessible(page, `/docs ${theme}`);
   });
 }
