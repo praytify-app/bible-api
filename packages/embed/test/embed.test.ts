@@ -62,6 +62,8 @@ describe("praytify embeds", () => {
     const links = [...root.querySelectorAll("a")].map((a) => a.getAttribute("href"));
     expect(links).toContain("https://praytify.bible/read/WEB/JHN/3");
     expect(links).toContain("https://ebible.org/web/");
+    // Never leak the host page's URL to the reader or a licensor's site.
+    for (const a of root.querySelectorAll("a")) expect(a.getAttribute("rel")).toBe("noopener noreferrer");
   });
 
   it("never interprets API text as HTML", async () => {
