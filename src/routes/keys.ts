@@ -71,6 +71,12 @@ function toKey(r: KeyRow, tier: string) {
   };
 }
 
+// postgres-js cannot serialise a Date parameter in a query that also binds an
+// array helper, so timestamps go in as ISO strings with an explicit cast.
+function isoOrNull(d: Date | null): string | null {
+  return d ? d.toISOString() : null;
+}
+
 function firstIssue(err: z.ZodError): string {
   return err.issues[0]?.message ?? "Invalid request";
 }
@@ -129,7 +135,7 @@ export function keysRouter(opts: KeysRouterOptions) {
     const [row] = await client<KeyRow[]>`
       INSERT INTO platform.api_keys (user_id, name, kind, key_hash, key_prefix, allowed_origins, expires_at)
       VALUES (${user.id}, ${body.name ?? "Untitled key"}, ${body.kind}, ${hashApiKey(plaintext)},
-              ${displayPrefix(plaintext)}, ${client.array(origins)}, ${expiresAt})
+              ${displayPrefix(plaintext)}, ${client.array(origins)}, ${isoOrNull(expiresAt)}::timestamptz)
       RETURNING id, name, kind, key_prefix, allowed_origins, created_at, last_used_at, expires_at
     `;
     return c.json(
@@ -190,13 +196,15 @@ export function keysRouter(opts: KeysRouterOptions) {
       const plaintext = generateApiKey(kind);
       // Keep the original lifetime policy: a key that expired or was set to
       // expire gets the same duration again, measured from now.
-      const lifetimeMs = old.expires_at ? old.expires_at.getTime() - new Date(old.created_at).getTime() : null;
+      // Timestamps may come back as strings depending on the driver's type
+      // parsing, so normalise before doing arithmetic.
+      const lifetimeMs = old.expires_at ? new Date(old.expires_at).getTime() - new Date(old.created_at).getTime() : null;
       const expiresAt = lifetimeMs && lifetimeMs > 0 ? new Date(Date.now() + lifetimeMs) : null;
       await tx`UPDATE platform.api_keys SET revoked = true, updated_at = NOW() WHERE id = ${old.id}`;
       const [row] = await tx<KeyRow[]>`
         INSERT INTO platform.api_keys (user_id, name, kind, key_hash, key_prefix, allowed_origins, expires_at)
         VALUES (${user.id}, ${old.name}, ${kind}, ${hashApiKey(plaintext)}, ${displayPrefix(plaintext)},
-                ${client.array(old.allowed_origins ?? [])}, ${expiresAt})
+                ${client.array(old.allowed_origins ?? [])}, ${isoOrNull(expiresAt)}::timestamptz)
         RETURNING id, name, kind, key_prefix, allowed_origins, created_at, last_used_at, expires_at
       `;
       return { row: row!, plaintext, revokedId: old.id };
