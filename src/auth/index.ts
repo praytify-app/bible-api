@@ -1,49 +1,46 @@
 import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "@better-auth/drizzle-adapter";
-import { bearer } from "better-auth/plugins";
+import { config } from "../config.js";
 import { db } from "../db/client.js";
 
+const cfg = config();
+
 const socialProviders = {
-  ...(process.env.GITHUB_CLIENT_ID && process.env.GITHUB_CLIENT_SECRET
-    ? {
-        github: {
-          clientId: process.env.GITHUB_CLIENT_ID,
-          clientSecret: process.env.GITHUB_CLIENT_SECRET,
-        },
-      }
+  ...(cfg.GITHUB_CLIENT_ID && cfg.GITHUB_CLIENT_SECRET
+    ? { github: { clientId: cfg.GITHUB_CLIENT_ID, clientSecret: cfg.GITHUB_CLIENT_SECRET } }
     : {}),
-  ...(process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET
-    ? {
-        google: {
-          clientId: process.env.GOOGLE_CLIENT_ID,
-          clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-        },
-      }
+  ...(cfg.GOOGLE_CLIENT_ID && cfg.GOOGLE_CLIENT_SECRET
+    ? { google: { clientId: cfg.GOOGLE_CLIENT_ID, clientSecret: cfg.GOOGLE_CLIENT_SECRET } }
     : {}),
 };
 
 /**
- * BetterAuth server instance configured with:
- * - GitHub + Google social login
- * - Bearer token plugin (for API key-like token auth)
- * - Drizzle ORM adapter for Postgres
+ * Developer accounts: GitHub and Google OAuth with database sessions.
  *
- * Note: BetterAuth does not ship an API key plugin out of the box.
- * We use the bearer plugin for token-based auth and implement
- * custom API key management via our own routes (src/routes/keys.ts).
+ * API keys are not a BetterAuth concern; they live in platform.api_keys and
+ * are checked by middleware/api-key.ts. The bearer() plugin is intentionally
+ * absent: nothing here needs a session token to double as a credential.
  */
 export const auth = betterAuth({
-  database: drizzleAdapter(db, {
-    provider: "pg",
-  }),
+  database: drizzleAdapter(db, { provider: "pg" }),
   socialProviders,
-  plugins: [bearer()],
-  secret: process.env.BETTER_AUTH_SECRET,
-  baseURL: process.env.BETTER_AUTH_URL,
-  trustedOrigins: [
-    process.env.PORTAL_URL || "http://localhost:5173",
-    process.env.BETTER_AUTH_URL || "http://localhost:3200",
-  ],
+  emailAndPassword: {
+    enabled: cfg.EMAIL_PASSWORD_AUTH,
+    minPasswordLength: 12,
+    maxPasswordLength: 256,
+  },
+  secret: cfg.BETTER_AUTH_SECRET,
+  baseURL: cfg.BETTER_AUTH_URL,
+  trustedOrigins: [...cfg.PORTAL_URL, cfg.BETTER_AUTH_URL],
+  session: {
+    expiresIn: 60 * 60 * 24 * 30,
+    updateAge: 60 * 60 * 24,
+  },
+  advanced: {
+    // Follow the public URL, not NODE_ENV: a self-hosted instance served over
+    // plain HTTP would otherwise set cookies the browser never sends back.
+    useSecureCookies: cfg.BETTER_AUTH_URL.startsWith("https://"),
+  },
 });
 
 export type Auth = typeof auth;
