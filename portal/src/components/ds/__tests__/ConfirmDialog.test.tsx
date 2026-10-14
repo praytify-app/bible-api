@@ -80,3 +80,37 @@ describe("ConfirmDialog", () => {
     await waitFor(() => expect(screen.getByRole("button", { name: "Cancel" })).toHaveFocus());
   });
 });
+
+describe("ConfirmDialog focus on close", () => {
+  it("lets the caller send focus elsewhere when the trigger no longer exists", async () => {
+    const user = userEvent.setup();
+    function Removed() {
+      const [open, setOpen] = useState(true);
+      return (
+        <>
+          <h2 tabIndex={-1} id="keys-heading">
+            API keys
+          </h2>
+          <ConfirmDialog
+            open={open}
+            onOpenChange={setOpen}
+            title="Revoke this key?"
+            subject="Server (pb_live_c3d4)"
+            confirmLabel="Revoke key"
+            onConfirm={() => Promise.resolve()}
+            onCloseAutoFocus={(event) => {
+              event.preventDefault();
+              document.getElementById("keys-heading")?.focus();
+            }}
+          />
+        </>
+      );
+    }
+    render(<Removed />);
+
+    await user.click(screen.getByRole("button", { name: "Revoke key" }));
+
+    await waitFor(() => expect(screen.queryByRole("alertdialog")).not.toBeInTheDocument());
+    expect(screen.getByRole("heading", { name: "API keys" })).toHaveFocus();
+  });
+});

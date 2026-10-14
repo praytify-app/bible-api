@@ -24,6 +24,12 @@ export interface ConfirmDialogProps {
   onConfirm: () => void | Promise<unknown>;
   pending?: boolean;
   error?: string | null;
+  /**
+   * Where focus goes when the dialog closes. Radix returns it to the trigger;
+   * when the action removed that trigger (a revoked or rolled row), call
+   * event.preventDefault() and focus something that still exists.
+   */
+  onCloseAutoFocus?: (event: Event) => void;
 }
 
 function messageOf(error: unknown): string {
@@ -44,6 +50,7 @@ export function ConfirmDialog({
   onConfirm,
   pending = false,
   error = null,
+  onCloseAutoFocus,
 }: ConfirmDialogProps) {
   const [ownPending, setOwnPending] = useState(false);
   const [ownError, setOwnError] = useState<string | null>(null);
@@ -77,6 +84,7 @@ export function ConfirmDialog({
       <RadixAlertDialog.Portal>
         <RadixAlertDialog.Overlay className="fixed inset-0 z-50 bg-scrim data-[state=open]:animate-fade-in" />
         <RadixAlertDialog.Content
+          onCloseAutoFocus={onCloseAutoFocus}
           onEscapeKeyDown={(event) => {
             if (isPending) event.preventDefault();
           }}
