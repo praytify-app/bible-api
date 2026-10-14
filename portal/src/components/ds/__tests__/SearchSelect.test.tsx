@@ -66,3 +66,34 @@ describe("SearchSelect", () => {
     expect(screen.getByRole("status")).toHaveTextContent("Nothing matches that search.");
   });
 });
+
+describe("SearchSelect with server-side search", () => {
+  it("reports each query and shows the caller's results unfiltered", async () => {
+    const user = userEvent.setup();
+    const onQueryChange = vi.fn();
+    const serverResults = [{ value: "KJV", label: "King James Version", description: "English" }];
+    render(
+      <SearchSelect
+        aria-label="Version"
+        options={serverResults}
+        value={null}
+        onValueChange={vi.fn()}
+        onQueryChange={onQueryChange}
+        filterOptions={false}
+      />,
+    );
+    await user.click(screen.getByRole("button", { name: /Version/ }));
+    await user.keyboard("kj");
+    expect(onQueryChange).toHaveBeenLastCalledWith("kj");
+    // "kj" does not appear in "King James Version", but the server matched it.
+    expect(within(screen.getByRole("listbox")).getAllByRole("option")).toHaveLength(1);
+  });
+
+  it("announces a search in progress", async () => {
+    const user = userEvent.setup();
+    render(<SearchSelect aria-label="Version" options={[]} value={null} onValueChange={vi.fn()} filterOptions={false} loading />);
+    await user.click(screen.getByRole("button", { name: /Version/ }));
+    expect(screen.getByRole("status")).toHaveTextContent("Searching…");
+    expect(screen.getByRole("listbox")).toHaveAttribute("aria-busy", "true");
+  });
+});

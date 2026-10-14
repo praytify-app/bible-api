@@ -27,6 +27,16 @@ export interface SearchSelectProps {
    * 1,000+ options responsive on a phone without a virtualisation dependency.
    */
   maxResults?: number;
+  /**
+   * Called on every keystroke with the raw query. For server-side search
+   * (the reader's debounced version search), debounce in the caller, pass
+   * the results as `options`, and set `filterOptions={false}`.
+   */
+  onQueryChange?: (query: string) => void;
+  /** false: show `options` as given; the caller has already filtered them. */
+  filterOptions?: boolean;
+  /** Results are being fetched. Announced in the status line. */
+  loading?: boolean;
   disabled?: boolean;
   id?: string;
   /** Needed when not inside a Field. */
@@ -50,6 +60,9 @@ export function SearchSelect({
   searchPlaceholder = "Type to filter",
   emptyMessage = "Nothing matches that search.",
   maxResults = 50,
+  onQueryChange,
+  filterOptions = true,
+  loading = false,
   disabled,
   id,
   className,
@@ -77,8 +90,9 @@ export function SearchSelect({
   );
   const matches = useMemo(() => {
     const needle = normalize(query.trim());
+    if (!filterOptions) return options;
     return needle ? index.filter((entry) => entry.haystack.includes(needle)).map((entry) => entry.option) : options;
-  }, [index, options, query]);
+  }, [filterOptions, index, options, query]);
   const visible = matches.slice(0, maxResults);
   const selected = options.find((option) => option.value === value) ?? null;
 
@@ -114,6 +128,15 @@ export function SearchSelect({
       const option = visible[active];
       if (option) choose(option);
     }
+  }
+
+  function statusText() {
+    if (loading) return "Searching…";
+    if (matches.length === 0) return emptyMessage;
+    if (matches.length > visible.length) {
+      return `Showing ${count.format(visible.length)} of ${count.format(matches.length)}. Keep typing to narrow the list.`;
+    }
+    return `${count.format(matches.length)} ${matches.length === 1 ? "result" : "results"}`;
   }
 
   // The trigger's name is the field label plus the current value, so a screen
@@ -163,6 +186,7 @@ export function SearchSelect({
               onChange={(event) => {
                 setQuery(event.target.value);
                 setActive(0);
+                onQueryChange?.(event.target.value);
               }}
               onKeyDown={handleKeyDown}
               autoComplete="off"
@@ -170,7 +194,14 @@ export function SearchSelect({
               className="h-10 w-full rounded-[10px] bg-surface-sunken pl-9 pr-3 text-body text-ink placeholder:text-ink-muted"
             />
           </div>
-          <ul ref={listRef} id={listboxId} role="listbox" aria-label={searchLabel} className="max-h-72 overflow-y-auto p-1">
+          <ul
+            ref={listRef}
+            id={listboxId}
+            role="listbox"
+            aria-label={searchLabel}
+            aria-busy={loading || undefined}
+            className="max-h-72 overflow-y-auto p-1"
+          >
             {visible.map((option, i) => {
               const isSelected = option.value === value;
               const isActive = i === active;
@@ -200,11 +231,7 @@ export function SearchSelect({
             })}
           </ul>
           <p role="status" className="border-t border-hairline px-3 py-2 text-caption text-ink-muted empty:hidden">
-            {matches.length === 0
-              ? emptyMessage
-              : matches.length > visible.length
-                ? `Showing ${count.format(visible.length)} of ${count.format(matches.length)}. Keep typing to narrow the list.`
-                : `${count.format(matches.length)} ${matches.length === 1 ? "result" : "results"}`}
+            {statusText()}
           </p>
         </RadixPopover.Content>
       </RadixPopover.Portal>
