@@ -72,6 +72,13 @@ async function fetchPublic<T>(path: string, init?: { signal?: AbortSignal; apiKe
   return res.json() as Promise<T>;
 }
 
+// --- API reference -------------------------------------------------------------
+
+export const apiReference = {
+  /** The spec the /docs page renders; a failure means the reference would be blank. */
+  spec: (signal?: AbortSignal) => fetchPublic<{ openapi?: string }>("/v1/openapi.json", { signal }),
+};
+
 // --- Sign-in methods ---------------------------------------------------------
 
 export interface AuthMethods {
