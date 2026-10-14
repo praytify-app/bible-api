@@ -128,4 +128,36 @@ describe("praytify embeds", () => {
 
     expect(fetchMock.mock.calls.some(([u]) => String(u).startsWith("https://bible.example.org/v1/verses"))).toBe(true);
   });
+
+  it("accepts props as properties, the way React 19 sets them on custom elements", async () => {
+    document.body.innerHTML = `<praytify-verse reference="John 3:16"></praytify-verse>`;
+    const el = document.querySelector("praytify-verse") as HTMLElement & Record<string, unknown>;
+    expect(() => {
+      el.version = "KJV";
+      el.api = "https://bible.example.org";
+      el.reader = "https://reader.example.org";
+      el.theme = "dark";
+      el.link = false;
+      el.attribution = true;
+      el.reference = "Romans 8:28";
+    }).not.toThrow();
+    expect(el.getAttribute("version")).toBe("KJV");
+    expect(el.getAttribute("theme")).toBe("dark");
+    expect(el.getAttribute("link")).toBe("false");
+    expect(el.getAttribute("reference")).toBe("Romans 8:28");
+    el.reference = null;
+    expect(el.hasAttribute("reference")).toBe(false);
+  });
+
+  it("re-renders when link or attribution change on a live element", async () => {
+    document.body.innerHTML = `<praytify-verse reference="John 3:16-17" version="WEB"></praytify-verse>`;
+    await settle();
+    const el = document.querySelector("praytify-verse")!;
+    const root = el.shadowRoot!;
+    expect([...root.querySelectorAll("a")].some((a) => a.textContent === "Read the chapter")).toBe(true);
+    el.setAttribute("link", "false");
+    await settle();
+    expect([...root.querySelectorAll("a")].some((a) => a.textContent === "Read the chapter")).toBe(false);
+  });
 });
+

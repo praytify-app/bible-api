@@ -155,16 +155,58 @@ abstract class PraytifyElement extends HTMLElement {
     this.root = this.attachShadow({ mode: "open" });
   }
 
-  protected get api(): string {
-    return (this.getAttribute("api") || DEFAULT_API).replace(/\/+$/, "");
+  // Every attribute has a reflecting property pair. React 19 assigns props to
+  // custom elements as properties when the property exists, so a getter-only
+  // accessor would throw in strict mode the moment JSX renders the widget.
+  protected attr(name: string): string | null {
+    return this.getAttribute(name);
   }
 
-  protected get reader(): string {
-    return (this.getAttribute("reader") || DEFAULT_READER).replace(/\/+$/, "");
+  protected setAttr(name: string, value: unknown): void {
+    if (value === null || value === undefined || value === false) this.removeAttribute(name);
+    else this.setAttribute(name, value === true ? "" : String(value));
   }
 
-  protected get version(): string {
-    return this.getAttribute("version") || "WEB";
+  get api(): string {
+    return (this.attr("api") || DEFAULT_API).replace(/\/+$/, "");
+  }
+  set api(v: string | null) {
+    this.setAttr("api", v);
+  }
+
+  get reader(): string {
+    return (this.attr("reader") || DEFAULT_READER).replace(/\/+$/, "");
+  }
+  set reader(v: string | null) {
+    this.setAttr("reader", v);
+  }
+
+  get version(): string {
+    return this.attr("version") || "WEB";
+  }
+  set version(v: string | null) {
+    this.setAttr("version", v);
+  }
+
+  get theme(): string {
+    return this.attr("theme") || "auto";
+  }
+  set theme(v: string | null) {
+    this.setAttr("theme", v);
+  }
+
+  get link(): string | null {
+    return this.attr("link");
+  }
+  set link(v: string | boolean | null) {
+    this.setAttr("link", typeof v === "boolean" ? String(v) : v);
+  }
+
+  get attribution(): string | null {
+    return this.attr("attribution");
+  }
+  set attribution(v: string | boolean | null) {
+    this.setAttr("attribution", typeof v === "boolean" ? String(v) : v);
   }
 
   connectedCallback(): void {
@@ -254,11 +296,18 @@ abstract class PraytifyElement extends HTMLElement {
 
 export class PraytifyVerse extends PraytifyElement {
   static get observedAttributes(): string[] {
-    return ["reference", "version", "api"];
+    return ["reference", "version", "api", "reader", "link", "attribution"];
+  }
+
+  get reference(): string | null {
+    return this.attr("reference");
+  }
+  set reference(v: string | null) {
+    this.setAttr("reference", v);
   }
 
   protected async load() {
-    const reference = this.getAttribute("reference");
+    const reference = this.reference;
     if (!reference) throw new Error('Set a reference, e.g. reference="John 3:16".');
     const url = `${this.api}/v1/verses?ref=${encodeURIComponent(reference)}&version=${encodeURIComponent(this.version)}`;
     const [passage, info] = await Promise.all([getJson<PassageResponse>(url), this.versionInfo(this.version)]);
@@ -268,7 +317,7 @@ export class PraytifyVerse extends PraytifyElement {
 
 export class PraytifyDaily extends PraytifyElement {
   static get observedAttributes(): string[] {
-    return ["version", "api"];
+    return ["version", "api", "reader", "link", "attribution"];
   }
 
   protected async load() {
