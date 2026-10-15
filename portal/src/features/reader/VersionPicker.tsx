@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useEffect, useMemo, useState } from "react";
 import { SearchSelect, type SearchSelectOption } from "@/components/ds";
 import { ApiError, bible, type BibleVersion } from "@/lib/api";
+import { versionLabel, versionSlug } from "@/lib/version-slug";
 import { rateLimitMessage } from "./errors";
 
 const SEARCH_DEBOUNCE_MS = 250;
@@ -10,8 +11,8 @@ const MIN_SERVER_QUERY = 2;
 
 function toOption(v: BibleVersion): SearchSelectOption {
   return {
-    value: v.abbreviation,
-    label: `${v.abbreviation} · ${v.name}`,
+    value: versionSlug(v),
+    label: versionLabel(v),
     description: v.language ?? undefined,
     keywords: v.languageCode ?? undefined,
   };

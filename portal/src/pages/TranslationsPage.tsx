@@ -21,6 +21,7 @@ import {
 } from "@/components/ds";
 import { filterCatalog, languagesOf, pageOf } from "@/features/docs/catalog";
 import { translations } from "@/lib/api";
+import { versionSlug } from "@/lib/version-slug";
 
 const ALL_LANGUAGES = "all";
 const count = new Intl.NumberFormat();
@@ -165,7 +166,7 @@ export function TranslationsPage() {
                       <TableCell label="Abbreviation">
                         <Link
                           to="/read/$version/$book/$chapter"
-                          params={{ version: t.abbreviation, book: "GEN", chapter: "1" }}
+                          params={{ version: versionSlug(t), book: "GEN", chapter: "1" }}
                           className="font-mono font-semibold text-accent-text underline-offset-4 hover:underline"
                         >
                           {t.abbreviation}

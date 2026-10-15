@@ -263,6 +263,7 @@ export const profile = {
 export interface Translation {
   id: string;
   abbreviation: string;
+  code?: string | null;
   name: string;
   language: string;
   languageCode: string;
@@ -290,6 +291,8 @@ export const translations = {
 export interface BibleVersion {
   id: string;
   abbreviation: string;
+  /** URL-safe code (engine 1.5+); see versionSlug(). */
+  code?: string | null;
   name: string;
   language?: string | null;
   languageCode?: string | null;

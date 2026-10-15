@@ -4,6 +4,7 @@ import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { Alert, Button, Card, EmptyState, Eyebrow, IconButton, SkeletonText, Spinner } from "@/components/ds";
 import { PUBLIC_SEARCH_KEY, bible, type BibleBook } from "@/lib/api";
+import { versionLabel } from "@/lib/version-slug";
 import { toDir, toLangTag } from "@/lib/lang";
 import { BookChapterPickersRow } from "@/features/reader/BookChapterPickers";
 import { ChapterBody } from "@/features/reader/ChapterBody";
@@ -276,7 +277,7 @@ export function ReadPage() {
           <VersionPicker
             className="min-w-0 flex-1"
             version={version}
-            currentLabel={detail ? `${detail.abbreviation} · ${detail.name}` : version}
+            currentLabel={detail ? versionLabel(detail) : version}
             onSelect={(abbreviation) => void switchVersion(abbreviation)}
             disabled={switchingTo !== null}
           />

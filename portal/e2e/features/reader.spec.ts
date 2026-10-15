@@ -37,6 +37,13 @@ async function expectSelected(page: Page, verses: number[], notSelected: number[
 }
 
 test.describe("reader", () => {
+  test("opens a translation by its engine code", async ({ page }) => {
+    // Production abbreviations are often titles with spaces; links use the
+    // engine's URL-safe code for those, so the reader must accept it.
+    await openChapter(page, "/read/engwebp/JHN/3", "John 3");
+    await expect(page.getByRole("button", { name: /^Translation: WEB · World English Bible/ })).toBeVisible();
+  });
+
   test("moves between chapters and across a book boundary", async ({ page, isMobile }) => {
     await openChapter(page, "/read/WEB/JHN/3", "John 3");
     await expect(page).toHaveTitle("John 3 (WEB) · Praytify Bible");

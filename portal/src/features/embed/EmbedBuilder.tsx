@@ -18,6 +18,7 @@ import {
 } from "@/components/ds";
 import { useTheme } from "@/lib/theme";
 import { API_URL, ApiError, bible, type BibleVersion } from "@/lib/api";
+import { versionSlug } from "@/lib/version-slug";
 import { AccentField } from "./AccentField";
 import {
   configFromSearch,
@@ -50,10 +51,10 @@ const CATALOG_STALE_MS = 5 * 60_000;
 
 function versionOption(version: BibleVersion): SearchSelectOption {
   return {
-    value: version.abbreviation,
-    label: `${version.name} (${version.abbreviation})`,
+    value: versionSlug(version),
+    label: version.abbreviation.trim() === version.name.trim() ? version.name : `${version.name} (${version.abbreviation})`,
     description: version.language ?? undefined,
-    keywords: [version.abbreviation, version.languageCode].filter(Boolean).join(" "),
+    keywords: [version.abbreviation, version.code, version.languageCode].filter(Boolean).join(" "),
   };
 }
 
@@ -106,8 +107,9 @@ export function EmbedBuilder({ inDashboard = false }: EmbedBuilderProps) {
     staleTime: CATALOG_STALE_MS,
   });
 
-  // `?version=web` works, but the widget and snippet carry the catalog's spelling.
-  const version = versionInfo.data?.abbreviation ?? settings.version;
+  // `?version=web` works, but the widget and snippet carry the catalog's
+  // spelling, as a URL-safe slug rather than a title with spaces.
+  const version = versionInfo.data ? versionSlug(versionInfo.data) : settings.version;
   const config: EmbedConfig = { ...settings, version, reference };
 
   const passage = useQuery({
