@@ -12,7 +12,14 @@ export interface Language {
 
 export interface Version {
   id: string;
+  /** As imported. Often a full title with spaces; see `versionSlug()` for URLs. */
   abbreviation: string;
+  /**
+   * Stable URL-safe code (the eBible translation id, e.g. `engwebp`), accepted
+   * anywhere an abbreviation is. Null for versions from other sources;
+   * absent from engines older than 1.5.
+   */
+  code?: string | null;
   name: string;
   description: string | null;
   license: string | null;
@@ -78,6 +85,8 @@ export interface Passage extends Partial<Licensing> {
 /** What `chapterWithMeta()` returns: the verses plus the chapter's licensing. */
 export interface ChapterMeta extends Licensing {
   version: string;
+  /** The version's URL-safe code, when it has one. */
+  versionCode?: string | null;
   versionName: string;
   bookCode: string;
   bookName: string;
@@ -129,7 +138,7 @@ export interface DailyVerse extends Partial<Licensing> {
 
 /** A whole translation for offline use, from `download()`. */
 export interface BibleDownload {
-  version: Licensing & { id: string; abbreviation: string; name: string; licenseType?: string };
+  version: Licensing & { id: string; abbreviation: string; code?: string | null; name: string; licenseType?: string };
   books: {
     bookCode: string;
     name: string;
@@ -154,7 +163,7 @@ export interface Page<T> {
 export interface ListVersionsParams {
   /** ISO 639-3 language code, e.g. `eng`. */
   language?: string;
-  /** Matches abbreviation or name. */
+  /** Matches abbreviation, name, or code. */
   search?: string;
   hasAudio?: boolean;
   page?: number;

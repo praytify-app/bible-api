@@ -29,6 +29,15 @@ const wholeBible = await bible.download("WEB"); // offline use: { version, books
 
 In browser code use a publishable key (`pb_pk_…`) restricted to your site's origins; never ship a secret key.
 
+To build links or store a reader's choice, name a version with `versionSlug()`: the abbreviation when it is short and URL-safe, otherwise the version's `code`. Imported abbreviations are often full titles with spaces.
+
+```ts
+import { versionSlug } from "@praytify/bible";
+
+const { data } = await bible.versions.list({ language: "eng" });
+const href = `/read/${versionSlug(data[0])}/JHN/3`;
+```
+
 ## Options
 
 | Option | Default | |

@@ -40,6 +40,8 @@ Reading is free and needs no account:
 | Verse of the day | `GET /v1/daily?version=WEB` |
 | Languages | `GET /v1/languages` |
 
+**Naming a translation.** Anywhere a version goes, use its abbreviation (`WEB`, `KJV`), its `code` from the catalog (the eBible id, such as `engwebp`), or its id. Matching ignores case. Many imported abbreviations are full titles with spaces, so prefer `code` in URLs; the SDK's `versionSlug()` picks the right one.
+
 An API key unlocks full-text search (`/v1/search?q=`) and full-Bible downloads (`/v1/versions/WEB/download`), and moves you from the shared per-IP limit onto your own account quota. Create keys in the [dashboard](https://praytify.bible/dashboard/keys):
 
 - **Secret keys** (`pb_sk_…`) are for servers. Never ship them to a browser or a mobile binary.
