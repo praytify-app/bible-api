@@ -37,6 +37,7 @@ The "open the platform" release: safe to share, easy to embed, fast at scale. Ba
 - Profile updates are partial: only the fields sent change.
 - Node 24, pnpm 12, TypeScript 7, hono 4.13, better-auth 1.7, drizzle-orm 0.45.4; the portal and engine move to current releases too.
 - Production containers run read-only, without Linux capabilities, with memory limits, and health-check readiness instead of liveness. The portal runs unprivileged nginx with a strict CSP.
+- Brotli on cache misses uses a window sized to the body instead of the 4 MB default: 2.4 to 4 times less CPU per compression, with output the same size or smaller. Measured at production scale in [docs/PERFORMANCE.md](docs/PERFORMANCE.md).
 
 ### Fixed
 
@@ -45,6 +46,7 @@ The "open the platform" release: safe to share, easy to embed, fast at scale. Ba
 - A database outage during key validation was reported as an invalid key (`401`); it is now `503`.
 - The published API reference pointed at `/api/v1` paths and a spec URL that returned `404`.
 - Fresh installs could not run migrations because the gateway and engine shared one migrations table.
+- Streamed downloads dropped the engine's `Retry-After`, so clients could not tell when to retry a busy `503`.
 
 ### Security
 
