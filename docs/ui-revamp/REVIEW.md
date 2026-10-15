@@ -63,6 +63,39 @@ Containers, images and the forward were removed afterwards (`docker rm -f`, `doc
 
 Examined: brand (Sacred Dawn cream and brown ink, indigo accent, serif italic display line) holds on every route in both themes; no template names, sample data or stock imagery; RTL text runs right to left while chapter navigation stays left to right. The dashboard shows the local stack's raised anonymous limit (1,000 a minute) because it reads the live plan. Nits, not defects: on short pages (not-found) the footer sits mid-viewport with page background below it.
 
+## Cross-browser
+
+Firefox, WebKit (Safari's engine, desktop) and an iPhone 15 profile, added as opt-in Playwright projects (`E2E_BROWSERS=all`), on `a3534e2`, 2026-10-14, against the local stack after the lead's gateway restart at 18:38 (account export and deletion live). Playwright 1.64.0 with chromium-1248, firefox-1555, webkit-2370. Preview mode now builds into `portal/dist-e2e`, so no other `vite build` can swap the bundle mid-run.
+
+Command, from `portal/`: `E2E_BROWSERS=all E2E_MODE=preview E2E_OUTPUT_DIR=<scratch> ./node_modules/.bin/playwright test --grep-invert screens` (all five projects, one run). Exit 0: **536 passed, 0 failed, 0 flaky, 14 skipped** in 7.3 min.
+
+| Project | Engine, viewport | Passed | Failed | Skipped |
+|---|---|---|---|---|
+| desktop | Chromium, 1440x900 | 108 | 0 | 2 |
+| mobile | Chromium (Pixel 7), 390x844 | 106 | 0 | 4 |
+| firefox | Firefox, 1440x900 | 108 | 0 | 2 |
+| webkit | WebKit (desktop Safari), 1440x900 | 108 | 0 | 2 |
+| iphone | WebKit (iPhone 15), 390x844 | 106 | 0 | 4 |
+
+Skips: `qa/reader-search.spec.ts` (2 per project) needs `VITE_PUBLIC_SEARCH_KEY`, which this command does not set; the reader's two keyboard-only cases skip on the touch projects (mobile, iphone), whose touch path is covered. No skip is engine-specific.
+
+The first run had 23 failures on the three new projects, and later full runs surfaced three more. Each, by cause:
+
+| Failure | Projects | Category | Root cause | Fix |
+|---|---|---|---|---|
+| Reader: switching translation keeps book and chapter (RTL check) | webkit, iphone | Product bug | WebKit's `Intl.getCanonicalLocales` does not apply CLDR macrolanguage aliases (`arb` stays `arb`; Chromium and Firefox give `ar`), so Arabic scripture had `lang="arb"` in Safari. The embed widget had the same code | `toLangTag` applies CLDR's bare-language macrolanguage aliases (`7bce8f4` portal, `fd71e2c` widget); unit tests check each entry against Node's CLDR and stub a WebKit-like `Intl` |
+| Keys secret key, embed snippet copy, reader selection copy | firefox, webkit, iphone | Harness | `grantPermissions(["clipboard-read", "clipboard-write"])` is Chromium-only. The app's copy is fine: real `writeText` succeeds in all three engines | `clipboardReader`: real clipboard read in Chromium and Firefox; in WebKit a wrapper still calls the real `writeText` and records text only after it resolves (`3802787`). `local-network-access` is granted only in Chromium |
+| Docs: API reference pinned to the portal theme | firefox | Harness | Firefox runs init scripts in a child frame's initial `about:blank`, which shares the portal's origin. `useTheme` rewrote `pb-theme` from there and the app followed the storage event back to dark | `useTheme` runs in the top frame only (`3802787`) |
+| Skip link moves focus to main | webkit, iphone | Harness (markup verified) | Safari's Tab skips links unless "Press Tab to highlight each item" is on. Option+Tab focuses the skip link and Enter focuses `main#main` | Test presses Option+Tab in WebKit (`3802787`). No product change needed |
+| Keys create/roll/rename, embed builder, inert-controls `/dashboard/usage` (load timeouts, redirect to `/login`) | firefox, webkit | Environment (inferred) | Not reproducible in isolation. Most likely the shared `portal/dist`: at 18:21 another `vite build` rebuilt it with `VITE_API_URL=http://localhost:3201`, which sends a running suite to a gateway without its sessions. Machine load is the other candidate | Preview builds into `dist-e2e` (`1e9db7d`). None recurred in two full runs |
+| Shared verse selection stays a plain query string | webkit (1 of 4 full runs) | Harness race | The test left the page before the reader booted; TanStack's boot-time `replaceState` then interrupted the next `goto` in WebKit, and the URL check ran before the router could rewrite it | Assert after the selection is applied (`3802787`); 15 of 15 repeats pass |
+| Inert controls on `/docs` | desktop (Chromium, 1 run) | Harness timing | The frame waits on Scalar from `cdn.jsdelivr.net`; specs allowed 7.5 s, the page itself allows 15 s before calling it slow | `DOCS_FRAME_TIMEOUT` = 15 s on the four frame waits (`a3534e2`) |
+| Account rights: download and delete | firefox, webkit, iphone (Chromium would fail the same way) | Environment | The `:3200` gateway predated the export route (404). With the route stubbed, the blob download worked in every engine | Resolved by the lead's gateway restart; passes in all five projects |
+
+Firefox runs with a 60 s test and 15 s expect timeout (`1e9db7d`): each Playwright call over Firefox's protocol measured 8 to 33 ms against 1 to 2 ms in Chromium, and inert-controls makes hundreds. Page loads themselves are fast in Firefox (64 to 475 ms on `/`, `/docs` and `/read/WEB/GEN/1`). The machine's load average was above 200 throughout, which explains the slowest runs.
+
+Not covered: real Safari and iOS Safari (Playwright's WebKit is the same engine, not the same browser: no system clipboard prompts, no ITP storage partitioning beyond what WebKit ships); Firefox on Android; `screens.spec.ts` in the new projects.
+
 ## Must not regress
 
 | # | Item | Verified by | Result |
