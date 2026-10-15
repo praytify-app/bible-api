@@ -15,7 +15,9 @@ curl -H 'Origin: https://my.praytify.app' https://<praytify-web>/api/bible/versi
 
 Either call gets unmetered search or a full-Bible download on Praytify's quota, and floods can exhaust the shared limits real users depend on. This was found by reading the code; whether the route is deployed was not verified.
 
-**Recommended fix:**
+**Status: fixed on a branch, ready to review.** Branch `fix/bible-proxy-auth` in the Praytify repository (worktree `~/sireskay/worktrees/praytify-bible-proxy`, not pushed) implements the fix below. It covers the web route and the same flaw in the Convex `bible.proxy` action, which forwarded any `/v1` path with the master key to any signed-in user. It also adds a per-user download limit (10 an hour, failing closed) and 27 route tests that fail against the old code. Web suite: 316 passing; Convex suite: 1,171 passing. Deploy Convex before web (the web route calls a new metering mutation), and set `BIBLE_GATEWAY_SECRET_KEY` in both Convex and Dokploy. Not yet run end to end in the app.
+
+**The fix, in outline:**
 
 1. Stop proxying public reads. The catalog, chapters, references (`/v1/verses?ref=`), and the daily verse are public, so the browser can call `https://api.praytify.bible` directly, with caching and ETags, and no secret leaves the server.
 2. For search from the browser, use a **publishable key** restricted to Praytify's web origins (step 3 below). Publishable keys are read-only, refuse downloads, and only work from allowed origins.

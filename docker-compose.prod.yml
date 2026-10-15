@@ -9,6 +9,7 @@
 ## Set in the Dokploy compose environment:
 ##   required: POSTGRES_PASSWORD, DATABASE_URL, BETTER_AUTH_SECRET, ADMIN_TOKEN, GATEWAY_TOKEN
 ##   optional: GITHUB_CLIENT_ID/SECRET, GOOGLE_CLIENT_ID/SECRET, REDIS_URL,
+##             ENGINE_DATABASE_URL, GATEWAY_DATABASE_URL (least-privilege roles),
 ##             MASTER_API_KEY (deprecated; remove once Praytify uses an internal key)
 ## See .env.production.example. Image tags are bumped by scripts/deploy.sh.
 
@@ -30,7 +31,9 @@ services:
     environment:
       NODE_ENV: production
       LOG_LEVEL: info
-      DATABASE_URL: ${DATABASE_URL}
+      # Per-service role after scripts/db-roles.sql has run (docs/DEPLOY.md);
+      # until then the shared DATABASE_URL is used.
+      DATABASE_URL: ${GATEWAY_DATABASE_URL:-${DATABASE_URL}}
       DB_POOL_MAX: "20"
       # Applies gateway migrations under an advisory lock; production's
       # hand-built schema is baselined at 0000 on first run.
@@ -76,7 +79,7 @@ services:
       - "3100"
     environment:
       NODE_ENV: production
-      DATABASE_URL: ${DATABASE_URL}
+      DATABASE_URL: ${ENGINE_DATABASE_URL:-${DATABASE_URL}}
       DB_POOL_MAX: "20"
       ADMIN_TOKEN: ${ADMIN_TOKEN}
       # Gateway traffic carries this token and skips the engine's per-IP

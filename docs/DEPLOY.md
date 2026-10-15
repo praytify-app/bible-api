@@ -61,6 +61,20 @@ In the gateway logs, the first boot should show `baselined existing gateway sche
 
 Re-pin the previous tags (`gateway 0.4.0-17ea66f`, `engine 1.4.0-b0835ca`, `portal 0.4.1-c167e10`) and restore the previous `docker-compose.prod.yml`. The previous portal image needs the old compose: it runs nginx as root and cannot start under the hardened settings. Migration 0001 only adds columns and an index, so the old gateway runs against the migrated schema unchanged.
 
+## Least-privilege database roles (recommended, after the release is stable)
+
+Today the gateway and engine share one superuser. `scripts/db-roles.sql` gives each service its own role that owns only its own tables, so a compromised engine cannot read developer sessions, OAuth tokens, or keys, and a compromised gateway cannot alter scripture. It is idempotent and transfers ownership of existing tables; `tests/integration/db-roles.int.test.ts` proves the isolation and the migration of a shared-superuser database.
+
+1. Back up the whole database (`pg_dump -Fc`), not just `platform`.
+2. Generate two passwords (`openssl rand -hex 24`) and run, as the superuser:
+   ```bash
+   ssh netcup-server 'docker exec -i -e PGOPTIONS="-c bible.engine_password=<engine> -c bible.gateway_password=<gateway>" <postgres-container> psql -U bible -d praytify_bible -v ON_ERROR_STOP=1 -f -' < scripts/db-roles.sql
+   ```
+3. In Dokploy, add `ENGINE_DATABASE_URL=postgresql://bible_engine:<engine>@bible-db:5432/praytify_bible` and `GATEWAY_DATABASE_URL=postgresql://bible_gateway:<gateway>@bible-db:5432/praytify_bible`, then redeploy. The compose file prefers these over the shared `DATABASE_URL`.
+4. Verify `/health/ready` on the gateway and a chapter read through the API. To roll back, remove the two variables and redeploy; the superuser still owns nothing it needs, because superusers bypass ownership checks.
+
+Self-hosted installs from `docker-compose.yml` get these roles automatically on first boot (`ENGINE_DB_PASSWORD`, `GATEWAY_DB_PASSWORD`).
+
 ## After the release
 
 - Move Praytify off `MASTER_API_KEY` as described in [integrations/praytify.md](integrations/praytify.md), then remove the variable.

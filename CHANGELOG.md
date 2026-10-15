@@ -13,6 +13,11 @@ The "open the platform" release: safe to share, easy to embed, fast at scale. Ba
 - **Per-account quotas** by tier (free, partner, internal), published at `GET /api/dashboard/plan`.
 - Usage per key (`GET /api/dashboard/usage/keys`) and a `keyId` filter on daily usage.
 - `GET /api/auth-methods` and opt-in email and password sign-in (`EMAIL_PASSWORD_AUTH`).
+- Account export and deletion: `GET /api/dashboard/account/export` (a JSON file of everything held, without credentials) and `DELETE /api/dashboard/account` (erases the account, keys, usage, and sessions; keys stop working at once), surfaced in Settings under "Your data".
+- Draft Privacy Policy, Terms of Service, Cookie Policy, and Acceptable Use Policy in `docs/legal/` with a counsel review packet, generated from `legal-config.yaml`. Not yet published.
+- Least-privilege database roles (`scripts/db-roles.sql`): the engine and the gateway each own only their own tables. Self-hosted installs get them on first boot; production can switch with `ENGINE_DATABASE_URL` and `GATEWAY_DATABASE_URL`.
+- `GET /api/limits` publishes the enforced anonymous and plan limits, so public pages never quote stale numbers.
+- The portal is rebuilt on the Core 2 dashboard structure with the Sacred Dawn brand: mobile navigation, light and dark themes, a reader with verse selection, sharing, settings, and resume, a key manager for secret and publishable keys, an embed builder, and per-route titles. Code-split routes cut first-load JavaScript for `/` by 17.7%.
 - Public **reference lookup**: `GET /v1/verses?ref=` no longer needs a key.
 - **`@praytify/bible` SDK** (`packages/sdk`) and **`<praytify-verse>` / `<praytify-daily>` web components** (`packages/embed`).
 - A working **public API reference** at `/docs`, generated from the engine's spec with `/v1` paths, the production server, and bearer auth.
@@ -46,6 +51,7 @@ The "open the platform" release: safe to share, easy to embed, fast at scale. Ba
 - Security headers on every gateway response (HSTS, CSP, `nosniff`, framing denied), a 64 KB body limit on account routes, `405` for writes to the read-only API, upstream timeouts, constant-time master key comparison, and no internal error details in responses.
 - The unused BetterAuth `bearer()` plugin is removed, so a session token alone no longer works as an API credential.
 - `.env` files are excluded from the Docker build context.
+- HSTS is `max-age=31536000; includeSubDomains` without `preload`; preloading is an owner decision (docs/DEPLOY.md).
 
 ### Deprecated
 

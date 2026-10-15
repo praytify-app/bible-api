@@ -1,0 +1,425 @@
+{
+  "schema_version": 1,
+  "scanner_version": 2,
+  "generated_at": "2026-10-14",
+  "root": "/Users/jkolade/sireskay/github/praytify-bible",
+  "summary": {
+    "files_seen": 1778,
+    "source_files_scanned": 203,
+    "platforms": {
+      "web": 1
+    },
+    "locales": [
+      "en"
+    ],
+    "vendors_by_category": {
+      "auth": [
+        "Better Auth"
+      ]
+    },
+    "pii_detected": [
+      "device_id",
+      "email",
+      "ip_address",
+      "name",
+      "password_hash"
+    ],
+    "spi_detected": [],
+    "tables": [
+      "account",
+      "platform",
+      "public",
+      "session",
+      "user",
+      "verification"
+    ],
+    "signals": {
+      "api_keys": 5,
+      "cookies": 5
+    },
+    "permissions": [],
+    "existing_legal_files": []
+  },
+  "claims": [
+    {
+      "id": "homepage",
+      "claim": "Website URL",
+      "field": "product.websites",
+      "value": "https://praytify.bible/docs/quickstart",
+      "sources": [
+        {
+          "file": "package.json"
+        }
+      ]
+    },
+    {
+      "id": "web",
+      "claim": "Web app is in scope",
+      "field": "product.apps.web.enabled",
+      "value": true,
+      "sources": [
+        {
+          "file": "package.json",
+          "line": 23,
+          "snippet": "\"hono\""
+        }
+      ]
+    },
+    {
+      "id": "library:Better Auth",
+      "claim": "Uses Better Auth (self-hosted library, not a third party)",
+      "field": "data_collection.authentication",
+      "value": "Better Auth",
+      "sources": [
+        {
+          "file": "package.json",
+          "line": 21,
+          "snippet": "\"better-auth\""
+        }
+      ]
+    },
+    {
+      "id": "pii:email",
+      "claim": "Collects email",
+      "field": "data_collection.identifiers",
+      "value": "email",
+      "sources": [
+        {
+          "file": "drizzle/0000_overrated_vision.sql",
+          "line": 84,
+          "snippet": "\"email\" text NOT NULL,"
+        },
+        {
+          "file": "drizzle/0000_overrated_vision.sql",
+          "line": 89,
+          "snippet": "CONSTRAINT \"user_email_unique\" UNIQUE(\"email\")"
+        },
+        {
+          "file": "scripts/run-migration.sql",
+          "line": 6,
+          "snippet": "\"email\" text NOT NULL,"
+        },
+        {
+          "file": "scripts/run-migration.sql",
+          "line": 11,
+          "snippet": "CONSTRAINT \"user_email_unique\" UNIQUE(\"email\")"
+        },
+        {
+          "file": "src/db/schema.ts",
+          "line": 22,
+          "snippet": "email: text(\"email\").notNull().unique(),"
+        }
+      ]
+    },
+    {
+      "id": "pii:name",
+      "claim": "Collects name",
+      "field": "data_collection.identifiers",
+      "value": "name",
+      "sources": [
+        {
+          "file": "drizzle/0000_overrated_vision.sql",
+          "line": 22,
+          "snippet": "\"name\" text NOT NULL,"
+        },
+        {
+          "file": "drizzle/0000_overrated_vision.sql",
+          "line": 83,
+          "snippet": "\"name\" text NOT NULL,"
+        },
+        {
+          "file": "scripts/run-migration.sql",
+          "line": 5,
+          "snippet": "\"name\" text NOT NULL,"
+        },
+        {
+          "file": "scripts/run-migration.sql",
+          "line": 54,
+          "snippet": "\"name\" text NOT NULL,"
+        },
+        {
+          "file": "src/db/schema.ts",
+          "line": 21,
+          "snippet": "name: text(\"name\").notNull(),"
+        }
+      ]
+    },
+    {
+      "id": "pii:password_hash",
+      "claim": "Collects password hash",
+      "field": "data_collection.identifiers",
+      "value": "password_hash",
+      "sources": [
+        {
+          "file": "drizzle/0000_overrated_vision.sql",
+          "line": 14,
+          "snippet": "\"password\" text,"
+        },
+        {
+          "file": "scripts/run-migration.sql",
+          "line": 25,
+          "snippet": "\"password\" text,"
+        },
+        {
+          "file": "src/db/schema.ts",
+          "line": 61,
+          "snippet": "password: text(\"password\"),"
+        }
+      ]
+    },
+    {
+      "id": "pii:ip_address",
+      "claim": "Stores ip address",
+      "field": "data_collection.internet_activity",
+      "value": "ip_address",
+      "sources": [
+        {
+          "file": "drizzle/0000_overrated_vision.sql",
+          "line": 50,
+          "snippet": "\"ip_address\" text,"
+        },
+        {
+          "file": "drizzle/0000_overrated_vision.sql",
+          "line": 77,
+          "snippet": "\"ip_address\" varchar(45),"
+        },
+        {
+          "file": "scripts/run-migration.sql",
+          "line": 36,
+          "snippet": "\"ip_address\" text,"
+        },
+        {
+          "file": "scripts/run-migration.sql",
+          "line": 97,
+          "snippet": "\"ip_address\" varchar(45),"
+        },
+        {
+          "file": "src/db/schema.ts",
+          "line": 37,
+          "snippet": "ipAddress: text(\"ip_address\"),"
+        }
+      ]
+    },
+    {
+      "id": "pii:device_id",
+      "claim": "Stores device id",
+      "field": "data_collection.internet_activity",
+      "value": "device_id",
+      "sources": [
+        {
+          "file": "drizzle/0000_overrated_vision.sql",
+          "line": 51,
+          "snippet": "\"user_agent\" text,"
+        },
+        {
+          "file": "drizzle/0000_overrated_vision.sql",
+          "line": 76,
+          "snippet": "\"user_agent\" text,"
+        },
+        {
+          "file": "scripts/run-migration.sql",
+          "line": 37,
+          "snippet": "\"user_agent\" text,"
+        },
+        {
+          "file": "scripts/run-migration.sql",
+          "line": 96,
+          "snippet": "\"user_agent\" text,"
+        },
+        {
+          "file": "src/db/schema.ts",
+          "line": 38,
+          "snippet": "userAgent: text(\"user_agent\"),"
+        }
+      ]
+    },
+    {
+      "id": "api",
+      "claim": "Customers receive API keys",
+      "field": "product.api_access",
+      "value": true,
+      "sources": [
+        {
+          "file": "src/auth/index.ts",
+          "line": 20,
+          "snippet": "* API keys are not a BetterAuth concern; they live in platform.api_keys and"
+        },
+        {
+          "file": "src/db/migrate.ts",
+          "line": 35,
+          "snippet": "SELECT to_regclass('platform.api_keys') IS NOT NULL AS has_tables,"
+        },
+        {
+          "file": "src/db/schema.ts",
+          "line": 88,
+          "snippet": "export const apiKeys = platformSchema.table("
+        },
+        {
+          "file": "src/db/schema.ts",
+          "line": 89,
+          "snippet": "\"api_keys\","
+        },
+        {
+          "file": "src/lib/api-keys.ts",
+          "line": 8,
+          "snippet": "export function generateApiKey(kind: KeyKind): string {"
+        }
+      ]
+    },
+    {
+      "id": "cookies",
+      "claim": "Cookies or browser storage are set",
+      "field": "cookies.uses_cookies",
+      "value": true,
+      "sources": [
+        {
+          "file": "portal/e2e/support/fixtures.ts",
+          "line": 12,
+          "snippet": "localStorage.setItem(\"pb-theme\", t);"
+        },
+        {
+          "file": "portal/src/components/ds/gallery/main.tsx",
+          "line": 11,
+          "snippet": "localStorage.setItem(THEME_STORAGE_KEY, forced);"
+        },
+        {
+          "file": "portal/src/features/reader/last-read.ts",
+          "line": 57,
+          "snippet": "window.localStorage.setItem(LAST_READ_STORAGE_KEY, JSON.stringify(parsed));"
+        },
+        {
+          "file": "portal/src/features/reader/settings.ts",
+          "line": 38,
+          "snippet": "window.localStorage.setItem(READER_SETTINGS_STORAGE_KEY, JSON.stringify(settings));"
+        },
+        {
+          "file": "portal/src/features/reader/__tests__/last-read.test.ts",
+          "line": 27,
+          "snippet": "localStorage.setItem(LAST_READ_STORAGE_KEY, \"{not json\");"
+        }
+      ]
+    }
+  ],
+  "assumptions": [
+    {
+      "id": "security_defaults",
+      "text": "security.controls starts from template defaults (TLS, encryption at rest, RBAC, vendor due diligence, backups, incident response). Remove any control you do not actually operate; each one is a claim.",
+      "field": "security.controls"
+    },
+    {
+      "id": "retention_defaults",
+      "text": "Retention periods are template defaults, not detected. Confirm each against what the database and backups actually do.",
+      "field": "retention"
+    },
+    {
+      "id": "pricing_free",
+      "text": "No payment processor or in-app purchase code was found, so pricing_model is free. Set it if you charge through another channel (invoices, resellers).",
+      "field": "terms_of_service.pricing_model"
+    },
+    {
+      "id": "dpa_recommended",
+      "text": "B2B signals (organizations or tenants, API keys, or outbound webhooks) suggest you process data on behalf of customers. The DPA is left disabled; enable dpa.applies and meta.output.documents.dpa if that is true.",
+      "field": "dpa.applies"
+    }
+  ],
+  "counsel_flags": [],
+  "coverage": [
+    {
+      "document": "privacy_policy",
+      "needed": "yes",
+      "why": "personal data in the schema; 1 third-party vendors"
+    },
+    {
+      "document": "terms_of_service",
+      "needed": "yes",
+      "why": "every product needs usage terms; sets liability and dispute rules"
+    },
+    {
+      "document": "cookie_policy",
+      "needed": "yes",
+      "why": "cookie or tracking code found"
+    },
+    {
+      "document": "eula",
+      "needed": "no",
+      "why": "no native mobile app found"
+    },
+    {
+      "document": "dpa",
+      "needed": "likely",
+      "why": "B2B signals (api_keys); customers will ask for one if you process their users' data"
+    },
+    {
+      "document": "acceptable_use_policy",
+      "needed": "yes",
+      "why": "API access"
+    }
+  ],
+  "open_questions": [
+    "An auth library is installed but no provider wiring was found. Which sign-in methods are live (email and password, magic link, Google, Apple, others)?",
+    "No account deletion flow was found. How do users delete their account or request erasure (required by GDPR, CCPA, and the app stores)?",
+    "Legal entity name, formation type and state, privacy contact email, and mailing address.",
+    "Which jurisdictions apply: US (with California and Virginia), EU/UK/EEA, Canada.",
+    "Retention periods per data class, and whether a DPO or EEA/UK representative is appointed.",
+    "Governing law, venue, and whether arbitration and a class action waiver apply.",
+    "Whether Terms of Service or Terms of Use is the house name for the document (meta.output.titles)."
+  ],
+  "signals": {
+    "cookies": [
+      {
+        "file": "portal/e2e/support/fixtures.ts",
+        "line": 12,
+        "snippet": "localStorage.setItem(\"pb-theme\", t);"
+      },
+      {
+        "file": "portal/src/components/ds/gallery/main.tsx",
+        "line": 11,
+        "snippet": "localStorage.setItem(THEME_STORAGE_KEY, forced);"
+      },
+      {
+        "file": "portal/src/features/reader/last-read.ts",
+        "line": 57,
+        "snippet": "window.localStorage.setItem(LAST_READ_STORAGE_KEY, JSON.stringify(parsed));"
+      },
+      {
+        "file": "portal/src/features/reader/settings.ts",
+        "line": 38,
+        "snippet": "window.localStorage.setItem(READER_SETTINGS_STORAGE_KEY, JSON.stringify(settings));"
+      },
+      {
+        "file": "portal/src/features/reader/__tests__/last-read.test.ts",
+        "line": 27,
+        "snippet": "localStorage.setItem(LAST_READ_STORAGE_KEY, \"{not json\");"
+      }
+    ],
+    "api_keys": [
+      {
+        "file": "src/auth/index.ts",
+        "line": 20,
+        "snippet": "* API keys are not a BetterAuth concern; they live in platform.api_keys and"
+      },
+      {
+        "file": "src/db/migrate.ts",
+        "line": 35,
+        "snippet": "SELECT to_regclass('platform.api_keys') IS NOT NULL AS has_tables,"
+      },
+      {
+        "file": "src/db/schema.ts",
+        "line": 88,
+        "snippet": "export const apiKeys = platformSchema.table("
+      },
+      {
+        "file": "src/db/schema.ts",
+        "line": 89,
+        "snippet": "\"api_keys\","
+      },
+      {
+        "file": "src/lib/api-keys.ts",
+        "line": 8,
+        "snippet": "export function generateApiKey(kind: KeyKind): string {"
+      }
+    ]
+  },
+  "config_path": "legal-config.yaml",
+  "config_hash": "52f4dbd35f5afba8550b65c62672bf976b761c2cf2054d1bce9cd47dbb3b987e"
+}

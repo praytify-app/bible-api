@@ -54,7 +54,7 @@ suite("gateway against a real database", () => {
     const { runMigrations } = await import("../../src/db/migrate.js");
     await runMigrations(urlFor(dbName), MIGRATIONS);
     sql = postgres(urlFor(dbName), { max: 2, onnotice: () => {} });
-    await sql`INSERT INTO "user" (id, name, email) VALUES ('u1', 'One', 'one@example.test'), ('u2', 'Two', 'two@example.test')`;
+    await sql`INSERT INTO "user" (id, name, email) VALUES ('u1', 'One', 'one@example.test'), ('u2', 'Two', 'two@example.test'), ('u3', 'Three', 'three@example.test')`;
 
     const { loadConfig } = await import("../../src/config.js");
     const { createApp } = await import("../../src/app.js");
@@ -64,6 +64,7 @@ suite("gateway against a real database", () => {
     const { keysRouter } = await import("../../src/routes/keys.js");
     const { usageRouter } = await import("../../src/routes/usage.js");
     const { profileRouter, planRouter } = await import("../../src/routes/profile.js");
+    const { accountRouter } = await import("../../src/routes/account.js");
     ({ aggregateUsage: aggregate } = await import("../../src/jobs/usage-aggregation.js"));
 
     const cfg = loadConfig({ ...process.env, NODE_ENV: "test", BIBLE_API_URL: "http://engine.test" });
@@ -82,6 +83,7 @@ suite("gateway against a real database", () => {
         a.route("/api/dashboard/usage", usageRouter());
         a.route("/api/dashboard/profile", profileRouter());
         a.route("/api/dashboard/plan", planRouter({ anonymous: { perMinute: 120, perDay: 20000 }, maxKeysPerUser: 3 }));
+        a.route("/api/dashboard/account", accountRouter({ onKeysRemoved: (ids) => ids.forEach((id) => resolver.invalidateKeyId(id)) }));
       },
     });
 
@@ -319,4 +321,67 @@ suite("gateway against a real database", () => {
       expect(plan.limits.secret.perMinute).toBe(6000);
     });
   });
+
+  describe("account rights", () => {
+    let key: string;
+
+    it("exports everything held about the user, without credentials", async () => {
+      await sql`INSERT INTO account (id, account_id, provider_id, user_id, access_token, refresh_token)
+                VALUES ('acc3', 'gh-3', 'github', 'u3', 'secret-access-token', 'secret-refresh-token')`;
+      await sql`INSERT INTO session (id, token, user_id, expires_at, ip_address, user_agent)
+                VALUES ('s3', 'secret-session-token', 'u3', now() + interval '1 day', '203.0.113.7', 'test-agent')`;
+      const created = await app.request("/api/dashboard/keys", as("u3", { method: "POST", body: JSON.stringify({ name: "Mine" }) }));
+      key = (await created.json()).key.key;
+      expect((await app.request("/v1/search?q=x", { headers: { authorization: `Bearer ${key}` } })).status).toBe(200);
+      await flushUsage();
+      await app.request("/api/dashboard/profile", as("u3", { method: "PUT", body: JSON.stringify({ appName: "Chapel" }) }));
+
+      const res = await app.request("/api/dashboard/account/export", as("u3"));
+      expect(res.status).toBe(200);
+      expect(res.headers.get("content-disposition")).toMatch(/attachment; filename="praytify-bible-account-/);
+      const text = await res.text();
+      const body = JSON.parse(text);
+      expect(body.user.email).toBe("three@example.test");
+      expect(body.linkedAccounts).toEqual([expect.objectContaining({ provider_id: "github", account_id: "gh-3" })]);
+      expect(body.sessions[0].ip_address).toBe("203.0.113.7");
+      expect(body.developerProfile.app_name).toBe("Chapel");
+      expect(body.apiKeys).toHaveLength(1);
+      expect(body.usageLogs.length).toBeGreaterThan(0);
+      for (const secret of ["secret-access-token", "secret-refresh-token", "secret-session-token", "key_hash", key]) {
+        expect(text).not.toContain(secret);
+      }
+    });
+
+    it("refuses deletion without the exact email", async () => {
+      const res = await app.request("/api/dashboard/account", as("u3", { method: "DELETE", body: JSON.stringify({ confirmEmail: "wrong@example.test" }) }));
+      expect(res.status).toBe(400);
+      expect((await res.json()).error.code).toBe("CONFIRMATION_MISMATCH");
+      expect((await sql`SELECT 1 FROM "user" WHERE id = 'u3'`).length).toBe(1);
+    });
+
+    it("erases the account and everything tied to it, and its keys stop working at once", async () => {
+      const res = await app.request(
+        "/api/dashboard/account",
+        as("u3", { method: "DELETE", body: JSON.stringify({ confirmEmail: "U3@Example.test" }) })
+      );
+      expect(res.status).toBe(200);
+      for (const [table, column] of [
+        ['"user"', "id"],
+        ["session", "user_id"],
+        ["account", "user_id"],
+        ["platform.api_keys", "user_id"],
+        ["platform.usage_logs", "user_id"],
+        ["platform.usage_daily", "user_id"],
+        ["platform.developer_profiles", "user_id"],
+      ] as const) {
+        const rows = await sql.unsafe(`SELECT 1 FROM ${table} WHERE ${column} = 'u3'`);
+        expect(rows.length, `${table} still has rows`).toBe(0);
+      }
+      const call = await app.request("/v1/search?q=x", { headers: { authorization: `Bearer ${key}` } });
+      expect(call.status).toBe(401);
+      // Other users are untouched.
+      expect((await sql`SELECT 1 FROM "user" WHERE id = 'u1'`).length).toBe(1);
+    });
+  });
 });
+
