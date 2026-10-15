@@ -1,228 +1,322 @@
+import { useQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
-import { CodeBlock } from "../components/CodeBlock";
+import { ArrowRight, ArrowUpRight } from "lucide-react";
+import type { ReactNode } from "react";
+import { Button, Card, CodeBlock, Eyebrow, PageHeader, SkeletonText, type CodeSnippet } from "@/components/ds";
+import { API_URL, bible } from "@/lib/api";
+import { SELF_HOST_URL, SOURCE_LABEL, SOURCE_URL } from "@/lib/nav";
 
-const codeExamples = [
+// Home for the Visitor persona (BRIEF §5): what this is, then proof that it
+// works. Every number on the page is fetched; every claim matches README.md.
+
+// The widget's and SDK's built-in API (packages/embed, packages/sdk). Snippets
+// name the API only when this portal talks to a different one (self-hosted, local).
+const HOSTED_API = "https://api.praytify.bible";
+const customApi = API_URL.replace(/\/+$/, "") !== HOSTED_API;
+
+const embedSnippet = `<script type="module" src="${window.location.origin}/embed/v1.js"></script>
+
+<praytify-verse reference="Romans 8:28" version="WEB"${customApi ? ` api="${API_URL}"` : ""}></praytify-verse>`;
+
+const apiSnippets: CodeSnippet[] = [
   {
     label: "cURL",
     language: "bash",
-    code: `# Look up a verse
-curl -H "Authorization: Bearer pb_your_api_key" \\
-  "https://api.praytify.bible/v1/verses?ref=John+3:16&version=KJV"
-
-# Search across a version
-curl -H "Authorization: Bearer pb_your_api_key" \\
-  "https://api.praytify.bible/v1/search?q=love&version=KJV&limit=5"`,
+    code: `curl "${API_URL}/v1/verses?ref=John%203:16&version=WEB"`,
   },
   {
     label: "JavaScript",
     language: "javascript",
-    code: `const API_KEY = "pb_your_api_key";
-const BASE = "https://api.praytify.bible";
-
-// Look up a verse
-const res = await fetch(
-  \`\${BASE}/v1/verses?ref=John+3:16&version=KJV\`,
-  { headers: { Authorization: \`Bearer \${API_KEY}\` } }
-);
+    code: `const res = await fetch("${API_URL}/v1/verses?ref=John%203:16&version=WEB");
 const { data } = await res.json();
-console.log(data.text);
-// "For God so loved the world..."`,
+
+console.log(data.reference, data.verses);`,
   },
   {
-    label: "Python",
-    language: "python",
-    code: `import requests
+    label: "SDK",
+    language: "ts",
+    code: `import { createClient } from "@praytify/bible";
 
-API_KEY = "pb_your_api_key"
-BASE = "https://api.praytify.bible"
-headers = {"Authorization": f"Bearer {API_KEY}"}
-
-# Look up a verse
-res = requests.get(
-    f"{BASE}/v1/verses",
-    params={"ref": "John 3:16", "version": "KJV"},
-    headers=headers
-)
-print(res.json()["data"]["text"])
-# "For God so loved the world..."`,
+const bible = createClient(${customApi ? `{ baseUrl: "${API_URL}" }` : ""});
+const passage = await bible.passage("John 3:16-18", { version: "WEB" });`,
   },
 ];
 
-const features = [
-  {
-    title: "600+ Translations",
-    description: "Access Bible texts across 600+ translations in over 100 languages, from KJV to modern versions.",
-    icon: "M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253",
-  },
-  {
-    title: "REST API",
-    description: "Clean, well-documented RESTful endpoints. Hierarchical navigation from books to chapters to verses.",
-    icon: "M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4",
-  },
-  {
-    title: "Free Forever",
-    description: "No cost for individuals. Generous rate limits. No hidden tiers or surprise charges.",
-    icon: "M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z",
-  },
-  {
-    title: "Developer Dashboard",
-    description: "Manage API keys, monitor usage, and track your application's performance in real time.",
-    icon: "M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z",
-  },
-  {
-    title: "OpenAPI Spec",
-    description: "Interactive API documentation with Scalar. Try endpoints directly from your browser.",
-    icon: "M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z",
-  },
-  {
-    title: "Open Licensing",
-    description: "Every translation is redistributable, with license and attribution metadata included in API responses.",
-    icon: "M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z",
-  },
+// The README's self-host steps, cloned from the configured public source.
+const selfHostSnippet = SOURCE_URL
+  ? `git clone ${SOURCE_URL}.git praytify-bible && cd praytify-bible
+docker compose up -d
+docker compose --profile seed run --rm seed`
+  : null;
+
+const startingPassages = [
+  { label: "Psalm 23", book: "PSA", chapter: "23" },
+  { label: "John 1", book: "JHN", chapter: "1" },
+  { label: "Romans 8", book: "ROM", chapter: "8" },
+  { label: "Matthew 5", book: "MAT", chapter: "5" },
 ];
 
-const stats = [
-  { value: "600+", label: "Translations" },
-  { value: "100+", label: "Languages" },
-  { value: "Free", label: "For Everyone" },
-  { value: "1K", label: "Requests/Day" },
-];
+const numberFormat = new Intl.NumberFormat();
 
 export function LandingPage() {
   return (
-    <div>
-      {/* Hero */}
-      <section className="relative overflow-hidden bg-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-20 pb-16 text-center">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary-50 text-primary text-sm font-semibold mb-6">
-            <span className="w-2 h-2 rounded-full bg-primary animate-pulse" />
-            Open Bible API
-          </div>
-          <h1 className="text-5xl sm:text-6xl lg:text-7xl font-extrabold text-gray-900 tracking-tight leading-tight font-serif">
-            The Bible API<br />
-            <span className="text-primary">for Developers</span>
-          </h1>
-          <p className="mt-6 text-lg sm:text-xl text-gray-600 max-w-2xl mx-auto leading-relaxed">
-            Access 600+ Bible translations in 100+ languages through a clean, modern REST API.
-            Free API keys, generous rate limits, and interactive documentation.
-          </p>
-          <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4">
-            <Link
-              to="/login"
-              className="inline-flex items-center px-8 py-3.5 text-base font-bold text-white bg-primary hover:bg-primary-dark rounded-xl shadow-lg shadow-primary/25 no-underline transition-all hover:shadow-xl hover:shadow-primary/30"
-            >
-              Get your free API key
-              <svg className="ml-2 w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6" />
-              </svg>
-            </Link>
-            <Link
-              to="/read"
-              className="inline-flex items-center px-8 py-3.5 text-base font-bold text-gray-700 bg-white border border-gray-300 hover:border-gray-400 rounded-xl no-underline transition-colors"
-            >
-              Read the Bible online
-            </Link>
-          </div>
-        </div>
-      </section>
-
-      {/* Code Example */}
-      <section className="bg-gray-50 py-16">
-        <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
-          <h2 className="text-center text-2xl font-bold text-gray-900 mb-8">
-            Start building in seconds
-          </h2>
-          <CodeBlock tabs={codeExamples} />
-        </div>
-      </section>
-
-      {/* Stats */}
-      <section className="py-16 bg-white">
-        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
-            {stats.map((stat) => (
-              <div key={stat.label} className="text-center">
-                <div className="text-4xl font-extrabold text-primary">{stat.value}</div>
-                <div className="mt-1 text-sm font-medium text-gray-500">{stat.label}</div>
-              </div>
+    <div className="mx-auto max-w-content px-4 sm:px-6">
+      <Hero />
+      <Section index="01" eyebrow="Read" spacing="open">
+        <SectionText
+          title="Open a chapter in seconds."
+          body="Pick a translation, choose a book, and read. The reader works on a phone, keeps your place, follows your light or dark setting, and reads right to left where the language does."
+          action={
+            <Button asChild trailingIcon={<ArrowRight aria-hidden />}>
+              <Link to="/read">Start reading</Link>
+            </Button>
+          }
+        />
+        <div className="flex flex-col gap-3">
+          <Eyebrow as="p">Start with a passage</Eyebrow>
+          <ul className="divide-y divide-hairline border-y border-hairline">
+            {startingPassages.map((passage) => (
+              <li key={passage.book}>
+                <Link
+                  to="/read/$version/$book/$chapter"
+                  params={{ version: "WEB", book: passage.book, chapter: passage.chapter }}
+                  className="group flex min-h-14 items-center justify-between gap-4 px-1 font-serif text-h3 italic text-ink transition-colors hover:text-accent-text"
+                >
+                  {passage.label}
+                  <span className="flex items-center gap-2 font-sans text-caption not-italic text-ink-muted">
+                    World English Bible
+                    <ArrowRight aria-hidden className="size-4 transition-transform group-hover:translate-x-0.5" />
+                  </span>
+                </Link>
+              </li>
             ))}
-          </div>
+          </ul>
         </div>
-      </section>
+      </Section>
 
-      {/* Features */}
-      <section className="py-20 bg-gray-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-16">
-            <h2 className="text-3xl font-bold text-gray-900">
-              Everything you need to build Bible-powered apps
-            </h2>
-            <p className="mt-4 text-lg text-gray-600 max-w-2xl mx-auto">
-              A complete platform for developers building faith-based applications.
-            </p>
-          </div>
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {features.map((feature) => (
-              <div
-                key={feature.title}
-                className="bg-white rounded-xl border border-gray-200 p-6 hover:shadow-md transition-shadow"
-              >
-                <div className="w-10 h-10 rounded-lg bg-primary-50 flex items-center justify-center mb-4">
-                  <svg
-                    className="w-5 h-5 text-primary"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                    strokeWidth={1.5}
-                  >
-                    <path strokeLinecap="round" strokeLinejoin="round" d={feature.icon} />
-                  </svg>
-                </div>
-                <h3 className="text-lg font-bold text-gray-900">{feature.title}</h3>
-                <p className="mt-2 text-sm text-gray-600 leading-relaxed">
-                  {feature.description}
-                </p>
+      <Section index="02" eyebrow="Embed" spacing="dense" flip>
+        <SectionText
+          title="Put a verse on any page with one tag."
+          body="No key, no build step, no framework. The widget follows each visitor's light or dark preference, links to the full chapter, and shows the translation's attribution."
+          action={
+            <Button asChild variant="secondary" trailingIcon={<ArrowRight aria-hidden />}>
+              <Link to="/embed">Open the embed builder</Link>
+            </Button>
+          }
+        />
+        <CodeBlock code={embedSnippet} language="html" label="HTML" />
+      </Section>
+
+      <Section index="03" eyebrow="API" spacing="open">
+        <SectionText
+          title="Ask for a passage, get JSON back."
+          body="Public reads need no key: translations, books, chapters, references, and the verse of the day. A key adds full-text search, whole-Bible downloads, and a quota of your own."
+          action={
+            <div className="flex flex-wrap items-center gap-x-6 gap-y-3">
+              <Button asChild variant="secondary">
+                <Link to="/docs/quickstart">Read the quick start</Link>
+              </Button>
+              <Button asChild variant="link">
+                <Link to="/docs">API reference</Link>
+              </Button>
+            </div>
+          }
+        />
+        <CodeBlock tabs={apiSnippets} />
+      </Section>
+
+      <DecisionPanel />
+
+      {/* Only with a public source to point at (VITE_SOURCE_URL); the section is its links. */}
+      {SOURCE_URL && SELF_HOST_URL && selfHostSnippet && (
+        <Section index="04" eyebrow="Open source" spacing="dense" flip>
+          <SectionText
+            title="Run the whole thing yourself."
+            body="The code is MIT licensed. One Docker Compose file brings up Postgres, the engine, the gateway, and this portal. Scripture is different: each translation keeps its own licence, recorded with its text."
+            action={
+              <div className="flex flex-wrap items-center gap-x-6 gap-y-3">
+                <Button asChild variant="secondary" trailingIcon={<ArrowUpRight aria-hidden />}>
+                  <a href={SOURCE_URL} target="_blank" rel="noopener noreferrer">
+                    {SOURCE_LABEL === "GitHub" ? "Source on GitHub" : "Source code"}
+                    <span className="sr-only"> (opens in a new tab)</span>
+                  </a>
+                </Button>
+                <Button asChild variant="link" trailingIcon={<ArrowUpRight aria-hidden />}>
+                  <a href={SELF_HOST_URL} target="_blank" rel="noopener noreferrer">
+                    Self-hosting guide<span className="sr-only"> (opens in a new tab)</span>
+                  </a>
+                </Button>
               </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Community CTA */}
-      <section className="py-20 bg-white">
-        <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <h2 className="text-3xl font-bold text-gray-900">
-            Join the community
-          </h2>
-          <p className="mt-4 text-lg text-gray-600 max-w-xl mx-auto">
-            Praytify Bible is open and free for everyone. Build apps that bring
-            Scripture closer to people around the world.
-          </p>
-          <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4">
-            <Link
-              to="/login"
-              className="inline-flex items-center px-8 py-3.5 text-base font-bold text-white bg-primary hover:bg-primary-dark rounded-xl shadow-lg shadow-primary/25 no-underline transition-all"
-            >
-              Get started for free
-            </Link>
-            <a
-              href="https://github.com/praytify"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 px-8 py-3.5 text-base font-bold text-gray-700 bg-white border border-gray-300 hover:border-gray-400 rounded-xl no-underline transition-colors"
-            >
-              <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
-                <path
-                  fillRule="evenodd"
-                  clipRule="evenodd"
-                  d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z"
-                />
-              </svg>
-              Star on GitHub
-            </a>
-          </div>
-        </div>
-      </section>
+            }
+          />
+          <CodeBlock code={selfHostSnippet} language="bash" label="Terminal" />
+        </Section>
+      )}
     </div>
+  );
+}
+
+function Hero() {
+  return (
+    <section className="grid gap-12 py-14 sm:py-20 lg:grid-cols-[minmax(0,7fr)_minmax(0,5fr)] lg:items-center lg:gap-16 lg:py-24">
+      <div className="flex flex-col gap-8">
+        <PageHeader
+          size="hero"
+          eyebrow="Open-source scripture infrastructure"
+          title="Scripture for every screen."
+          serifLine="Read it, embed it, build on it."
+          description="A public reader, drop-in widgets, and a JSON API, all open source. Reading needs no account and no key."
+        />
+        <div className="flex flex-wrap gap-3">
+          <Button asChild size="lg">
+            <Link to="/read">Start reading</Link>
+          </Button>
+          <Button asChild size="lg" variant="secondary">
+            <Link to="/docs/quickstart">Explore the API</Link>
+          </Button>
+        </div>
+        <CatalogCounts />
+      </div>
+      <VerseOfTheDay />
+    </section>
+  );
+}
+
+const count = (value: number) => <strong className="text-h4 font-semibold tabular-nums text-ink">{numberFormat.format(value)}</strong>;
+
+/**
+ * Live size of the catalog from two small requests (a version count from
+ * pagination metadata, and the languages list), not a download of the whole
+ * catalog. Renders nothing while loading, on error, or when the catalog is empty.
+ */
+function CatalogCounts() {
+  const { data } = useQuery({ queryKey: ["catalog-stats"], queryFn: () => bible.catalogStats(), staleTime: 60 * 60 * 1000 });
+  if (!data || data.languages === 0) return null;
+  return (
+    <p className="flex flex-wrap items-baseline gap-x-2 gap-y-1 border-t border-hairline pt-5 text-body-sm text-ink-secondary">
+      {/* The version total is optional in the API's metadata; say only what we know. */}
+      <span>
+        {data.versions !== null ? (
+          <>
+            {count(data.versions)} translations in {count(data.languages)} languages.
+          </>
+        ) : (
+          <>Scripture in {count(data.languages)} languages.</>
+        )}
+      </span>
+      <Link to="/docs/translations" className="font-semibold text-accent-text underline-offset-4 hover:underline">
+        Browse the catalog
+      </Link>
+    </p>
+  );
+}
+
+function VerseOfTheDay() {
+  const { data, isPending, isError } = useQuery({
+    queryKey: ["bible-daily", "WEB"],
+    queryFn: () => bible.daily("WEB"),
+    staleTime: 60 * 60 * 1000,
+  });
+  return (
+    <Card as="section" aria-labelledby="daily-title" padding="lg" className="flex flex-col gap-5">
+      <h2 id="daily-title" className="text-eyebrow font-semibold uppercase text-accent-text">
+        Verse of the day
+      </h2>
+      {isPending ? (
+        <div aria-busy="true">
+          <SkeletonText lines={4} />
+          <span className="sr-only">Loading the verse of the day</span>
+        </div>
+      ) : isError ? (
+        <p className="text-body text-ink-secondary">
+          Today's verse is not available right now. The reader is open whenever you are.
+        </p>
+      ) : (
+        <figure className="flex flex-col gap-4">
+          <blockquote className="font-serif text-h3 italic leading-snug text-ink">
+            <p>{data.text}</p>
+          </blockquote>
+          <figcaption className="text-body-sm text-ink-secondary">
+            <span className="font-semibold text-ink">{data.reference}</span>, {data.version}
+          </figcaption>
+        </figure>
+      )}
+      <Button asChild variant="link" className="self-start" trailingIcon={<ArrowRight aria-hidden />}>
+        <Link to="/read">Open the reader</Link>
+      </Button>
+    </Card>
+  );
+}
+
+function Section({
+  index,
+  eyebrow,
+  spacing,
+  flip = false,
+  children,
+}: {
+  index: string;
+  eyebrow: string;
+  /** Alternate dense and open sections so the page has rhythm (DESIGN.md Layout). */
+  spacing: "dense" | "open";
+  /** Put the text on the right from lg up, alternating sides between sections. */
+  flip?: boolean;
+  children: [ReactNode, ReactNode];
+}) {
+  const [text, aside] = children;
+  return (
+    <section className={spacing === "open" ? "border-t border-hairline py-16 sm:py-24" : "border-t border-hairline py-12 sm:py-16"}>
+      <Eyebrow index={index} className="mb-8">
+        {eyebrow}
+      </Eyebrow>
+      {/* Code and lists get the wider column; the text keeps a readable measure. */}
+      <div
+        className={
+          flip
+            ? "grid items-start gap-10 lg:grid-cols-[minmax(0,7fr)_minmax(0,5fr)] lg:gap-16"
+            : "grid items-start gap-10 lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)] lg:gap-16"
+        }
+      >
+        <div className={flip ? "lg:order-2" : undefined}>{text}</div>
+        <div className="min-w-0">{aside}</div>
+      </div>
+    </section>
+  );
+}
+
+function SectionText({ title, body, action }: { title: string; body: string; action: ReactNode }) {
+  return (
+    <div className="flex max-w-measure flex-col gap-4">
+      <h2 className="text-h2 font-bold text-balance text-ink">{title}</h2>
+      <p className="text-body-lg text-ink-secondary">{body}</p>
+      <div className="pt-2">{action}</div>
+    </div>
+  );
+}
+
+/** The one committed panel: the point where a Visitor becomes an Integrator. */
+function DecisionPanel() {
+  return (
+    <Card as="section" variant="committed" padding="lg" aria-labelledby="decision-title" className="my-8 sm:my-12">
+      <div className="flex flex-col gap-8 lg:flex-row lg:items-end lg:justify-between">
+        <div className="flex max-w-measure flex-col gap-3">
+          <h2 id="decision-title" className="text-h1 font-bold text-balance">
+            Reading stays open. Get a key when you need more.
+          </h2>
+          <p className="text-body-lg">
+            Secret keys stay on your server. Publishable keys work in the browser, only from the sites you list. Your
+            dashboard shows what each one uses.
+          </p>
+        </div>
+        <div className="flex shrink-0 flex-wrap items-center gap-4">
+          <Button asChild size="lg" variant="secondary">
+            <Link to="/dashboard/keys">Create a key</Link>
+          </Button>
+          <Link to="/docs/quickstart" className="text-body font-semibold text-on-accent underline underline-offset-4">
+            Read the quick start first
+          </Link>
+        </div>
+      </div>
+    </Card>
   );
 }

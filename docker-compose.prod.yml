@@ -1,25 +1,48 @@
-## Praytify Bible — Production Docker Compose (Dokploy)
+## Praytify Bible, production (Dokploy, plain docker compose).
 ##
-## Architecture:
-##   praytify.bible     → portal (static frontend, nginx, port 80)
-##   api.praytify.bible → gateway (public API + auth, port 3200)
-##   bible-engine       → internal only (raw Bible data, port 3100, NOT exposed)
+##   praytify.bible      -> portal   (static SPA, nginx, port 80)
+##   api.praytify.bible  -> gateway  (public API, accounts, keys, caching, port 3200)
+##   bible-engine        -> internal only (scripture data, port 3100, never exposed)
 ##
-## Database: Bundled Postgres instance with persistent volume.
+## Routing is configured in the Dokploy Domains UI, not with Traefik labels.
 ##
-## Routing: Managed via Dokploy Domains UI (not Traefik labels).
-##
-## Required env vars — set in Dokploy compose environment section:
-##   DATABASE_URL, BETTER_AUTH_SECRET, ADMIN_TOKEN, POSTGRES_PASSWORD, MASTER_API_KEY
-##   Optional: GITHUB_CLIENT_ID, GITHUB_CLIENT_SECRET, GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET
+## Set in the Dokploy compose environment:
+##   required: POSTGRES_PASSWORD, DATABASE_URL, BETTER_AUTH_SECRET, GATEWAY_TOKEN
+##   optional: ADMIN_TOKEN (unset locks the engine's admin routes),
+##             GITHUB_CLIENT_ID/SECRET, GOOGLE_CLIENT_ID/SECRET, REDIS_URL,
+##             ENGINE_DATABASE_URL, GATEWAY_DATABASE_URL (least-privilege roles),
+##             MASTER_API_KEY (deprecated; remove once Praytify uses an internal key)
+## See .env.production.example. Pin image tags by hand to the tag scripts/deploy.sh
+## prints (docs/DEPLOY.md, steps 1 and 4).
+
+x-hardening: &hardening
+  read_only: true
+  security_opt:
+    - no-new-privileges:true
+  cap_drop:
+    - ALL
+  tmpfs:
+    - /tmp:size=64m
 
 services:
   gateway:
+    <<: *hardening
     image: novashock/praytify-bible-gateway:0.4.0-17ea66f
     restart: unless-stopped
+    mem_limit: 768m
     environment:
-      DATABASE_URL: ${DATABASE_URL}
+      NODE_ENV: production
+      LOG_LEVEL: info
+      # Per-service role after scripts/db-roles.sql has run (docs/DEPLOY.md);
+      # until then the shared DATABASE_URL is used.
+      DATABASE_URL: ${GATEWAY_DATABASE_URL:-${DATABASE_URL}}
+      DB_POOL_MAX: "20"
+      # Applies gateway migrations under an advisory lock; production's
+      # hand-built schema is baselined at 0000 on first run.
+      MIGRATE_ON_BOOT: "true"
       BIBLE_API_URL: http://bible-engine:3100
+      GATEWAY_TOKEN: ${GATEWAY_TOKEN}
+      PUBLIC_API_URL: https://api.praytify.bible
       BETTER_AUTH_SECRET: ${BETTER_AUTH_SECRET}
       BETTER_AUTH_URL: https://api.praytify.bible
       PORTAL_URL: https://praytify.bible
@@ -27,34 +50,49 @@ services:
       GITHUB_CLIENT_SECRET: ${GITHUB_CLIENT_SECRET:-}
       GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
       GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
+      MASTER_API_KEY: ${MASTER_API_KEY:-}
+      REDIS_URL: ${REDIS_URL:-}
+      # Traefik appends the client address to X-Forwarded-For.
+      TRUST_PROXY_HOPS: "1"
+      READ_CACHE_MAX_MB: "256"
       PORT: "3200"
-      MASTER_API_KEY: ${MASTER_API_KEY}
     depends_on:
       postgres:
         condition: service_healthy
       bible-engine:
         condition: service_healthy
     healthcheck:
-      test: ["CMD", "node", "-e", "fetch('http://localhost:3200/health').then(r=>{if(!r.ok)process.exit(1)})"]
+      # Readiness, not liveness: a database outage must show as unhealthy.
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3200/health/ready').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
       interval: 30s
       timeout: 5s
       retries: 3
-      start_period: 15s
+      start_period: 30s
     networks:
       - dokploy-network
       - internal
 
   bible-engine:
+    <<: *hardening
     image: novashock/praytify-bible-engine:1.4.0-b0835ca
     restart: unless-stopped
+    mem_limit: 1g
     expose:
       - "3100"
     environment:
-      DATABASE_URL: ${DATABASE_URL}
+      NODE_ENV: production
+      DATABASE_URL: ${ENGINE_DATABASE_URL:-${DATABASE_URL}}
+      DB_POOL_MAX: "20"
       ADMIN_TOKEN: ${ADMIN_TOKEN}
+      # Gateway traffic carries this token and skips the engine's per-IP
+      # limiter; the gateway enforces per-account and per-IP quotas itself.
+      GATEWAY_TOKEN: ${GATEWAY_TOKEN}
+      RATE_LIMIT_MAX: "1000"
+      # Full-Bible downloads build two at a time; more queue (up to 16) or get 503.
+      DOWNLOAD_CONCURRENCY: "2"
       PORT: "3100"
     healthcheck:
-      test: ["CMD", "node", "-e", "fetch('http://localhost:3100/api/v1/health').then(r=>{if(!r.ok)process.exit(1)})"]
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3100/api/v1/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
       interval: 30s
       timeout: 5s
       retries: 3
@@ -68,13 +106,31 @@ services:
   postgres:
     image: postgres:16-alpine
     restart: unless-stopped
+    mem_limit: 2g
+    shm_size: 256m
+    # Sized for the 2 GB container (Postgres defaults assume 128 MB). See
+    # docs/PERFORMANCE.md; random_page_cost assumes SSD or NVMe storage.
+    command:
+      - postgres
+      - -c
+      - shared_buffers=512MB
+      - -c
+      - effective_cache_size=1536MB
+      - -c
+      - work_mem=16MB
+      - -c
+      - maintenance_work_mem=256MB
+      - -c
+      - random_page_cost=1.1
+    security_opt:
+      - no-new-privileges:true
     environment:
       POSTGRES_USER: bible
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
       POSTGRES_DB: praytify_bible
     volumes:
       - bible_data:/var/lib/postgresql/data
-      - ./scripts/init-db.sql:/docker-entrypoint-initdb.d/01-init.sql
+      - ./scripts/init-db.sql:/docker-entrypoint-initdb.d/01-init.sql:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U bible -d praytify_bible"]
       interval: 10s
@@ -89,12 +145,24 @@ services:
           - bible-db
 
   portal:
-    image: novashock/praytify-bible-portal:0.4.1-e043cc9
+    <<: *hardening
+    image: novashock/praytify-bible-portal:0.4.1-c167e10
     restart: unless-stopped
+    mem_limit: 128m
+    # Requires the unprivileged nginx image (portal/Dockerfile). The old
+    # root-nginx images cannot start with these restrictions, so this file and
+    # the portal tag must ship together.
+    sysctls:
+      net.ipv4.ip_unprivileged_port_start: "0"
+    # nginx writes its pid and temp files here; everything else is read-only.
+    tmpfs:
+      - /tmp:size=64m
+      - /var/cache/nginx:size=64m
+      - /var/run:size=1m
     expose:
       - "80"
     healthcheck:
-      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:80/ || exit 1"]
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:80/health || exit 1"]
       interval: 30s
       timeout: 5s
       retries: 3

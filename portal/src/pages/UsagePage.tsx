@@ -1,165 +1,180 @@
 import { useQuery } from "@tanstack/react-query";
-import {
-  LineChart,
-  Line,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
-} from "recharts";
-import { usage } from "../lib/api";
+import { useNavigate, useSearch } from "@tanstack/react-router";
+import { X } from "lucide-react";
+import { Alert, Badge, Button, Card, CardHeader, PageHeader, Select, Skeleton, Stat } from "@/components/ds";
+import { formatDay, zeroFill } from "@/features/usage/fill";
+import { KeyUsageTable } from "@/features/usage/KeyUsageTable";
+import { DEFAULT_PERIOD, PERIODS, usageHref, validateUsageSearch, type UsageSearch } from "@/features/usage/search";
+import { UsageChart } from "@/features/usage/UsageChart";
+import { keys, usage } from "@/lib/api";
+
+const count = new Intl.NumberFormat();
+const periodOptions = PERIODS.map((d) => ({ value: String(d), label: `Last ${d} days` }));
+const UNAVAILABLE = "Could not be loaded";
 
 export function UsagePage() {
-  const {
-    data: dailyData,
-    isLoading: loadingDaily,
-    isError: dailyError,
-  } = useQuery({
-    queryKey: ["usage-daily"],
-    queryFn: () => usage.daily(30),
+  const navigate = useNavigate();
+  const raw: Record<string, unknown> = useSearch({ strict: false });
+  const { days = DEFAULT_PERIOD, keyId } = validateUsageSearch(raw);
+  const ignoredKeyFilter = raw.keyId !== undefined && !keyId;
+
+  const setView = (next: UsageSearch) => navigate({ href: usageHref(next), replace: true });
+
+  const daily = useQuery({
+    queryKey: ["usage-daily", days, keyId ?? "all"],
+    queryFn: () => usage.daily(days, keyId),
   });
+  const summary = useQuery({ queryKey: ["usage-summary", days], queryFn: () => usage.summary(days) });
+  const byKey = useQuery({ queryKey: ["usage-by-key", days], queryFn: () => usage.byKey(days) });
 
-  const {
-    data: summary,
-    isLoading: loadingSummary,
-    isError: summaryError,
-  } = useQuery({
-    queryKey: ["usage-summary"],
-    queryFn: () => usage.summary(),
+  // Name the charted key. Keys without traffic in the period are not in byKey, so fall back to the key list.
+  const keyFromUsage = keyId ? byKey.data?.find((k) => k.keyId === keyId) : undefined;
+  const keyList = useQuery({
+    queryKey: ["keys"],
+    queryFn: () => keys.list(),
+    enabled: Boolean(keyId) && byKey.isSuccess && !keyFromUsage,
   });
+  const keyName = keyFromUsage?.name ?? keyList.data?.find((k) => k.id === keyId)?.name ?? "Selected key";
 
-  const hasError = dailyError || summaryError;
+  // Zero-fill only a successful response; an error stays an error (must-not-regress 9).
+  const chartData = daily.isSuccess ? zeroFill(daily.data.daily, daily.data.period.from, daily.data.period.to) : null;
+  const periodDays = summary.data?.periodDays ?? days;
+  const periodLabel = `last ${periodDays} days`;
+  const failed = [daily, summary, byKey].filter((q) => q.isError);
 
-  // Zero-fill the 30-day window only for a successful-but-sparse response;
-  // an error must render as an error, not as "0 requests"
-  const chartData =
-    !dailyError && dailyData?.daily && dailyData.daily.length > 0
-      ? dailyData.daily
-      : Array.from({ length: 30 }, (_, i) => {
-          const date = new Date();
-          date.setDate(date.getDate() - (29 - i));
-          return {
-            date: date.toISOString().split("T")[0],
-            requests: 0,
-            errors: 0,
-            avgResponseTimeMs: 0,
-          };
-        });
+  const s = summary.isError ? undefined : summary.data;
+  const errorRate =
+    s && s.totalRequests > 0 ? `${((s.totalErrors / s.totalRequests) * 100).toFixed(1)}% of requests` : undefined;
 
   return (
-    <div>
-      <div className="mb-8">
-        <h1 className="text-2xl font-bold text-gray-900">Usage</h1>
-        <p className="mt-1 text-sm text-gray-500">
-          Monitor your API usage over the last 30 days.
-        </p>
-      </div>
+    <div className="flex flex-col gap-8">
+      <PageHeader
+        title="Usage"
+        serifLine="requests by day and by key"
+        description="Counts come from your API keys and are grouped by UTC day. Anonymous traffic is not counted here."
+        actions={
+          <Select
+            aria-label="Period"
+            options={periodOptions}
+            value={String(days)}
+            onValueChange={(value) => setView({ days: Number(value) as UsageSearch["days"], keyId })}
+            className="min-w-44"
+          />
+        }
+      />
 
-      {hasError && (
-        <div className="mb-6 bg-red-50 border border-red-200 rounded-xl p-4 text-sm text-red-700">
-          We couldn't load your usage data. Refresh the page or try again
-          shortly.
-        </div>
+      {failed.length > 0 && (
+        <Alert
+          tone="danger"
+          title="Some usage data could not be loaded."
+          action={
+            <Button
+              variant="secondary"
+              size="sm"
+              loading={failed.some((q) => q.isFetching)}
+              onClick={() => failed.forEach((q) => q.refetch())}
+            >
+              Try again
+            </Button>
+          }
+        >
+          The sections marked unavailable show a dash, not a zero, until they load.
+        </Alert>
+      )}
+      {ignoredKeyFilter && (
+        <Alert tone="warning" onDismiss={() => setView({ days })}>
+          That link had a key filter this page does not recognise, so the chart shows all keys.
+        </Alert>
       )}
 
-      {/* Summary Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-4 gap-4 mb-8">
-        <div className="bg-white rounded-xl border border-gray-200 p-5">
-          <div className="text-sm font-medium text-gray-500">Total Requests</div>
-          <div className="mt-1 text-2xl font-bold text-gray-900">
-            {loadingSummary || summaryError ? "--" : (summary?.totalRequests?.toLocaleString() ?? "0")}
-          </div>
+      <Card as="section" aria-labelledby="usage-summary-title">
+        <CardHeader
+          title={<span id="usage-summary-title">Totals, {periodLabel}</span>}
+          description={keyId ? "All keys. The chart below shows one key." : "All keys."}
+        />
+        <div className="grid grid-cols-2 gap-x-6 gap-y-6 lg:grid-cols-5">
+          <Stat label="Requests" value={s?.totalRequests} loading={summary.isPending} unavailableReason={UNAVAILABLE} />
+          <Stat
+            label="Errors"
+            value={s?.totalErrors}
+            hint={errorRate}
+            loading={summary.isPending}
+            unavailableReason={UNAVAILABLE}
+          />
+          <Stat
+            label="Avg response"
+            // An average of no requests is not 0 ms.
+            value={s && s.totalRequests === 0 ? "None" : s?.avgResponseTimeMs}
+            hint={s && s.totalRequests === 0 ? "No requests to time" : undefined}
+            format={(ms) => `${count.format(ms)} ms`}
+            loading={summary.isPending}
+            unavailableReason={UNAVAILABLE}
+          />
+          <Stat
+            label="Requests today"
+            value={s?.requestsToday}
+            hint="Since midnight UTC"
+            loading={summary.isPending}
+            unavailableReason={UNAVAILABLE}
+          />
+          <Stat label="Active keys" value={s?.activeKeys} loading={summary.isPending} unavailableReason={UNAVAILABLE} />
         </div>
-        <div className="bg-white rounded-xl border border-gray-200 p-5">
-          <div className="text-sm font-medium text-gray-500">Total Errors</div>
-          <div className="mt-1 text-2xl font-bold text-gray-900">
-            {loadingSummary || summaryError ? "--" : (summary?.totalErrors?.toLocaleString() ?? "0")}
-          </div>
-        </div>
-        <div className="bg-white rounded-xl border border-gray-200 p-5">
-          <div className="text-sm font-medium text-gray-500">Avg Response</div>
-          <div className="mt-1 text-2xl font-bold text-gray-900">
-            {loadingSummary || summaryError ? "--" : `${summary?.avgResponseTimeMs ?? 0}ms`}
-          </div>
-        </div>
-        <div className="bg-white rounded-xl border border-gray-200 p-5">
-          <div className="text-sm font-medium text-gray-500">Active Keys</div>
-          <div className="mt-1 text-2xl font-bold text-gray-900">
-            {loadingSummary || summaryError ? "--" : (summary?.activeKeys ?? "0")}
-          </div>
-        </div>
-      </div>
+      </Card>
 
-      {/* Chart */}
-      <div className="bg-white rounded-xl border border-gray-200 p-6">
-        <h2 className="text-lg font-bold text-gray-900 mb-6">Daily Requests</h2>
-        {dailyError ? (
-          <div className="flex items-center justify-center h-64 text-sm text-gray-500">
-            Usage data is unavailable right now.
+      <Card as="section" aria-labelledby="usage-daily-title">
+        <CardHeader
+          title={<span id="usage-daily-title">Requests per day</span>}
+          description={
+            daily.isSuccess
+              ? `${formatDay(daily.data.period.from, "long")} to ${formatDay(daily.data.period.to, "long")}, UTC.`
+              : undefined
+          }
+          actions={
+            keyId ? (
+              <span className="inline-flex items-center gap-1">
+                <Badge tone="accent">Key: {keyName}</Badge>
+                <Button variant="ghost" size="sm" leadingIcon={<X aria-hidden />} onClick={() => setView({ days })}>
+                  Show all keys
+                </Button>
+              </span>
+            ) : undefined
+          }
+        />
+        {daily.isError ? (
+          // Checked before loading: a failure must never fall through to an empty, zero-looking chart.
+          <div className="flex h-72 flex-col items-center justify-center gap-1 rounded-input bg-surface-sunken px-6 text-center">
+            <p className="font-semibold text-ink">Daily usage is unavailable right now.</p>
+            <p className="text-body-sm text-ink-secondary">Nothing is shown rather than a misleading zero.</p>
           </div>
-        ) : loadingDaily ? (
-          <div className="flex items-center justify-center h-64">
-            <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary" />
+        ) : daily.isPending || !chartData ? (
+          <div aria-busy>
+            <Skeleton className="h-72 w-full" />
+            <p className="sr-only">Loading daily usage</p>
           </div>
         ) : (
-          <div className="h-72">
-            <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={chartData}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                <XAxis
-                  dataKey="date"
-                  tick={{ fontSize: 12, fill: "#9ca3af" }}
-                  tickFormatter={(v: string) => {
-                    const d = new Date(v);
-                    return `${d.getMonth() + 1}/${d.getDate()}`;
-                  }}
-                />
-                <YAxis
-                  tick={{ fontSize: 12, fill: "#9ca3af" }}
-                  allowDecimals={false}
-                />
-                <Tooltip
-                  contentStyle={{
-                    borderRadius: "8px",
-                    border: "1px solid #e5e7eb",
-                    boxShadow: "0 4px 6px -1px rgb(0 0 0 / 0.1)",
-                    fontSize: "13px",
-                  }}
-                  labelFormatter={(label) => {
-                    if (typeof label !== "string" && typeof label !== "number") {
-                      return "";
-                    }
-
-                    return new Date(label).toLocaleDateString("en-US", {
-                      month: "short",
-                      day: "numeric",
-                      year: "numeric",
-                    });
-                  }}
-                />
-                <Line
-                  type="monotone"
-                  dataKey="requests"
-                  stroke="#4F46E5"
-                  strokeWidth={2}
-                  dot={false}
-                  activeDot={{ r: 5, fill: "#4F46E5" }}
-                />
-                <Line
-                  type="monotone"
-                  dataKey="errors"
-                  stroke="#ef4444"
-                  strokeWidth={1.5}
-                  dot={false}
-                  strokeDasharray="4 4"
-                  activeDot={{ r: 4, fill: "#ef4444" }}
-                />
-              </LineChart>
-            </ResponsiveContainer>
+          <div className="flex flex-col gap-3">
+            {chartData.every((d) => d.requests === 0) && (
+              <p className="text-body-sm text-ink-secondary">
+                {keyId ? "No requests with this key" : "No requests with your keys"} in this period yet.
+              </p>
+            )}
+            <UsageChart data={chartData} />
           </div>
         )}
-      </div>
+      </Card>
+
+      <Card as="section" aria-labelledby="usage-keys-title">
+        <CardHeader
+          title={<span id="usage-keys-title">By key</span>}
+          description={`Requests and errors per key, ${periodLabel}. Revoked keys keep their history.`}
+        />
+        <KeyUsageTable
+          query={byKey}
+          periodLabel={periodLabel}
+          selectedKeyId={keyId}
+          onChartKey={(next) => setView({ days, keyId: next })}
+        />
+      </Card>
     </div>
   );
 }

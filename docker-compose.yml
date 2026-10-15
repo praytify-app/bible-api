@@ -1,70 +1,150 @@
+## Praytify Bible: self-hosted stack.
+##
+##   docker compose up -d                      # Postgres, engine, gateway, portal
+##   docker compose --profile seed run --rm seed   # once: sample public-domain translations
+##
+##   portal   http://localhost:8080
+##   gateway  http://localhost:3200   (API reference at /docs)
+##
+## The engine is built from its public repository by default. To build from a
+## local checkout instead: ENGINE_CONTEXT=../open-bible-api docker compose up -d
+##
+## Sign in to the dashboard with email and password (enabled below), or add
+## GitHub/Google OAuth credentials to .env. For production, see
+## docker-compose.prod.yml and docs/DEPLOY.md.
+##
+## The `*-change-me` fallbacks below are public. Ports bind to 127.0.0.1 so
+## they never leave this machine. To serve other machines, set BIND_ADDRESS
+## (or put a reverse proxy in front), PUBLIC_API_URL and PORTAL_URL, and real
+## secrets in .env; the gateway refuses to start on placeholders once
+## PUBLIC_API_URL is not localhost.
+
+x-hardening: &hardening
+  read_only: true
+  security_opt:
+    - no-new-privileges:true
+  cap_drop:
+    - ALL
+  tmpfs:
+    - /tmp:size=64m
+
 services:
-  gateway:
-    build: .
-    ports:
-      - "3200:3200"
-    environment:
-      - DATABASE_URL=postgresql://bible:${POSTGRES_PASSWORD:-bible}@postgres:5432/praytify_bible
-      - DATABASE_SCHEMA=platform
-      - BIBLE_API_URL=http://bible-api:3100
-      - BETTER_AUTH_SECRET=${BETTER_AUTH_SECRET:-dev-secret}
-      - BETTER_AUTH_URL=${BETTER_AUTH_URL:-http://localhost:3200}
-      - PORTAL_URL=${PORTAL_URL:-http://localhost:5173}
-      - GITHUB_CLIENT_ID=${GITHUB_CLIENT_ID:-}
-      - GITHUB_CLIENT_SECRET=${GITHUB_CLIENT_SECRET:-}
-      - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID:-}
-      - GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET:-}
-      - PORT=3200
-    depends_on:
-      postgres:
-        condition: service_healthy
-      bible-api:
-        condition: service_started
-    healthcheck:
-      test: ["CMD", "wget", "-qO-", "http://localhost:3200/health"]
-      interval: 30s
-      timeout: 5s
-      retries: 3
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.gateway.rule=Host(`api.praytify.bible`)"
-      - "traefik.http.routers.gateway.entrypoints=websecure"
-      - "traefik.http.routers.gateway.tls.certresolver=letsencrypt"
-
-  # NOTE: For Dokploy, bible-api and gateway are deployed as separate services
-  # pointing to separate repos. This docker-compose is for LOCAL DEV only.
-  bible-api:
-    build:
-      context: ../open-bible-api
-    expose:
-      - "3100"
-    environment:
-      - DATABASE_URL=postgresql://bible:${POSTGRES_PASSWORD:-bible}@postgres:5432/praytify_bible
-      - DATABASE_SCHEMA=bible
-      - ADMIN_TOKEN=${ADMIN_TOKEN:-dev-admin-token}
-    depends_on:
-      postgres:
-        condition: service_healthy
-    healthcheck:
-      test: ["CMD", "wget", "-qO-", "http://localhost:3100/api/v1/health"]
-      interval: 30s
-      timeout: 5s
-      retries: 3
-
   postgres:
     image: postgres:16-alpine
+    restart: unless-stopped
+    # Modest settings for a small server; raise for the full corpus (docs/PERFORMANCE.md).
+    command: ["postgres", "-c", "shared_buffers=256MB", "-c", "effective_cache_size=768MB", "-c", "work_mem=8MB"]
     environment:
-      - POSTGRES_USER=bible
-      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-bible}
-      - POSTGRES_DB=praytify_bible
+      POSTGRES_USER: bible
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-bible}
+      POSTGRES_DB: praytify_bible
+      # Each service gets its own role that owns only its own tables.
+      ENGINE_DB_PASSWORD: ${ENGINE_DB_PASSWORD:-engine-db-password-change-me}
+      GATEWAY_DB_PASSWORD: ${GATEWAY_DB_PASSWORD:-gateway-db-password-change-me}
     volumes:
       - bible_data:/var/lib/postgresql/data
-      - ./scripts/init-db.sql:/docker-entrypoint-initdb.d/01-init.sql
+      - ./scripts/init-db.sql:/docker-entrypoint-initdb.d/01-init.sql:ro
+      - ./scripts/db-roles-init.sh:/docker-entrypoint-initdb.d/02-roles.sh:ro
+      - ./scripts/db-roles.sql:/opt/praytify/db-roles.sql:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U bible -d praytify_bible"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    networks: [internal]
+
+  engine:
+    <<: *hardening
+    build:
+      context: ${ENGINE_CONTEXT:-https://github.com/praytify-app/open-bible-api.git#main}
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: postgresql://bible_engine:${ENGINE_DB_PASSWORD:-engine-db-password-change-me}@postgres:5432/praytify_bible
+      GATEWAY_TOKEN: ${GATEWAY_TOKEN:-self-host-gateway-token-change-me}
+      # Unset locks the engine's admin routes; set one only if you use them.
+      ADMIN_TOKEN: ${ADMIN_TOKEN:-}
+      MIGRATE_ON_BOOT: "true"
+      PORT: "3100"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3100/api/v1/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
       interval: 10s
       timeout: 5s
-      retries: 5
+      retries: 10
+      start_period: 20s
+    networks: [internal]
+
+  # One-shot: seeds a few public-domain translations, the daily verses, and
+  # search indexes. Downloads from eBible.org on first run.
+  seed:
+    profiles: [seed]
+    build:
+      context: ${ENGINE_CONTEXT:-https://github.com/praytify-app/open-bible-api.git#main}
+    command: ["node", "dist/seeder/cli.js", "seed-sample"]
+    environment:
+      DATABASE_URL: postgresql://bible_engine:${ENGINE_DB_PASSWORD:-engine-db-password-change-me}@postgres:5432/praytify_bible
+      EBIBLE_CACHE_DIR: /cache
+    volumes:
+      - ebible_cache:/cache
+    depends_on:
+      engine:
+        condition: service_healthy
+    networks: [internal]
+
+  gateway:
+    <<: *hardening
+    build: .
+    restart: unless-stopped
+    ports:
+      - "${BIND_ADDRESS:-127.0.0.1}:3200:3200"
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: postgresql://bible_gateway:${GATEWAY_DB_PASSWORD:-gateway-db-password-change-me}@postgres:5432/praytify_bible
+      MIGRATE_ON_BOOT: "true"
+      BIBLE_API_URL: http://engine:3100
+      GATEWAY_TOKEN: ${GATEWAY_TOKEN:-self-host-gateway-token-change-me}
+      PUBLIC_API_URL: ${PUBLIC_API_URL:-http://localhost:3200}
+      BETTER_AUTH_URL: ${PUBLIC_API_URL:-http://localhost:3200}
+      BETTER_AUTH_SECRET: ${BETTER_AUTH_SECRET:-self-host-secret-change-me-self-host-secret}
+      PORTAL_URL: ${PORTAL_URL:-http://localhost:8080}
+      EMAIL_PASSWORD_AUTH: ${EMAIL_PASSWORD_AUTH:-true}
+      GITHUB_CLIENT_ID: ${GITHUB_CLIENT_ID:-}
+      GITHUB_CLIENT_SECRET: ${GITHUB_CLIENT_SECRET:-}
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
+      # Set to 1 when a reverse proxy (Traefik, Caddy, nginx) sits in front.
+      TRUST_PROXY_HOPS: ${TRUST_PROXY_HOPS:-0}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      engine:
+        condition: service_healthy
+    networks: [internal, public]
+
+  portal:
+    <<: *hardening
+    build:
+      context: .
+      dockerfile: portal/Dockerfile
+      args:
+        VITE_API_URL: ${PUBLIC_API_URL:-http://localhost:3200}
+    restart: unless-stopped
+    ports:
+      - "${BIND_ADDRESS:-127.0.0.1}:8080:80"
+    sysctls:
+      net.ipv4.ip_unprivileged_port_start: "0"
+    tmpfs:
+      - /tmp:size=64m
+      - /var/cache/nginx:size=64m
+      - /var/run:size=1m
+    networks: [public]
 
 volumes:
   bible_data:
+  ebible_cache:
+
+networks:
+  internal:
+  public:

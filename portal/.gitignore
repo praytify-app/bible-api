@@ -9,6 +9,7 @@ lerna-debug.log*
 
 node_modules
 dist
+dist-e2e
 dist-ssr
 *.local
 
@@ -22,3 +23,8 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Generated from packages/embed by scripts/copy-embed.mjs or the Docker build.
+public/embed/
+playwright-report/
+e2e/results/

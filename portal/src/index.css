@@ -1,31 +1,434 @@
 @import "tailwindcss";
+/* Self-hosted variable fonts. Weight axis only: the optical-size files cost about
+   150 KB more for latin and the reader is phone-first. unicode-range keeps
+   non-latin subsets off the wire until a page needs them. */
+@import "@fontsource-variable/plus-jakarta-sans/wght.css";
+@import "@fontsource-variable/source-serif-4/wght.css";
+@import "@fontsource-variable/source-serif-4/wght-italic.css";
+
+/* Dark mode follows data-theme on <html> (set before paint by index.html and kept
+   in sync by lib/theme.tsx), not the OS media query, so the reader can override it. */
+@custom-variant dark (&:where([data-theme=dark], [data-theme=dark] *));
+
+/* ---------------------------------------------------------------------------
+   Layer 1: raw Sacred Dawn values. Markup never uses these directly; they exist
+   so the semantic layer below reads as decisions, not hex soup.
+   Every text/background pair is checked by scripts/contrast-check.mjs.
+   --------------------------------------------------------------------------- */
+:root {
+  /* Paper (light surfaces) */
+  --sd-paper: #faf6f1;
+  --sd-paper-raised: #ffffff;
+  --sd-paper-sunken: #f4eee6;
+
+  /* Brown ink ramp. 900 is the brand ink. 700 and 600 are solid equivalents of
+     the spec's 72% and 65% alpha inks composited on paper, so contrast holds on
+     every light surface instead of shifting with whatever sits underneath. */
+  --sd-brown-900: #2c1810;
+  --sd-brown-700: #66564f;
+  --sd-brown-600: #74665f;
+  --sd-brown-500: #8f827b;
+  --sd-brown-400: #9d928c;
+
+  /* Night (dark surfaces): brown-black, never neutral grey */
+  --sd-night-950: #130f0c;
+  --sd-night-900: #1a1411;
+  --sd-night-800: #241c18;
+  --sd-night-700: #2e2420;
+
+  /* Dawn ink ramp for dark surfaces (cream, never pure white) */
+  --sd-dawn-50: #f3ebe1;
+  --sd-dawn-200: #bdb5ad;
+  --sd-dawn-400: #9c958e;
+  --sd-dawn-500: #7c756f;
+  --sd-dawn-600: #716a64;
+
+  /* Sacred Indigo */
+  --sd-indigo-200: #a8a4f8;
+  --sd-indigo-500: #5b53e8;
+  --sd-indigo-450: #6159ec;
+  --sd-indigo-600: #4f46e5;
+  --sd-indigo-700: #4338ca;
+  --sd-indigo-800: #3730a3;
+  --sd-indigo-950: #1e1b4b;
+  --sd-indigo-tint: #eeedfb;
+  --sd-indigo-night: #252040;
+
+  /* Warm tan, used for the reader's verse highlight */
+  --sd-tan: #d4a574;
+
+  /* Status, tinted toward the brand's warmth */
+  --sd-green-700: #2e6b3a;
+  --sd-green-300: #8fd19a;
+  --sd-green-tint: #e7f0e1;
+  --sd-green-night: #1d2b1f;
+  --sd-amber-800: #8a5300;
+  --sd-amber-300: #efc16b;
+  --sd-amber-tint: #faefd8;
+  --sd-amber-night: #302512;
+  --sd-red-700: #b3261e;
+  --sd-red-800: #9f1f17;
+  --sd-red-600: #c0362c;
+  --sd-red-300: #f4a194;
+  --sd-red-tint: #fbe9e4;
+  --sd-red-night: #3b1c18;
+
+  --sd-white: #ffffff;
+  /* The committed panel's top-right highlight: its lightest point, so contrast is checked against it. */
+  --sd-committed-highlight: rgb(255 255 255 / 0.1);
+}
+
+/* ---------------------------------------------------------------------------
+   Layer 2: semantic roles. Components and pages speak only in these.
+   [data-theme="light"] is listed too so a subtree can force light inside dark.
+   --------------------------------------------------------------------------- */
+:root,
+[data-theme="light"] {
+  color-scheme: light;
+
+  --surface-base: var(--sd-paper);
+  --surface-raised: var(--sd-paper-raised);
+  --surface-sunken: var(--sd-paper-sunken);
+  --surface-overlay: var(--sd-paper-raised);
+  --surface-inverse: var(--sd-brown-900);
+
+  --ink: var(--sd-brown-900);
+  --ink-secondary: var(--sd-brown-700);
+  --ink-muted: var(--sd-brown-600);
+  /* Decoration only (disabled glyphs, ornaments). Fails AA for text by design. */
+  --ink-faint: var(--sd-brown-400);
+  --ink-inverse: var(--sd-paper);
+  --ink-on-accent: var(--sd-white);
+  --ink-on-danger: var(--sd-white);
+
+  --accent: var(--sd-indigo-600);
+  --accent-hover: var(--sd-indigo-700);
+  --accent-active: var(--sd-indigo-800);
+  --accent-text: var(--sd-indigo-700);
+  --accent-subtle: var(--sd-indigo-tint);
+  --accent-deep: var(--sd-indigo-950);
+
+  --hairline: rgb(44 24 16 / 0.08);
+  --border: rgb(44 24 16 / 0.14);
+  /* Control edges (inputs, checkboxes, switch tracks) must reach 3:1 (WCAG 1.4.11). */
+  --control: var(--sd-brown-500);
+  --focus: var(--sd-indigo-700);
+
+  --success: var(--sd-green-700);
+  --success-subtle: var(--sd-green-tint);
+  --warning: var(--sd-amber-800);
+  --warning-subtle: var(--sd-amber-tint);
+  --danger: var(--sd-red-700);
+  --danger-fill: var(--sd-red-700);
+  --danger-hover: var(--sd-red-800);
+  --danger-subtle: var(--sd-red-tint);
+  --info: var(--sd-indigo-700);
+  --info-subtle: var(--sd-indigo-tint);
+
+  --highlight: #efdecc;
+  --scrim: rgb(44 24 16 / 0.45);
+
+  --chart-1: var(--sd-indigo-600);
+  --chart-2: var(--sd-red-700);
+  --chart-grid: rgb(44 24 16 / 0.08);
+  --chart-axis: var(--sd-brown-600);
+
+  --elev-raised: 0 1px 2px rgb(44 24 16 / 0.05), 0 8px 24px -12px rgb(44 24 16 / 0.12);
+  --elev-overlay: 0 2px 6px rgb(44 24 16 / 0.06), 0 16px 40px -12px rgb(44 24 16 / 0.22);
+  --elev-dialog: 0 4px 12px rgb(44 24 16 / 0.08), 0 32px 64px -24px rgb(44 24 16 / 0.32);
+  --elev-committed: 0 24px 60px rgb(79 70 229 / 0.28);
+}
+
+[data-theme="dark"] {
+  color-scheme: dark;
+
+  --surface-base: var(--sd-night-900);
+  --surface-raised: var(--sd-night-800);
+  --surface-sunken: var(--sd-night-950);
+  --surface-overlay: var(--sd-night-700);
+  --surface-inverse: var(--sd-dawn-50);
+
+  --ink: var(--sd-dawn-50);
+  --ink-secondary: var(--sd-dawn-200);
+  --ink-muted: var(--sd-dawn-400);
+  --ink-faint: var(--sd-dawn-600);
+  --ink-inverse: var(--sd-brown-900);
+  --ink-on-accent: var(--sd-white);
+  --ink-on-danger: var(--sd-white);
+
+  /* One step lighter than light mode so the fill still separates from the
+     surface (3:1) while white labels keep AA. */
+  --accent: var(--sd-indigo-500);
+  --accent-hover: var(--sd-indigo-450);
+  --accent-active: var(--sd-indigo-600);
+  --accent-text: var(--sd-indigo-200);
+  --accent-subtle: var(--sd-indigo-night);
+  --accent-deep: var(--sd-indigo-950);
+
+  --hairline: rgb(243 235 225 / 0.08);
+  --border: rgb(243 235 225 / 0.14);
+  --control: var(--sd-dawn-500);
+  --focus: var(--sd-indigo-200);
+
+  --success: var(--sd-green-300);
+  --success-subtle: var(--sd-green-night);
+  --warning: var(--sd-amber-300);
+  --warning-subtle: var(--sd-amber-night);
+  /* red-300 reads as text on night surfaces, but white labels need a deeper fill. */
+  --danger: var(--sd-red-300);
+  --danger-fill: var(--sd-red-600);
+  --danger-hover: var(--sd-red-700);
+  --danger-subtle: var(--sd-red-night);
+  --info: var(--sd-indigo-200);
+  --info-subtle: var(--sd-indigo-night);
+
+  --highlight: #433427;
+  --scrim: rgb(0 0 0 / 0.6);
+
+  --chart-1: var(--sd-indigo-200);
+  --chart-2: var(--sd-red-300);
+  --chart-grid: rgb(243 235 225 / 0.08);
+  --chart-axis: var(--sd-dawn-400);
+
+  --elev-raised: 0 1px 2px rgb(0 0 0 / 0.3), inset 0 0 0 1px rgb(243 235 225 / 0.04);
+  --elev-overlay: 0 16px 40px -8px rgb(0 0 0 / 0.6), inset 0 0 0 1px rgb(243 235 225 / 0.06);
+  --elev-dialog: 0 32px 64px -16px rgb(0 0 0 / 0.7), inset 0 0 0 1px rgb(243 235 225 / 0.06);
+  --elev-committed: 0 24px 60px rgb(0 0 0 / 0.5);
+}
+
+/* ---------------------------------------------------------------------------
+   Layer 3: Tailwind names. `inline` makes each utility reference the semantic
+   variable at the element, so a subtree with its own data-theme recolours.
+   Markup: bg-surface, text-ink, border-hairline, bg-accent, text-accent-text...
+   --------------------------------------------------------------------------- */
+@theme inline {
+  --color-surface: var(--surface-base);
+  --color-surface-raised: var(--surface-raised);
+  --color-surface-sunken: var(--surface-sunken);
+  --color-surface-overlay: var(--surface-overlay);
+  --color-surface-inverse: var(--surface-inverse);
+
+  --color-ink: var(--ink);
+  --color-ink-secondary: var(--ink-secondary);
+  --color-ink-muted: var(--ink-muted);
+  --color-ink-faint: var(--ink-faint);
+  --color-ink-inverse: var(--ink-inverse);
+  --color-on-accent: var(--ink-on-accent);
+  --color-on-danger: var(--ink-on-danger);
+
+  --color-accent: var(--accent);
+  --color-accent-hover: var(--accent-hover);
+  --color-accent-active: var(--accent-active);
+  --color-accent-text: var(--accent-text);
+  --color-accent-subtle: var(--accent-subtle);
+  --color-accent-deep: var(--accent-deep);
+
+  --color-hairline: var(--hairline);
+  --color-border: var(--border);
+  --color-control: var(--control);
+  --color-focus: var(--focus);
+
+  --color-success: var(--success);
+  --color-success-subtle: var(--success-subtle);
+  --color-warning: var(--warning);
+  --color-warning-subtle: var(--warning-subtle);
+  --color-danger: var(--danger);
+  --color-danger-fill: var(--danger-fill);
+  --color-danger-hover: var(--danger-hover);
+  --color-danger-subtle: var(--danger-subtle);
+  --color-info: var(--info);
+  --color-info-subtle: var(--info-subtle);
+
+  --color-highlight: var(--highlight);
+  --color-scrim: var(--scrim);
+
+  --shadow-raised: var(--elev-raised);
+  --shadow-overlay: var(--elev-overlay);
+  --shadow-dialog: var(--elev-dialog);
+  --shadow-committed: var(--elev-committed);
+
+  /* Scripture size scales with the reader's text-size setting. Inline so the
+     multiplier resolves on the reading column, not on :root. */
+  --text-scripture: calc(1.1875rem * var(--reader-scale, 1));
+  --text-scripture--line-height: 1.8;
+}
 
 @theme {
-  /* Brand primary — Sacred Indigo */
-  --color-primary: #4F46E5;
-  --color-primary-dark: #4338CA;
-  --color-primary-light: #818CF8;
-  --color-primary-50: #EEF2FF;
-  --color-primary-100: #E0E7FF;
-  --color-primary-200: #C7D2FE;
-  --color-primary-300: #A5B4FC;
-  --color-primary-400: #818CF8;
-  --color-primary-500: #6366F1;
-  --color-primary-600: #4F46E5;
-  --color-primary-700: #4338CA;
+  --font-sans: "Plus Jakarta Sans Variable", "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
+  /* Non-latin scripture falls through to the platform serif for its script. */
+  --font-serif: "Source Serif 4 Variable", "Source Serif 4", Georgia, "Noto Serif", serif;
+  --font-mono: ui-monospace, "SFMono-Regular", "Cascadia Code", Menlo, Consolas, monospace;
 
-  /* Typography */
-  --font-sans: "Plus Jakarta Sans", system-ui, -apple-system, sans-serif;
-  --font-serif: "Source Serif 4", Georgia, "Times New Roman", serif;
+  /* Type scale. Display and h1 use the DESIGN.md clamp ranges; body never drops
+     below 16px (brand guidelines §7). Weight steps differ by at least 1.25. */
+  --text-display: clamp(3rem, 2rem + 4.5vw, 4.75rem);
+  --text-display--line-height: 1.02;
+  --text-display--letter-spacing: -0.02em;
+  --text-h1: clamp(1.875rem, 1.4rem + 2.2vw, 2.875rem);
+  --text-h1--line-height: 1.1;
+  --text-h1--letter-spacing: -0.02em;
+  --text-h2: 1.625rem;
+  --text-h2--line-height: 1.2;
+  --text-h2--letter-spacing: -0.015em;
+  --text-h3: 1.25rem;
+  --text-h3--line-height: 1.3;
+  --text-h3--letter-spacing: -0.01em;
+  --text-h4: 1.0625rem;
+  --text-h4--line-height: 1.4;
+  --text-body-lg: 1.0625rem;
+  --text-body-lg--line-height: 1.6;
+  --text-body: 1rem;
+  --text-body--line-height: 1.55;
+  --text-body-sm: 0.875rem;
+  --text-body-sm--line-height: 1.5;
+  --text-caption: 0.8125rem;
+  --text-caption--line-height: 1.45;
+  --text-eyebrow: 0.6875rem;
+  --text-eyebrow--line-height: 1.2;
+  --text-eyebrow--letter-spacing: 0.24em;
+
+  --radius-input: 12px;
+  --radius-card: 20px;
+  --radius-panel: 28px;
+  --radius-pill: 9999px;
+
+  --container-content: 70rem;
+  --container-measure: 68ch;
+
+  --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+
+  --animate-fade-in: fade-in 160ms var(--ease-out-expo);
+  --animate-fade-out: fade-out 120ms ease-in;
+  --animate-pop-in: pop-in 180ms var(--ease-out-expo);
+  --animate-sheet-in-left: sheet-in-left 240ms var(--ease-out-expo);
+  --animate-sheet-in-right: sheet-in-right 240ms var(--ease-out-expo);
+  --animate-shimmer: shimmer 1.6s ease-in-out infinite;
+
+  @keyframes fade-in {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+  @keyframes fade-out {
+    from { opacity: 1; }
+    to { opacity: 0; }
+  }
+  @keyframes pop-in {
+    from { opacity: 0; transform: translateY(4px) scale(0.98); }
+    to { opacity: 1; transform: none; }
+  }
+  @keyframes sheet-in-left {
+    from { transform: translateX(-100%); }
+    to { transform: none; }
+  }
+  @keyframes sheet-in-right {
+    from { transform: translateX(100%); }
+    to { transform: none; }
+  }
+  @keyframes shimmer {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.55; }
+  }
+
+  /* Legacy aliases, DEPRECATED. Unmigrated pages still use primary-*; they keep
+     rendering until Phase 4 moves them to the semantic names above. Remove this
+     block once `grep -r "primary-" src/pages src/components` is empty. */
+  --color-primary: #4f46e5;
+  --color-primary-dark: #4338ca;
+  --color-primary-light: #818cf8;
+  --color-primary-50: #eef2ff;
+  --color-primary-100: #e0e7ff;
+  --color-primary-200: #c7d2fe;
+  --color-primary-300: #a5b4fc;
+  --color-primary-400: #818cf8;
+  --color-primary-500: #6366f1;
+  --color-primary-600: #4f46e5;
+  --color-primary-700: #4338ca;
 }
 
-body {
-  margin: 0;
-  font-family: var(--font-sans);
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+/* The committed panel from DESIGN.md: marks decision points only, never decoration.
+   Labels on it use text-on-accent; the 10% highlight keeps white text above 5:1. */
+@utility bg-committed {
+  background-color: var(--sd-indigo-600);
+  background-image:
+    radial-gradient(circle at 88% 0%, var(--sd-committed-highlight), transparent 45%),
+    linear-gradient(145deg, var(--sd-indigo-600), var(--sd-indigo-800) 55%, var(--sd-indigo-950));
+  /* The indigo focus outline vanishes on an indigo fill; focus inside the panel
+     uses the label colour instead. Inherited, so every control inside follows. */
+  --focus: var(--ink-on-accent);
 }
 
-code, pre {
-  font-family: ui-monospace, "Cascadia Code", "Fira Code", Consolas, monospace;
+/* Extends the hit area of a compact control to 44x44 (brand guidelines §7) without
+   changing its layout. Do not combine with overflow-hidden or a custom ::after. */
+@utility touch-target {
+  position: relative;
+  &::after {
+    content: "";
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: max(100%, 44px);
+    height: max(100%, 44px);
+    transform: translate(-50%, -50%);
+  }
+}
+
+@layer base {
+  html {
+    background-color: var(--surface-base);
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    background-color: var(--surface-base);
+    color: var(--ink);
+    font-family: var(--font-sans);
+    font-size: var(--text-body);
+    line-height: var(--text-body--line-height);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+  }
+
+  /* One visible focus indicator for everything focusable. Outline rather than a
+     box-shadow ring so it survives Windows forced-colours mode. */
+  :focus-visible {
+    outline: 2px solid var(--focus);
+    outline-offset: 2px;
+  }
+
+  /* Route changes move focus to the page heading so screen readers read it
+     (route-focus.ts). It is a reading position, not a control: no ring. */
+  h1[tabindex="-1"]:focus-visible {
+    outline: none;
+  }
+
+  ::selection {
+    background-color: var(--accent-subtle);
+    color: var(--ink);
+  }
+
+  button:not(:disabled),
+  [role="button"]:not([aria-disabled="true"]) {
+    cursor: pointer;
+  }
+
+  code,
+  kbd,
+  pre,
+  samp {
+    font-family: var(--font-mono);
+  }
+}
+
+/* Respect reduced motion everywhere. Elements that signal progress (spinners)
+   opt out with data-motion="essential", because a frozen spinner reads as a hang. */
+@media (prefers-reduced-motion: reduce) {
+  *:not([data-motion="essential"]),
+  *:not([data-motion="essential"])::before,
+  *:not([data-motion="essential"])::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }

@@ -1,144 +1,223 @@
-import { useState, useMemo } from "react";
+import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { translations } from "../lib/api";
+import { Link } from "@tanstack/react-router";
+import { ChevronLeft, ChevronRight, Search } from "lucide-react";
+import {
+  Alert,
+  Badge,
+  Button,
+  EmptyState,
+  Field,
+  Input,
+  PageHeader,
+  SearchSelect,
+  Skeleton,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeaderCell,
+  TableRow,
+} from "@/components/ds";
+import { filterCatalog, languagesOf, pageOf } from "@/features/docs/catalog";
+import { translations } from "@/lib/api";
+import { versionSlug } from "@/lib/version-slug";
+
+const ALL_LANGUAGES = "all";
+const count = new Intl.NumberFormat();
 
 export function TranslationsPage() {
   const [search, setSearch] = useState("");
-  const [languageFilter, setLanguageFilter] = useState("");
+  const [language, setLanguage] = useState<string>(ALL_LANGUAGES);
+  const [page, setPage] = useState(1);
 
-  const { data: translationList, isLoading, isError } = useQuery({
-    queryKey: ["translations"],
-    queryFn: () => translations.list(),
-  });
+  const catalog = useQuery({ queryKey: ["translations"], queryFn: translations.list });
 
-  const languages = useMemo(() => {
-    if (!translationList) return [];
-    const langs = [...new Set(translationList.map((t) => t.language))].sort();
-    return langs;
-  }, [translationList]);
+  const languages = useMemo(() => languagesOf(catalog.data ?? []), [catalog.data]);
+  const languageOptions = useMemo(
+    () => [
+      { value: ALL_LANGUAGES, label: "All languages" },
+      ...languages.map((l) => ({
+        value: l.code,
+        label: l.name,
+        description: `${count.format(l.count)} translation${l.count === 1 ? "" : "s"}`,
+        keywords: l.code,
+      })),
+    ],
+    [languages],
+  );
+  const filtered = useMemo(
+    () => filterCatalog(catalog.data ?? [], search, language === ALL_LANGUAGES ? null : language),
+    [catalog.data, search, language],
+  );
+  const view = pageOf(filtered, page);
+  const filtering = search.trim() !== "" || language !== ALL_LANGUAGES;
 
-  const filtered = useMemo(() => {
-    if (!translationList) return [];
-    return translationList.filter((t) => {
-      const matchesSearch =
-        !search ||
-        t.name.toLowerCase().includes(search.toLowerCase()) ||
-        t.abbreviation.toLowerCase().includes(search.toLowerCase()) ||
-        t.language.toLowerCase().includes(search.toLowerCase());
-      const matchesLanguage =
-        !languageFilter || t.language === languageFilter;
-      return matchesSearch && matchesLanguage;
-    });
-  }, [translationList, search, languageFilter]);
+  function clearFilters() {
+    setSearch("");
+    setLanguage(ALL_LANGUAGES);
+    setPage(1);
+  }
 
   return (
-    <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900">
-          Bible Translations
-        </h1>
-        <p className="mt-2 text-gray-600">
-          Browse all available translations. Use the search and filter to find
-          what you need.
-        </p>
-      </div>
+    <div className="mx-auto flex w-full max-w-content flex-col gap-8 px-4 py-10 sm:px-6 lg:px-8">
+      <PageHeader
+        eyebrow="Docs"
+        title="Translations"
+        serifLine="every version in the catalog"
+        description={
+          // The live count appears only once the catalog has loaded (must-not-regress 8).
+          catalog.isSuccess
+            ? `${count.format(catalog.data.length)} translations in ${count.format(languages.length)} languages. Open one in the reader, or use its abbreviation in any API call.`
+            : "Open a translation in the reader, or use its abbreviation in any API call."
+        }
+      />
 
-      {/* Filters */}
-      <div className="flex flex-col sm:flex-row gap-3 mb-6">
-        <div className="flex-1">
-          <input
-            type="text"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search by name, abbreviation, or language..."
-            className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
-          />
-        </div>
-        <select
-          value={languageFilter}
-          onChange={(e) => setLanguageFilter(e.target.value)}
-          className="px-4 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary bg-white"
+      {catalog.isError ? (
+        <Alert
+          tone="danger"
+          title="We could not load the translation list."
+          action={
+            <Button variant="secondary" size="sm" loading={catalog.isFetching} onClick={() => catalog.refetch()}>
+              Try again
+            </Button>
+          }
         >
-          <option value="">All Languages</option>
-          {languages.map((lang) => (
-            <option key={lang} value={lang}>
-              {lang}
-            </option>
-          ))}
-        </select>
-      </div>
-
-      {/* Count */}
-      <div className="mb-4 text-sm text-gray-500">
-        {isLoading
-          ? "Loading translations..."
-          : isError
-            ? ""
-            : `${filtered.length} translation${filtered.length !== 1 ? "s" : ""} found`}
-      </div>
-
-      {/* Table */}
-      {isError ? (
-        <div className="bg-red-50 border border-red-200 rounded-xl p-12 text-center">
-          <p className="text-red-700 font-medium">
-            We couldn't load the translation list.
-          </p>
-          <p className="mt-1 text-sm text-red-600">
-            Please refresh the page or try again in a few minutes.
-          </p>
-        </div>
-      ) : isLoading ? (
-        <div className="flex items-center justify-center py-12">
-          <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary" />
-        </div>
-      ) : filtered.length > 0 ? (
-        <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead>
-                <tr className="border-b border-gray-200 bg-gray-50">
-                  <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                    Abbreviation
-                  </th>
-                  <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                    Name
-                  </th>
-                  <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                    Language
-                  </th>
-                  <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">
-                    Direction
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-100">
-                {filtered.map((t) => (
-                  <tr key={t.id} className="hover:bg-gray-50">
-                    <td className="px-4 py-3">
-                      <code className="text-sm font-mono text-primary font-semibold">
-                        {t.abbreviation}
-                      </code>
-                    </td>
-                    <td className="px-4 py-3 text-sm text-gray-900">
-                      {t.name}
-                    </td>
-                    <td className="px-4 py-3 text-sm text-gray-600">
-                      {t.language}
-                    </td>
-                    <td className="px-4 py-3 text-sm text-gray-500 uppercase">
-                      {t.textDirection || "ltr"}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
+          The API may be unreachable. Try again in a moment.
+        </Alert>
       ) : (
-        <div className="bg-white border border-gray-200 rounded-xl p-12 text-center">
-          <p className="text-gray-500">
-            No translations match your search criteria.
-          </p>
+        <div className="flex flex-col gap-5">
+          <div className="grid gap-4 sm:grid-cols-[minmax(0,1fr)_16rem]">
+            <Field label="Search translations">
+              <Input
+                type="search"
+                leadingIcon={<Search />}
+                placeholder="Name, abbreviation, or language"
+                value={search}
+                disabled={catalog.isPending}
+                onChange={(e) => {
+                  setSearch(e.target.value);
+                  setPage(1);
+                }}
+              />
+            </Field>
+            <Field label="Language" disabled={catalog.isPending}>
+              <SearchSelect
+                options={languageOptions}
+                value={language}
+                onValueChange={(value) => {
+                  setLanguage(value);
+                  setPage(1);
+                }}
+                searchLabel="Search languages"
+                searchPlaceholder="Type a language"
+                emptyMessage="No language matches that search."
+              />
+            </Field>
+          </div>
+
+          <div className="flex min-h-6 flex-wrap items-center justify-between gap-3 text-body-sm text-ink-secondary">
+            <span role="status">
+              {catalog.isSuccess &&
+                (filtered.length === 0
+                  ? "No translations match."
+                  : `Showing ${count.format(view.from)} to ${count.format(view.to)} of ${count.format(filtered.length)}${filtering ? " matching" : ""}`)}
+            </span>
+            {catalog.isSuccess && filtering && (
+              <Button variant="link" onClick={clearFilters}>
+                Clear filters
+              </Button>
+            )}
+          </div>
+
+          {catalog.isPending ? (
+            <div aria-busy className="flex flex-col gap-2 rounded-card border border-hairline bg-surface-raised p-4">
+              {Array.from({ length: 8 }, (_, i) => (
+                <Skeleton key={i} className="h-9 w-full" />
+              ))}
+              <p className="sr-only">Loading translations</p>
+            </div>
+          ) : filtered.length === 0 ? (
+            <EmptyState
+              icon={<Search />}
+              title="No translations match"
+              description="Try a shorter search, another spelling, or all languages."
+              action={
+                <Button variant="secondary" onClick={clearFilters}>
+                  Clear filters
+                </Button>
+              }
+            />
+          ) : (
+            <>
+              <Table caption="Bible translations" stackOnMobile>
+                <TableHead>
+                  <TableRow>
+                    <TableHeaderCell>Abbreviation</TableHeaderCell>
+                    <TableHeaderCell>Name</TableHeaderCell>
+                    <TableHeaderCell>Language</TableHeaderCell>
+                    <TableHeaderCell>Licence</TableHeaderCell>
+                    <TableHeaderCell className="text-right">Verses</TableHeaderCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {view.rows.map((t) => (
+                    <TableRow key={t.id}>
+                      <TableCell label="Abbreviation">
+                        <Link
+                          to="/read/$version/$book/$chapter"
+                          params={{ version: versionSlug(t), book: "GEN", chapter: "1" }}
+                          className="font-mono font-semibold text-accent-text underline-offset-4 hover:underline"
+                        >
+                          {t.abbreviation}
+                          <span className="sr-only">, read {t.name}</span>
+                        </Link>
+                      </TableCell>
+                      <TableCell label="Name">{t.name}</TableCell>
+                      <TableCell label="Language">
+                        <span className="inline-flex flex-wrap items-center gap-2">
+                          <span className="text-ink-secondary">{t.language || t.languageCode || "Unknown"}</span>
+                          {t.textDirection === "rtl" && <Badge tone="neutral">Right to left</Badge>}
+                        </span>
+                      </TableCell>
+                      <TableCell label="Licence" className="text-ink-secondary">
+                        {t.license || "Not stated"}
+                      </TableCell>
+                      <TableCell label="Verses" className="text-right tabular-nums text-ink-secondary">
+                        {typeof t.verseCount === "number" ? count.format(t.verseCount) : "Not available"}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+
+              {view.pages > 1 && (
+                <nav aria-label="Translation pages" className="flex items-center justify-between gap-3">
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    leadingIcon={<ChevronLeft aria-hidden />}
+                    disabled={view.page === 1}
+                    onClick={() => setPage(view.page - 1)}
+                  >
+                    Previous
+                  </Button>
+                  <span className="text-body-sm text-ink-secondary">
+                    Page {view.page} of {view.pages}
+                  </span>
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    trailingIcon={<ChevronRight aria-hidden />}
+                    disabled={view.page === view.pages}
+                    onClick={() => setPage(view.page + 1)}
+                  >
+                    Next
+                  </Button>
+                </nav>
+              )}
+            </>
+          )}
         </div>
       )}
     </div>

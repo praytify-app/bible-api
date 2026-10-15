@@ -1,0 +1,1221 @@
+{
+ "template": "/Users/jkolade/sireskay/core-2-dashboard-builder-react-efu",
+ "package": {
+  "name": "core-2",
+  "framework": {
+   "next": "16.4.0",
+   "react": "^19.3.0",
+   "react-dom": "^19.3.0",
+   "tailwindcss": "^4.0.9"
+  },
+  "dependencies": {
+   "@headlessui/react": "^2.2.0",
+   "@tailwindcss/postcss": "^4.0.9",
+   "@tiptap/extension-link": "^2.11.5",
+   "@tiptap/extension-text-align": "^2.11.5",
+   "@tiptap/extension-underline": "^2.11.5",
+   "@tiptap/react": "^2.11.5",
+   "@tiptap/starter-kit": "^2.11.5",
+   "@types/react-scroll": "^1.8.10",
+   "@types/react-slider": "^1.3.6",
+   "@types/react-tagsinput": "^3.20.6",
+   "add": "^2.0.6",
+   "emoji-picker-react": "^4.12.0",
+   "framer-motion": "^12.5.0",
+   "millify": "^6.1.0",
+   "next": "16.4.0",
+   "next-themes": "^0.4.4",
+   "postcss": "^8.5.3",
+   "react": "^19.3.0",
+   "react-animate-height": "^3.2.3",
+   "react-datepicker": "^8.2.0",
+   "react-dom": "^19.3.0",
+   "react-number-format": "^5.4.3",
+   "react-remove-scroll": "^2.6.3",
+   "react-scroll": "^1.9.3",
+   "react-slider": "^2.0.6",
+   "react-tagsinput": "^3.20.3",
+   "react-textarea-autosize": "^8.5.8",
+   "react-tooltip": "^5.28.0",
+   "react-use": "^17.6.0",
+   "recharts": "^2.15.1",
+   "sharp": "^0.33.5",
+   "swiper": "^11.2.4",
+   "tailwindcss": "^4.0.9",
+   "yarn": "^1.22.22"
+  },
+  "devDependencies": {
+   "@types/node": "^20",
+   "@types/react": "^19",
+   "@types/react-dom": "^19",
+   "eslint": "^9",
+   "eslint-config-next": "16.4.0",
+   "tailwind-scrollbar": "^4.0.1",
+   "typescript": "^5"
+  },
+  "scripts": {
+   "dev": "next dev",
+   "build": "next build",
+   "start": "next start",
+   "lint": "eslint ."
+  }
+ },
+ "routes": [
+  {
+   "route": "/",
+   "file": "app/page.tsx",
+   "renders": "@/templates/HomePage"
+  },
+  {
+   "route": "/affiliate-center",
+   "file": "app/affiliate-center/page.tsx",
+   "renders": "@/templates/AffiliateCenterPage"
+  },
+  {
+   "route": "/customers",
+   "file": "app/customers/page.tsx",
+   "renders": "@/templates/Customers/OverviewPage"
+  },
+  {
+   "route": "/customers/customer-list",
+   "file": "app/customers/customer-list/page.tsx",
+   "renders": "@/templates/Customers/CustomerList/CustomerListPage"
+  },
+  {
+   "route": "/customers/customer-list/details",
+   "file": "app/customers/customer-list/details/page.tsx",
+   "renders": "@/templates/Customers/CustomerList/DetailsPage"
+  },
+  {
+   "route": "/explore-creators",
+   "file": "app/explore-creators/page.tsx",
+   "renders": "@/templates/ExploreCreatorsPage"
+  },
+  {
+   "route": "/income/earning",
+   "file": "app/income/earning/page.tsx",
+   "renders": "@/templates/Income/EarningPage"
+  },
+  {
+   "route": "/income/payouts",
+   "file": "app/income/payouts/page.tsx",
+   "renders": "@/templates/Income/PayoutsPage"
+  },
+  {
+   "route": "/income/refunds",
+   "file": "app/income/refunds/page.tsx",
+   "renders": "@/templates/Income/Refunds/RefundsPage"
+  },
+  {
+   "route": "/income/refunds/details",
+   "file": "app/income/refunds/details/page.tsx",
+   "renders": "@/templates/Income/Refunds/DetailsPage"
+  },
+  {
+   "route": "/income/statements",
+   "file": "app/income/statements/page.tsx",
+   "renders": "@/templates/Income/StatementsPage"
+  },
+  {
+   "route": "/messages",
+   "file": "app/messages/page.tsx",
+   "renders": "@/templates/MessagesPage"
+  },
+  {
+   "route": "/notifications",
+   "file": "app/notifications/page.tsx",
+   "renders": "@/templates/Notifications"
+  },
+  {
+   "route": "/products",
+   "file": "app/products/page.tsx",
+   "renders": "@/templates/Products/OverviewPage"
+  },
+  {
+   "route": "/products/comments",
+   "file": "app/products/comments/page.tsx",
+   "renders": "@/templates/Products/CommentsPage"
+  },
+  {
+   "route": "/products/drafts",
+   "file": "app/products/drafts/page.tsx",
+   "renders": "@/templates/Products/DraftsPage"
+  },
+  {
+   "route": "/products/new",
+   "file": "app/products/new/page.tsx",
+   "renders": "@/templates/Products/NewProductPage"
+  },
+  {
+   "route": "/products/released",
+   "file": "app/products/released/page.tsx",
+   "renders": "@/templates/Products/ReleasedPage"
+  },
+  {
+   "route": "/products/scheduled",
+   "file": "app/products/scheduled/page.tsx",
+   "renders": "@/templates/Products/ScheduledPage"
+  },
+  {
+   "route": "/promote",
+   "file": "app/promote/page.tsx",
+   "renders": "@/templates/PromotePage"
+  },
+  {
+   "route": "/settings",
+   "file": "app/settings/page.tsx",
+   "renders": "@/templates/SettingsPage"
+  },
+  {
+   "route": "/shop",
+   "file": "app/shop/page.tsx",
+   "renders": "@/templates/Shop/ShopPage"
+  },
+  {
+   "route": "/shop/details",
+   "file": "app/shop/details/page.tsx",
+   "renders": "@/templates/Shop/ShopDetailsPage"
+  },
+  {
+   "route": "/upgrade-to-pro",
+   "file": "app/upgrade-to-pro/page.tsx",
+   "renders": "@/templates/UpgradeToProPage"
+  }
+ ],
+ "components": [
+  {
+   "name": "Button",
+   "files": 1,
+   "imports": [
+    "next"
+   ]
+  },
+  {
+   "name": "Card",
+   "files": 1,
+   "imports": []
+  },
+  {
+   "name": "CardChartPie",
+   "files": 1,
+   "imports": [
+    "react-number-format",
+    "recharts"
+   ]
+  },
+  {
+   "name": "Checkbox",
+   "files": 1,
+   "imports": [
+    "@headlessui/react"
+   ]
+  },
+  {
+   "name": "Compatibility",
+   "files": 1,
+   "imports": []
+  },
+  {
+   "name": "CountryItem",
+   "files": 1,
+   "imports": [
+    "react-number-format"
+   ]
+  },
+  {
+   "name": "DateAndTime",
+   "files": 1,
+   "imports": [
+    "date-fns",
+    "framer-motion",
+    "react-datepicker"
+   ]
+  },
+  {
+   "name": "DeleteItems",
+   "files": 1,
+   "imports": []
+  },
+  {
+   "name": "Dropdown",
+   "files": 1,
+   "imports": [
+    "@headlessui/react"
+   ]
+  },
+  {
+   "name": "Editor",
+   "files": 1,
+   "imports": [
+    "@tiptap/extension-link",
+    "@tiptap/extension-text-align",
+    "@tiptap/extension-underline",
+    "@tiptap/react",
+    "@tiptap/starter-kit",
+    "emoji-picker-react"
+   ]
+  },
+  {
+   "name": "Emoji",
+   "files": 1,
+   "imports": [
+    "@headlessui/react",
+    "emoji-picker-react",
+    "next-themes"
+   ]
+  },
+  {
+   "name": "Field",
+   "files": 1,
+   "imports": []
+  },
+  {
+   "name": "FieldFiles",
+   "files": 1,
+   "imports": []
+  },
+  {
+   "name": "FieldImage",
+   "files": 1,
+   "imports": []
+  },
+  {
+   "name": "Filters",
+   "files": 1,
+   "imports": []
+  },
+  {
+   "name": "Follower",
+   "files": 1,
+   "imports": []
+  },
+  {
+   "name": "GridProduct",
+   "files": 1,
+   "imports": []
+  },
+  {
+   "name": "Header",
+   "files": 6,
+   "imports": [
+    "@headlessui/react",
+    "next",
+    "react-use"
+   ]
+  },
+  {
+   "name": "Icon",
+   "files": 1,
+   "imports": []
+  },
+  {
+   "name": "Image",
+   "files": 1,
+   "imports": [
+    "next"
+   ]
+  },
+  {
+   "name": "Layout",
+   "files": 1,
+   "imports": []
+  },
+  {
+   "name": "LikeButton",
+   "files": 1,
+   "imports": []
+  },
+  {
+   "name": "Login",
+   "files": 5,
+   "imports": []
+  },
+  {
+   "name": "Logo",
+   "files": 1,
+   "imports": [
+    "next"
+   ]
+  },
+  {
+   "name": "Message",
+   "files": 1,
+   "imports": [
+    "react-textarea-autosize"
+   ]
+  },
+  {
+   "name": "Modal",
+   "files": 1,
+   "imports": [
+    "@headlessui/react"
+   ]
+  },
+  {
+   "name": "NavLink",
+   "files": 1,
+   "imports": [
+    "next"
+   ]
+  },
+  {
+   "name": "NewCustomers",
+   "files": 1,
+   "imports": [
+    "next"
+   ]
+  },
+  {
+   "name": "NoFound",
+   "files": 1,
+   "imports": []
+  },
+  {
+   "name": "Percentage",
+   "files": 1,
+   "imports": []
+  },
+  {
+   "name": "PopularProducts",
+   "files": 1,
+   "imports": []
+  },
+  {
+   "name": "Product",
+   "files": 1,
+   "imports": [
+    "next",
+    "react-number-format"
+   ]
+  },
+  {
+   "name": "ProductView",
+   "files": 1,
+   "imports": [
+    "react-number-format",
+    "recharts"
+   ]
+  },
+  {
+   "name": "Range",
+   "files": 1,
+   "imports": [
+    "react-number-format",
+    "react-slider"
+   ]
+  },
+  {
+   "name": "RefundRequests",
+   "files": 1,
+   "imports": [
+    "next"
+   ]
+  },
+  {
+   "name": "ScheduleProduct",
+   "files": 1,
+   "imports": [
+    "react-number-format"
+   ]
+  },
+  {
+   "name": "Search",
+   "files": 1,
+   "imports": []
+  },
+  {
+   "name": "Select",
+   "files": 1,
+   "imports": [
+    "@headlessui/react"
+   ]
+  },
+  {
+   "name": "ShareProduct",
+   "files": 1,
+   "imports": []
+  },
+  {
+   "name": "ShopItem",
+   "files": 1,
+   "imports": [
+    "react-number-format"
+   ]
+  },
+  {
+   "name": "Sidebar",
+   "files": 2,
+   "imports": [
+    "next",
+    "react-animate-height",
+    "react-remove-scroll"
+   ]
+  },
+  {
+   "name": "Spinner",
+   "files": 1,
+   "imports": []
+  },
+  {
+   "name": "Switch",
+   "files": 1,
+   "imports": [
+    "@headlessui/react"
+   ]
+  },
+  {
+   "name": "Table",
+   "files": 1,
+   "imports": []
+  },
+  {
+   "name": "TableProductCell",
+   "files": 1,
+   "imports": []
+  },
+  {
+   "name": "TableRow",
+   "files": 1,
+   "imports": []
+  },
+  {
+   "name": "Tabs",
+   "files": 1,
+   "imports": []
+  },
+  {
+   "name": "Test",
+   "files": 1,
+   "imports": []
+  },
+  {
+   "name": "ThemeButton",
+   "files": 1,
+   "imports": [
+    "next-themes"
+   ]
+  },
+  {
+   "name": "Tooltip",
+   "files": 1,
+   "imports": [
+    "react-tooltip"
+   ]
+  },
+  {
+   "name": "UnpublishItems",
+   "files": 1,
+   "imports": []
+  }
+ ],
+ "templates": [
+  {
+   "name": "AffiliateCenterPage",
+   "files": 7,
+   "imports": [
+    "millify",
+    "react-number-format",
+    "recharts"
+   ]
+  },
+  {
+   "name": "Customers",
+   "files": 18,
+   "imports": [
+    "millify",
+    "next",
+    "react-number-format",
+    "react-use",
+    "recharts"
+   ]
+  },
+  {
+   "name": "ExploreCreatorsPage",
+   "files": 4,
+   "imports": []
+  },
+  {
+   "name": "HomePage",
+   "files": 8,
+   "imports": [
+    "millify",
+    "next",
+    "react-number-format",
+    "recharts",
+    "swiper"
+   ]
+  },
+  {
+   "name": "Income",
+   "files": 18,
+   "imports": [
+    "next",
+    "react-number-format",
+    "react-use",
+    "recharts"
+   ]
+  },
+  {
+   "name": "MessagesPage",
+   "files": 5,
+   "imports": [
+    "react-number-format",
+    "react-use"
+   ]
+  },
+  {
+   "name": "Notifications",
+   "files": 4,
+   "imports": [
+    "next"
+   ]
+  },
+  {
+   "name": "Products",
+   "files": 35,
+   "imports": [
+    "@headlessui/react",
+    "millify",
+    "next",
+    "react-number-format",
+    "react-tagsinput",
+    "recharts"
+   ]
+  },
+  {
+   "name": "PromotePage",
+   "files": 11,
+   "imports": [
+    "react-number-format",
+    "react-textarea-autosize",
+    "recharts"
+   ]
+  },
+  {
+   "name": "SettingsPage",
+   "files": 8,
+   "imports": [
+    "react-scroll"
+   ]
+  },
+  {
+   "name": "Shop",
+   "files": 9,
+   "imports": [
+    "swiper"
+   ]
+  },
+  {
+   "name": "UpgradeToProPage",
+   "files": 5,
+   "imports": [
+    "react-animate-height"
+   ]
+  }
+ ],
+ "tokens": {
+  "file": "app/globals.css",
+  "dark_mode": "&:where([data-theme=dark], [data-theme=dark] *)",
+  "light": {
+   "shade-01": "#141414",
+   "shade-02": "#101010",
+   "shade-03": "#191919",
+   "shade-04": "#222222",
+   "shade-05": "#4c4c4c",
+   "shade-06": "#727272",
+   "shade-07": "#7b7b7b",
+   "shade-08": "#e2e2e2",
+   "shade-09": "#f1f1f1",
+   "shade-10": "#fdfdfd",
+   "primary-01": "#2a85ff",
+   "primary-02": "#00a656",
+   "primary-03": "#ff381c",
+   "primary-04": "#7f5fff",
+   "primary-05": "#ff9d34",
+   "secondary-01": "#ffbc99",
+   "secondary-02": "#cabdff",
+   "secondary-03": "#b1e5fc",
+   "secondary-04": "#b5e4ca",
+   "secondary-05": "#ffd88d",
+   "backgrounds-surface1": "var(--shade-09)",
+   "backgrounds-surface2": "var(--shade-10)",
+   "backgrounds-surface2-overlay": "var(--shade-10)",
+   "backgrounds-surface3": "rgba(241, 241, 241, 0.5)",
+   "backgrounds-pop": "var(--shade-10)",
+   "backgrounds-dark1": "var(--shade-03)",
+   "backgrounds-dark2": "var(--shade-01)",
+   "backgrounds-primary": "var(--primary-01)",
+   "backgrounds-highlight": "#f9f9f9",
+   "backgrounds-depth": "#f9f9f9",
+   "backgrounds-depth2": "#f9f9f9",
+   "text-primary": "var(--shade-02)",
+   "text-secondary": "var(--shade-06)",
+   "text-tertiary": "var(--shade-07)",
+   "text-light": "var(--shade-10)",
+   "text-blue": "var(--primary-01)",
+   "stroke-border": "var(--shade-10)",
+   "stroke-subtle": "rgba(123, 123, 123, 0.1)",
+   "stroke-focus": "var(--primary-01)",
+   "stroke-highlight": "rgba(123, 123, 123, 0.5)",
+   "stroke-stroke2": "var(--shade-08)",
+   "accent": "#f52495",
+   "mask-1-stop50": "rgba(253, 253, 253, 0)",
+   "mask-1-stop100": "var(--shade-10)",
+   "mask-2-stop1": "var(--shade-09)",
+   "mask-2-stop2": "rgba(241, 241, 241, 0)",
+   "chart-green": "#00b512",
+   "chart-purple": "var(--primary-04)",
+   "chart-yellow": "var(--primary-05)",
+   "chart-min": "var(--shade-08)",
+   "gradient-menu": "rgba(226, 226, 226, 0.5), var(--shade-08)",
+   "gradient-card": "var(--shade-09), #ebebeb",
+   "box-shadow-depth": "0px 2.15px 0.5px -2px rgba(0, 0, 0, 0.25),\n        0px 24px 24px -16px rgba(8, 8, 8, 0.04),\n        0px 6px 13px 0px rgba(8, 8, 8, 0.03),\n        0px 6px 4px -4px rgba(8, 8, 8, 0.05),\n        0px 5px 1.5px -4px rgba(8, 8, 8, 0.09)",
+   "box-shadow-depth-dark-widget": "0px 6px 4px -4px rgba(8, 8, 8, 0.25),\n        0px 6px 13px 0px rgba(8, 8, 8, 0.12),\n        0px 24px 24px -16px rgba(8, 8, 8, 0.08)",
+   "box-shadow-depth-toggle": "0px 0px 36px -8px rgba(0, 0, 0, 0.05),\n        0px 6px 4px -4px rgba(8, 8, 8, 0.05),\n        0px 5px 1.5px -4px rgba(8, 8, 8, 0.09)",
+   "box-shadow-depth-menu": "0px 6px 4px -4px rgba(8, 8, 8, 0.05),\n        0px 5px 1.5px -4px rgba(8, 8, 8, 0.09)",
+   "box-shadow-press-pressing": "0px 1px 2px 1px rgba(18, 18, 18, 0.05) inset",
+   "box-shadow-press-pressing-dark": "0px 2px 4px 1px rgba(18, 18, 18, 0.35)\n        inset",
+   "box-shadow-widget": "0px 5px 1.5px -4px rgba(8, 8, 8, 0.09),\n        0px 6px 4px -4px rgba(8, 8, 8, 0.05)",
+   "box-shadow-hover-light": "0px 0px 0px 3px #fff inset",
+   "box-shadow-input-typing": "0px 4px 4px 0px rgba(157, 157, 157, 0.1) inset,\n        0px 0px 0px 3px #fff inset",
+   "box-shadow-dropdown": "0px 0px 10px 0px rgba(0, 0, 0, 0.05),\n        0px 2.15px 0.5px -2px rgba(0, 0, 0, 0.25),\n        0px 24px 24px -16px rgba(8, 8, 8, 0.04),\n        0px 6px 13px 0px rgba(8, 8, 8, 0.03),\n        0px 6px 4px -4px rgba(8, 8, 8, 0.05),\n        0px 5px 1.5px -4px rgba(8, 8, 8, 0.09)"
+  },
+  "dark_overrides": {
+   "backgrounds-surface1": "var(--shade-02)",
+   "backgrounds-surface2": "var(--shade-03)",
+   "backgrounds-surface2-overlay": "var(--shade-02)",
+   "backgrounds-surface3": "rgba(16, 16, 16, 0.5)",
+   "backgrounds-pop": "var(--shade-04)",
+   "backgrounds-dark1": "var(--shade-08)",
+   "backgrounds-dark2": "var(--shade-10)",
+   "backgrounds-primary": "var(--primary-01)",
+   "backgrounds-highlight": "var(--shade-04)",
+   "backgrounds-depth": "#1d1d1d",
+   "backgrounds-depth2": "rgba(16, 16, 16, 0.5)",
+   "text-primary": "var(--shade-09)",
+   "text-secondary": "var(--shade-07)",
+   "text-tertiary": "var(--shade-06)",
+   "text-light": "var(--shade-01)",
+   "text-blue": "var(--primary-01)",
+   "stroke-border": "#272727",
+   "stroke-subtle": "#1e1e1e",
+   "stroke-focus": "var(--primary-01)",
+   "stroke-highlight": "rgba(114, 114, 114, 0.5)",
+   "stroke-stroke2": "#282828",
+   "accent": "#f52495",
+   "mask-1-stop50": "rgba(40, 40, 40, 0)",
+   "mask-1-stop100": "var(--shade-03)",
+   "mask-2-stop1": "var(--shade-02)",
+   "mask-2-stop2": "rgba(27, 27, 27, 0)",
+   "chart-min": "var(--shade-04)",
+   "gradient-menu": "rgba(226, 226, 226, 0.025), rgba(226, 226, 226, 0.05)",
+   "gradient-card": "rgba(241, 241, 241, 0.075), rgba(235, 235, 235, 0.075)",
+   "box-shadow-depth": "0px 2.15px 0.5px -2px rgba(0, 0, 0, 0.25),\n        0px 5px 1.5px -4px rgba(8, 8, 8, 0.2),\n        0px 6px 4px -4px rgba(8, 8, 8, 0.16),\n        0px 6px 13px 0px rgba(8, 8, 8, 0.12),\n        0px 24px 24px -16px rgba(8, 8, 8, 0.08),\n        2px 4px 16px 0px rgba(253, 253, 253, 0.05) inset",
+   "box-shadow-depth-toggle": "0px 0px 36px -8px rgba(0, 0, 0, 0.5),\n        0px 2.15px 0.5px -2px rgba(0, 0, 0, 0.25),\n        0px 24px 24px -16px rgba(8, 8, 8, 0.04),\n        0px 6px 13px 0px rgba(8, 8, 8, 0.03),\n        0px 6px 4px -4px rgba(8, 8, 8, 0.05),\n        0px 5px 1.5px -4px rgba(8, 8, 8, 0.09)",
+   "box-shadow-widget": "0px 5px 1.5px -4px rgba(8, 8, 8, 0.5),\n        0px 6px 4px -4px rgba(8, 8, 8, 0.05)",
+   "box-shadow-input-typing": "0px 4px 4px 0px rgba(18, 18, 18, 0.81) inset,\n        0px 0px 0px 3px rgba(40, 40, 40, 0.1) inset",
+   "box-shadow-dropdown": "0px 16px 48px -4px rgba(0, 0, 0, 0.75),\n        0px 0px 10px 0px rgba(0, 0, 0, 0.5),\n        0px 2.15px 0.5px -2px rgba(0, 0, 0, 0.25),\n        0px 24px 24px -16px rgba(8, 8, 8, 0.04),\n        0px 6px 13px 0px rgba(8, 8, 8, 0.03),\n        0px 6px 4px -4px rgba(8, 8, 8, 0.05),\n        0px 5px 1.5px -4px rgba(8, 8, 8, 0.09)"
+  },
+  "theme_colors": {
+   "color-shade-01": "var(--shade-01)",
+   "color-shade-02": "var(--shade-02)",
+   "color-shade-03": "var(--shade-03)",
+   "color-shade-04": "var(--shade-04)",
+   "color-shade-05": "var(--shade-05)",
+   "color-shade-06": "var(--shade-06)",
+   "color-shade-07": "var(--shade-07)",
+   "color-shade-08": "var(--shade-08)",
+   "color-shade-09": "var(--shade-09)",
+   "color-shade-10": "var(--shade-10)",
+   "color-primary-01": "var(--primary-01)",
+   "color-primary-02": "var(--primary-02)",
+   "color-primary-03": "var(--primary-03)",
+   "color-primary-04": "var(--primary-04)",
+   "color-primary-05": "var(--primary-05)",
+   "color-secondary-01": "var(--secondary-01)",
+   "color-secondary-02": "var(--secondary-02)",
+   "color-secondary-03": "var(--secondary-03)",
+   "color-secondary-04": "var(--secondary-04)",
+   "color-secondary-05": "var(--secondary-05)",
+   "color-b-surface1": "var(--backgrounds-surface1)",
+   "color-b-surface2": "var(--backgrounds-surface2)",
+   "color-b-surface2-overlay": "var(--backgrounds-surface2-overlay)",
+   "color-b-surface3": "var(--backgrounds-surface3)",
+   "color-b-pop": "var(--backgrounds-pop)",
+   "color-b-dark1": "var(--backgrounds-dark1)",
+   "color-b-dark2": "var(--backgrounds-dark2)",
+   "color-b-primary": "var(--backgrounds-primary)",
+   "color-b-highlight": "var(--backgrounds-highlight)",
+   "color-b-depth": "var(--backgrounds-depth)",
+   "color-b-depth2": "var(--backgrounds-depth2)",
+   "color-t-primary": "var(--text-primary)",
+   "color-t-secondary": "var(--text-secondary)",
+   "color-t-tertiary": "var(--text-tertiary)",
+   "color-t-light": "var(--text-light)",
+   "color-t-blue": "var(--text-blue)",
+   "color-s-border": "var(--stroke-border)",
+   "color-s-subtle": "var(--stroke-subtle)",
+   "color-s-focus": "var(--stroke-focus)",
+   "color-s-highlight": "var(--stroke-highlight)",
+   "color-s-stroke2": "var(--stroke-stroke2)",
+   "color-accent": "var(--accent)",
+   "color-mask-1-stop50": "var(--mask-1-stop50)",
+   "color-mask-1-stop100": "var(--mask-1-stop100)",
+   "color-mask-2-stop1": "var(--mask-2-stop1)",
+   "color-mask-2-stop2": "var(--mask-2-stop2)",
+   "color-chart-green": "var(--chart-green)",
+   "color-chart-purple": "var(--chart-purple)",
+   "color-chart-yellow": "var(--chart-yellow)"
+  },
+  "breakpoints": {
+   "breakpoint-sm": "480px",
+   "breakpoint-md": "767px",
+   "breakpoint-lg": "1023px",
+   "breakpoint-xl": "1259px",
+   "breakpoint-2xl": "1419px",
+   "breakpoint-3xl": "1719px",
+   "breakpoint-4xl": "1899px"
+  },
+  "text_sizes": [
+   "text-0",
+   "text-body-1",
+   "text-body-2",
+   "text-button",
+   "text-caption",
+   "text-h1",
+   "text-h2",
+   "text-h3",
+   "text-h4",
+   "text-h5",
+   "text-h6",
+   "text-overline",
+   "text-sub-title-1",
+   "text-sub-title-2"
+  ],
+  "fonts": {
+   "font-inter": "var(--font-inter-display)"
+  },
+  "radii": {},
+  "shadows": [
+   "shadow-depth",
+   "shadow-depth-dark-widget",
+   "shadow-depth-menu",
+   "shadow-depth-toggle",
+   "shadow-dropdown",
+   "shadow-hover-light",
+   "shadow-input-typing",
+   "shadow-press-pressing",
+   "shadow-press-pressing-dark",
+   "shadow-widget"
+  ],
+  "component_classes": [
+   "action",
+   "box-hover",
+   "card",
+   "center",
+   "center-with-sidebar",
+   "chart-tooltip",
+   "chart-tooltip-up",
+   "col-left",
+   "col-right",
+   "epr-body",
+   "epr-emoji-category-content",
+   "epr-emoji-category-label",
+   "epr-header",
+   "gradient-card",
+   "gradient-menu",
+   "gradient-repeat-lines",
+   "gradient-repeat-lines-green",
+   "label",
+   "label-gray",
+   "label-green",
+   "label-red",
+   "label-yellow",
+   "react-tooltip",
+   "recharts-sector",
+   "tiptap"
+  ]
+ },
+ "icons": {
+  "file": "components/Icon/index.tsx",
+  "count": 82,
+  "names": [
+   "arrow",
+   "arrow-percent",
+   "arrow-up-right",
+   "bag",
+   "bell",
+   "block",
+   "calendar",
+   "calendar-1",
+   "camera",
+   "camera-stroke",
+   "camera-video",
+   "cart",
+   "chain",
+   "chain-think",
+   "chart",
+   "chat",
+   "chat-think",
+   "check",
+   "check-circle",
+   "check-circle-fill",
+   "chevron",
+   "clock",
+   "clock-1",
+   "close",
+   "cube",
+   "dashboard",
+   "desktop",
+   "dots",
+   "emoji",
+   "facebook",
+   "filters",
+   "feather",
+   "font",
+   "grid",
+   "heart",
+   "heart-fill",
+   "help",
+   "help-think",
+   "hourglass",
+   "earth",
+   "edit",
+   "envelope",
+   "envelope-think",
+   "income",
+   "info",
+   "instagram",
+   "edit-profile",
+   "laptop",
+   "laptop-think",
+   "layers",
+   "link",
+   "link-1",
+   "list",
+   "lock",
+   "logout",
+   "mailchimp",
+   "magic-pencil",
+   "mastodon",
+   "mobile",
+   "moon",
+   "plus",
+   "product",
+   "product-think",
+   "profile",
+   "promote",
+   "reply",
+   "search",
+   "send",
+   "star-stroke",
+   "star-stroke-think",
+   "star-fill",
+   "sun",
+   "tablet",
+   "threads",
+   "trash",
+   "trash-think",
+   "twitter",
+   "upload",
+   "usd-circle",
+   "video",
+   "wallet",
+   "name"
+  ]
+ },
+ "identity": {
+  "patterns": [
+   "\\bcore[\\s-]?2(\\.0)?\\b",
+   "\\bui8\\b"
+  ],
+  "text_hits": {
+   "package.json": 1,
+   "app/layout.tsx": 17,
+   "components/Login/index.tsx": 1,
+   "components/ShareProduct/index.tsx": 2,
+   "mocks/affiliate-center.tsx": 18,
+   "mocks/creators.tsx": 5,
+   "mocks/messages.tsx": 4,
+   "mocks/products.tsx": 10,
+   "mocks/promote.tsx": 36,
+   "mocks/statements.tsx": 10,
+   "templates/Customers/CustomerList/DetailsPage/Details/Contacts/index.tsx": 2,
+   "templates/Customers/OverviewPage/ShareProducts/index.tsx": 2,
+   "templates/HomePage/GetMoreCustomers/index.tsx": 2,
+   "templates/PromotePage/List/SchedulePost/index.tsx": 1,
+   "templates/Shop/ShopPage/Profile/index.tsx": 1
+  },
+  "brand_assets": [
+   "public/fb-og-image.png",
+   "public/images/logo-dark.png",
+   "public/images/logo-light.png",
+   "public/linkedin-og-image.png",
+   "public/pinterest-og-image.png"
+  ]
+ },
+ "navigation": "contstants/navigation.tsx",
+ "source": {
+  "digest": "f351f90b607cfc9a",
+  "files": {
+   "app/.DS_Store": "5ddfac6af3b73315",
+   "app/favicon.ico": "5e21a2016b1f9fd9",
+   "app/globals.css": "8ffaf0ad7ab3405c",
+   "app/layout.tsx": "59270d410de3b9e2",
+   "app/page.tsx": "43556a1643c46f1b",
+   "app/providers.tsx": "0689305a475dcb71",
+   "app/affiliate-center/page.tsx": "04709e5430e13422",
+   "app/customers/page.tsx": "34009965621596ad",
+   "app/customers/customer-list/page.tsx": "da0a3a1066a73d48",
+   "app/customers/customer-list/details/page.tsx": "ac5f6768873b30c4",
+   "app/explore-creators/page.tsx": "0408abfbebbf6a71",
+   "app/income/.DS_Store": "ddc88c2d953e6942",
+   "app/income/earning/page.tsx": "2657b4cba18e2eb9",
+   "app/income/payouts/page.tsx": "ec969ccc095e3d14",
+   "app/income/refunds/page.tsx": "52b5b182d269d2a5",
+   "app/income/refunds/details/page.tsx": "cad824dfbfe061e0",
+   "app/income/statements/page.tsx": "161ffe49e2a22380",
+   "app/messages/page.tsx": "c62e4f5b9bcf5173",
+   "app/notifications/page.tsx": "65bd559080f63769",
+   "app/products/.DS_Store": "06f82c37fd91333c",
+   "app/products/page.tsx": "bc79dfde03aa390b",
+   "app/products/comments/page.tsx": "df34b4d2da5b793b",
+   "app/products/drafts/page.tsx": "b8fc10c10802ee6d",
+   "app/products/new/page.tsx": "981b1383b2a00f3f",
+   "app/products/released/page.tsx": "57b80c7b6077b3b8",
+   "app/products/scheduled/page.tsx": "037a863f4e3a772a",
+   "app/promote/page.tsx": "3b15802c907d50e7",
+   "app/settings/page.tsx": "3a6ae287fae7807e",
+   "app/shop/page.tsx": "d3b352a6e85f4c49",
+   "app/shop/details/page.tsx": "170f1dabac889d4a",
+   "app/upgrade-to-pro/page.tsx": "89fd110cd9710a6d",
+   "components/.DS_Store": "b6004b9acff2790e",
+   "components/Button/index.tsx": "c0f600ad365c2366",
+   "components/Card/index.tsx": "adb7f2ce8b0e1e09",
+   "components/CardChartPie/index.tsx": "61b0d34d6cdeec16",
+   "components/Checkbox/index.tsx": "ad0e740dc80edb80",
+   "components/Compatibility/index.tsx": "0d123f48a0582098",
+   "components/CountryItem/index.tsx": "514c3440138fa5f2",
+   "components/DateAndTime/index.tsx": "aecbc32532961c45",
+   "components/DeleteItems/index.tsx": "ea2e752ad516b43e",
+   "components/Dropdown/index.tsx": "3a895c3a0ee903d0",
+   "components/Editor/index.tsx": "7e667ed056301ca7",
+   "components/Emoji/index.tsx": "4ed48cf3886b9a3d",
+   "components/Field/index.tsx": "47d4f836ba907a10",
+   "components/FieldFiles/index.tsx": "d2aaa0bae6c138ca",
+   "components/FieldImage/index.tsx": "3ff20b62215131cd",
+   "components/Filters/index.tsx": "3e646bb812e2124e",
+   "components/Follower/index.tsx": "678894c122911600",
+   "components/GridProduct/index.tsx": "2bc615066f738e4d",
+   "components/Header/.DS_Store": "9322cbeea9adb513",
+   "components/Header/index.tsx": "1c946448c5d44a12",
+   "components/Header/Messages/index.tsx": "36211ed9116926ee",
+   "components/Header/Notifications/index.tsx": "5bc630ee502baddf",
+   "components/Header/SearchGlobal/index.tsx": "c58fb26f5f3985ab",
+   "components/Header/User/index.tsx": "48403bfdde01c014",
+   "components/Icon/index.tsx": "ff25032c2e480ac0",
+   "components/Image/index.tsx": "17ee64629733bd3a",
+   "components/Layout/index.tsx": "703bfe7cc9acb0b4",
+   "components/LikeButton/index.tsx": "f098da88abe65946",
+   "components/Login/.DS_Store": "a4ae69c8d86db47b",
+   "components/Login/index.tsx": "f22b6a857b323eae",
+   "components/Login/CreateAccount/index.tsx": "c8131b09a535ccff",
+   "components/Login/ResetPassword/index.tsx": "74ed7f90ac94f6d2",
+   "components/Login/SignIn/index.tsx": "438c4f5f3e7fe236",
+   "components/Logo/index.tsx": "8e2a71b5c93850ab",
+   "components/Message/index.tsx": "c562f66ceb4fca63",
+   "components/Modal/index.tsx": "45a9f288746f4d61",
+   "components/NavLink/index.tsx": "6f30363087bda86c",
+   "components/NewCustomers/index.tsx": "2b7ddd24a3a86dc0",
+   "components/NoFound/index.tsx": "c0df193f64c45228",
+   "components/Percentage/index.tsx": "308d31df14bf4c2f",
+   "components/PopularProducts/index.tsx": "2083c8bdad32dcb8",
+   "components/Product/index.tsx": "57f54edb82df8ca4",
+   "components/ProductView/index.tsx": "2ec0c0ec67f7c0cb",
+   "components/Range/index.tsx": "35bd253b6fe6078c",
+   "components/RefundRequests/index.tsx": "5a29b3d151dfebe7",
+   "components/ScheduleProduct/index.tsx": "fddcdb5726de24e5",
+   "components/Search/index.tsx": "84ac2ffb4e1374c7",
+   "components/Select/index.tsx": "126ccafca4a08fa4",
+   "components/ShareProduct/index.tsx": "35d059377cc1f469",
+   "components/ShopItem/index.tsx": "4bf2bd8d3b4509b1",
+   "components/Sidebar/index.tsx": "eed854c89b0e8f11",
+   "components/Sidebar/Dropdown/index.tsx": "de53db8ad3746c28",
+   "components/Spinner/index.tsx": "7f62faaf54ac21d0",
+   "components/Switch/index.tsx": "25e1a4a1a07e15bd",
+   "components/Table/index.tsx": "6f90f8fc2bbc1581",
+   "components/TableProductCell/index.tsx": "349ce43153e752b1",
+   "components/TableRow/index.tsx": "74473edbc23782fb",
+   "components/Tabs/index.tsx": "24d1b33517e10c57",
+   "components/Test/index.tsx": "e96a76caec87da18",
+   "components/ThemeButton/index.tsx": "f24a64f4c2a100cb",
+   "components/Tooltip/index.tsx": "75b8a971722ceb49",
+   "components/UnpublishItems/index.tsx": "f1c35faf0346afe1",
+   "templates/.DS_Store": "80092cc3af384b72",
+   "templates/AffiliateCenterPage/.DS_Store": "9d65f3706181cd15",
+   "templates/AffiliateCenterPage/index.tsx": "46ea2b69f7b585b4",
+   "templates/AffiliateCenterPage/CampaignEarning/index.tsx": "d27d6ad39fb9e31a",
+   "templates/AffiliateCenterPage/CreateLink/index.tsx": "4699c69b0879f7d3",
+   "templates/AffiliateCenterPage/Insights/index.tsx": "2125743611ec1145",
+   "templates/AffiliateCenterPage/Performance/index.tsx": "745de1765d95fff3",
+   "templates/AffiliateCenterPage/ProductView/index.tsx": "0c1f2bfd277b9abc",
+   "templates/Customers/.DS_Store": "343d03d05a4296cc",
+   "templates/Customers/CustomerList/CustomerListPage/index.tsx": "64e87030f213c9d0",
+   "templates/Customers/CustomerList/CustomerListPage/List/index.tsx": "dd23d87102cd57f5",
+   "templates/Customers/CustomerList/DetailsPage/index.tsx": "f6f9f9a2ed4b1877",
+   "templates/Customers/CustomerList/DetailsPage/Customer/index.tsx": "0b802c32d071e493",
+   "templates/Customers/CustomerList/DetailsPage/Details/index.tsx": "ee7f8891320793dd",
+   "templates/Customers/CustomerList/DetailsPage/Details/Contacts/index.tsx": "3f48246ec62d9f20",
+   "templates/Customers/CustomerList/DetailsPage/Details/PurchaseHistory/index.tsx": "56671b968165d8ef",
+   "templates/Customers/OverviewPage/index.tsx": "30f0b00280ea48e4",
+   "templates/Customers/OverviewPage/ActiveTimes/index.tsx": "e36cb5a5fb6079ee",
+   "templates/Customers/OverviewPage/Countries/index.tsx": "24e5332d12558fdb",
+   "templates/Customers/OverviewPage/Messages/index.tsx": "8a614d1eb3709dc4",
+   "templates/Customers/OverviewPage/Overview/index.tsx": "5c164bc10718071a",
+   "templates/Customers/OverviewPage/Overview/Chart/index.tsx": "8c82cb53ceeeef46",
+   "templates/Customers/OverviewPage/Overview/Item/index.tsx": "1411aa0daf4e466b",
+   "templates/Customers/OverviewPage/RefundRequests/index.tsx": "acdd8b1ea62cc78d",
+   "templates/Customers/OverviewPage/ShareProducts/index.tsx": "f64b56d059038a33",
+   "templates/Customers/OverviewPage/Traffic\u0421hannel/index.tsx": "14c94507799ab442",
+   "templates/ExploreCreatorsPage/.DS_Store": "d0a733051b2c46ac",
+   "templates/ExploreCreatorsPage/index.tsx": "5520eaa6ef36a4c7",
+   "templates/ExploreCreatorsPage/Creator/index.tsx": "c27e67d6d99ceb75",
+   "templates/ExploreCreatorsPage/Filters/index.tsx": "af71284d347fbb58",
+   "templates/HomePage/.DS_Store": "b2f0cd100a51e803",
+   "templates/HomePage/index.tsx": "7389e6b3518e6cfe",
+   "templates/HomePage/Comments/index.tsx": "f832069795f6274e",
+   "templates/HomePage/GetMoreCustomers/index.tsx": "06c843e59f739267",
+   "templates/HomePage/Overview/index.tsx": "414c4eadd202f9aa",
+   "templates/HomePage/Overview/Balance/index.tsx": "d88bf427b5a3278f",
+   "templates/HomePage/OverviewSlider/index.tsx": "7688be770fa6bce4",
+   "templates/HomePage/ProductView/index.tsx": "6e89daa2b98527b3",
+   "templates/Income/.DS_Store": "89130f454daae6a3",
+   "templates/Income/EarningPage/index.tsx": "f506aab58c24dbf1",
+   "templates/Income/EarningPage/Balance/index.tsx": "58719578376e07cc",
+   "templates/Income/EarningPage/Balance/Item/index.tsx": "0d82dc65baa29185",
+   "templates/Income/EarningPage/Countries/index.tsx": "8159b76ebf739ad1",
+   "templates/Income/EarningPage/RecentEarnings/index.tsx": "34bced104777e974",
+   "templates/Income/EarningPage/TopEarningProducts/index.tsx": "6b033c47e392ee81",
+   "templates/Income/EarningPage/Transactions/index.tsx": "7f9c7bf5cecdeb33",
+   "templates/Income/PayoutsPage/index.tsx": "6ecf6b3fcd420d94",
+   "templates/Income/PayoutsPage/PayoutHistory/index.tsx": "a877fd90c22e3715",
+   "templates/Income/PayoutsPage/Statistics/index.tsx": "a3ee491bb4b59a40",
+   "templates/Income/Refunds/DetailsPage/index.tsx": "56568327a4d0c813",
+   "templates/Income/Refunds/DetailsPage/Statistics/index.tsx": "2d37e01df80ac65e",
+   "templates/Income/Refunds/RefundsPage/index.tsx": "08f28900e749e573",
+   "templates/Income/Refunds/RefundsPage/List/index.tsx": "a757946b17076409",
+   "templates/Income/StatementsPage/index.tsx": "59b75d3ab6123437",
+   "templates/Income/StatementsPage/Statistics/index.tsx": "71714e45f105d87b",
+   "templates/Income/StatementsPage/Transactions/index.tsx": "944b679d1e9afdbb",
+   "templates/MessagesPage/.DS_Store": "b657d90cf5934dec",
+   "templates/MessagesPage/index.tsx": "4d32a541107bea14",
+   "templates/MessagesPage/Details/index.tsx": "3ccb097682986e21",
+   "templates/MessagesPage/Details/Chat/index.tsx": "17109f6701f533d5",
+   "templates/MessagesPage/Message/index.tsx": "a21072295f122eb0",
+   "templates/Notifications/.DS_Store": "0f01ec78790ef5f0",
+   "templates/Notifications/index.tsx": "878ca9ee776bb582",
+   "templates/Notifications/Filter/index.tsx": "36bdedd64f09c912",
+   "templates/Notifications/Notification/index.tsx": "704e4e7c418a877c",
+   "templates/Products/.DS_Store": "3e2b4b5cb5d699d9",
+   "templates/Products/CommentsPage/index.tsx": "754b7ba9416406b8",
+   "templates/Products/CommentsPage/List/index.tsx": "52e8304c15ffbb96",
+   "templates/Products/CommentsPage/List/Answer/index.tsx": "8db08e12f4b08b98",
+   "templates/Products/DraftsPage/index.tsx": "5de5a0cfd3fdedc4",
+   "templates/Products/DraftsPage/Grid/index.tsx": "c42f10f196ab3c2a",
+   "templates/Products/DraftsPage/List/index.tsx": "0262fe0afa8d0808",
+   "templates/Products/NewProductPage/index.tsx": "ce48b16e5d66c759",
+   "templates/Products/NewProductPage/CTA/index.tsx": "3016d6854cee6ab8",
+   "templates/Products/NewProductPage/CategoryAndAttributes/index.tsx": "606db93f5e49e79d",
+   "templates/Products/NewProductPage/CoverImage/index.tsx": "091d9f478987ab37",
+   "templates/Products/NewProductPage/Demos/index.tsx": "e2184aeb923a05bd",
+   "templates/Products/NewProductPage/Discussion/index.tsx": "b2154e84041488db",
+   "templates/Products/NewProductPage/Highlights/index.tsx": "92514150e1d6d734",
+   "templates/Products/NewProductPage/Highlights/Item/index.tsx": "c47eb96456867cc9",
+   "templates/Products/NewProductPage/Images/index.tsx": "a7961420ebea8fa8",
+   "templates/Products/NewProductPage/Price/index.tsx": "5732c041d72724a8",
+   "templates/Products/NewProductPage/ProductDetails/index.tsx": "530d7314cfa7cc43",
+   "templates/Products/NewProductPage/UploadProductFiles/index.tsx": "e971e3aaa346611a",
+   "templates/Products/OverviewPage/index.tsx": "f6d3a7cb046bbc08",
+   "templates/Products/OverviewPage/Overview/index.tsx": "78d3ea9dde4786fc",
+   "templates/Products/OverviewPage/Overview/Item/index.tsx": "15573e56bc4e6879",
+   "templates/Products/OverviewPage/ProductActivity/index.tsx": "1aae7086352171ab",
+   "templates/Products/OverviewPage/ProductView/index.tsx": "afc12bf3277931a7",
+   "templates/Products/OverviewPage/Products/index.tsx": "6bcce378438707fb",
+   "templates/Products/OverviewPage/Products/Market/index.tsx": "1324516ea6909e8b",
+   "templates/Products/OverviewPage/Products/ProductsStatistics/index.tsx": "6f779868a360439d",
+   "templates/Products/OverviewPage/Products/ProductsStatistics/Legend/index.tsx": "ff8d4841003c88e0",
+   "templates/Products/OverviewPage/Products/ProductsStatistics/ProgressBar/index.tsx": "d2085d25dc07840c",
+   "templates/Products/OverviewPage/Products/SetProductsStatus/index.tsx": "5214fd990a431895",
+   "templates/Products/ReleasedPage/index.tsx": "c18c36e534bf0660",
+   "templates/Products/ReleasedPage/Grid/index.tsx": "99329ae15efbe474",
+   "templates/Products/ReleasedPage/List/index.tsx": "390cb5085c033327",
+   "templates/Products/ScheduledPage/index.tsx": "e013be4a76f4eace",
+   "templates/Products/ScheduledPage/List/index.tsx": "1ca70191e6b3517d",
+   "templates/PromotePage/.DS_Store": "695769b557d457fa",
+   "templates/PromotePage/index.tsx": "cfe3188b6f5551e0",
+   "templates/PromotePage/Engagement/index.tsx": "6b8662acfc69403c",
+   "templates/PromotePage/Insights/index.tsx": "35327b440dfa34c5",
+   "templates/PromotePage/Interactions/index.tsx": "d99901932449f2f6",
+   "templates/PromotePage/List/index.tsx": "0b972e993c0c1e40",
+   "templates/PromotePage/List/NewPost/index.tsx": "8c728376729780e9",
+   "templates/PromotePage/List/Published/index.tsx": "affe95ac5b59d506",
+   "templates/PromotePage/List/SchedulePost/index.tsx": "6e6894c25b3a1723",
+   "templates/PromotePage/List/SchedulePost/PostTo/index.tsx": "6c6095327756117b",
+   "templates/PromotePage/List/Scheduled/index.tsx": "5071013118585a24",
+   "templates/SettingsPage/.DS_Store": "e76a7ec8f6a8b770",
+   "templates/SettingsPage/index.tsx": "6a0c3f5402f921ed",
+   "templates/SettingsPage/Menu/index.tsx": "8d949e581cc2a148",
+   "templates/SettingsPage/Notifications/index.tsx": "f64f59489e3a4b3b",
+   "templates/SettingsPage/Password/index.tsx": "a27dc6593451b64c",
+   "templates/SettingsPage/Payment/index.tsx": "c1730310b3e16deb",
+   "templates/SettingsPage/ProfileInformation/index.tsx": "f62c6923d118161b",
+   "templates/SettingsPage/YourShop/index.tsx": "a9aba289e42c9ece",
+   "templates/Shop/.DS_Store": "d2a9d91c7d8ab9ce",
+   "templates/Shop/ShopDetailsPage/index.tsx": "69b5e9f190299a0c",
+   "templates/Shop/ShopDetailsPage/Comments/index.tsx": "2a9c7be2ad02a35b",
+   "templates/Shop/ShopDetailsPage/Comments/Answer/index.tsx": "f80efe74812b0146",
+   "templates/Shop/ShopDetailsPage/Description/index.tsx": "0f2b9e2c8fedffee",
+   "templates/Shop/ShopDetailsPage/Gallery/index.tsx": "2c5b1811fda49c4a",
+   "templates/Shop/ShopDetailsPage/Populars/index.tsx": "6e06713b4777d022",
+   "templates/Shop/ShopPage/index.tsx": "518b4b0cd4673e3f",
+   "templates/Shop/ShopPage/Profile/index.tsx": "0bfd0e3debcf10e1",
+   "templates/UpgradeToProPage/.DS_Store": "96267fea753579dc",
+   "templates/UpgradeToProPage/index.tsx": "f498996c050ca042",
+   "templates/UpgradeToProPage/Faq/index.tsx": "23d61adfce73197e",
+   "templates/UpgradeToProPage/Faq/Item/index.tsx": "fe7bcb96b0cada8a",
+   "templates/UpgradeToProPage/Pricing/index.tsx": "61d859d48a6bc913",
+   "hooks/useSelection.ts": "853fdbe6bd2b3104",
+   "contstants/navigation.tsx": "ed2838bbff7ee7e8",
+   "types/comment.ts": "6f5a9a488c636f03",
+   "types/customer.ts": "7d3977c87c3f87ec",
+   "types/product.ts": "2946b0f8cc27b814",
+   "types/promote.ts": "55e64faadf235250",
+   "types/refund.ts": "9e3c734a6c92c427",
+   "types/select.ts": "6ccfb80223be5fe0",
+   "types/tabs.ts": "4e9ae7aa7570dee3",
+   "mocks/activeTimes.tsx": "50acb144c8f85600",
+   "mocks/affiliate-center.tsx": "ce7761d543fb13fe",
+   "mocks/charts.tsx": "b59fffddfc34ba08",
+   "mocks/comments.tsx": "9129c9e74440351a",
+   "mocks/compatibility.tsx": "903114ce2ce47348",
+   "mocks/countries.tsx": "aa52dd98379bb0f3",
+   "mocks/creators.tsx": "802fe4bb3e3d34e3",
+   "mocks/customers.tsx": "8470d3ce62e310c6",
+   "mocks/dashboard.tsx": "35075fa4027fcf61",
+   "mocks/faqs.tsx": "19399bc2f1293fc2",
+   "mocks/followers.tsx": "a9b6f12cc868e881",
+   "mocks/followings.tsx": "3b98977b6ad03961",
+   "mocks/income.tsx": "b40c1ced21eb42dc",
+   "mocks/messages.tsx": "5cddb963d71b1322",
+   "mocks/notifications.tsx": "d3c2440c957c1388",
+   "mocks/payouts.tsx": "20673ce12aefe1eb",
+   "mocks/pricing.tsx": "8ae32161264615bd",
+   "mocks/products.tsx": "7676de9ee82a7ef0",
+   "mocks/promote.tsx": "1c87824330388101",
+   "mocks/refunds.tsx": "d4fb2d6722fc8ab4",
+   "mocks/shopItems.tsx": "96360c77a0523448",
+   "mocks/statements.tsx": "d0f347810fe83025",
+   "mocks/transactions.tsx": "3fc3d79056810662"
+  }
+ }
+}

@@ -1,0 +1,14 @@
+# Single-package workspace. Declaring it here also stops pnpm from adopting a
+# pnpm-workspace.yaml that happens to sit in a parent directory.
+packages:
+  - "."
+
+# pnpm 10+ blocks dependency build scripts unless approved. esbuild's
+# postinstall only selects its platform binary.
+allowBuilds:
+  esbuild: true
+
+# Transitive security floors. Drop an entry once the parent ships the fix.
+overrides:
+  # GHSA-737v-mqg7-c878, via better-auth
+  defu: ">=6.1.5"

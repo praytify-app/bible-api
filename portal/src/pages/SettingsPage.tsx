@@ -1,135 +1,76 @@
-import { useState, useEffect } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { profile } from "../lib/api";
+import type { ReactNode } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { AppWindow, Gauge, ShieldCheck, UserRound } from "lucide-react";
+import { Alert, Button, Card, CardHeader, PageHeader, SkeletonText } from "@/components/ds";
+import { SectionNav, type SectionLink } from "@/features/docs/SectionNav";
+import { AccountSummary } from "@/features/settings/AccountSummary";
+import { DataRights } from "@/features/settings/DataRights";
+import { PlanSummary } from "@/features/settings/PlanSummary";
+import { ProfileForm } from "@/features/settings/ProfileForm";
+import { profile } from "@/lib/api";
 
-const useCases = [
-  "Bible App",
-  "Church Website",
-  "Devotional App",
-  "Study Tool",
-  "Ministry Platform",
-  "Educational",
-  "Personal Project",
-  "Other",
-];
+const sections = [
+  { id: "profile", title: "App profile", description: "What you are building", icon: <AppWindow /> },
+  { id: "plan", title: "Plan", description: "Tier and rate limits", icon: <Gauge /> },
+  { id: "account", title: "Account", description: "Name, email, sign out", icon: <UserRound /> },
+  { id: "your-data", title: "Your data", description: "Download or delete", icon: <ShieldCheck /> },
+] satisfies SectionLink[];
+
+function Section({ id, title, description, children }: { id: string; title: string; description: string; children: ReactNode }) {
+  return (
+    <Card as="section" id={id} aria-labelledby={`${id}-title`} className="scroll-mt-24">
+      <CardHeader title={<span id={`${id}-title`}>{title}</span>} description={description} />
+      {children}
+    </Card>
+  );
+}
 
 export function SettingsPage() {
-  const queryClient = useQueryClient();
-  const [appName, setAppName] = useState("");
-  const [appUrl, setAppUrl] = useState("");
-  const [description, setDescription] = useState("");
-  const [saved, setSaved] = useState(false);
-
-  const { data: profileData } = useQuery({
-    queryKey: ["profile"],
-    queryFn: () => profile.get(),
-  });
-
-  useEffect(() => {
-    if (profileData) {
-      setAppName(profileData.appName || "");
-      setAppUrl(profileData.appUrl || "");
-      setDescription(profileData.description || "");
-    }
-  }, [profileData]);
-
-  const updateMutation = useMutation({
-    mutationFn: () => profile.update({ appName, appUrl, description }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["profile"] });
-      setSaved(true);
-      setTimeout(() => setSaved(false), 3000);
-    },
-  });
+  const stored = useQuery({ queryKey: ["profile"], queryFn: profile.get });
 
   return (
-    <div>
-      <div className="mb-8">
-        <h1 className="text-2xl font-bold text-gray-900">Settings</h1>
-        <p className="mt-1 text-sm text-gray-500">
-          Manage your developer profile and application details.
-        </p>
-      </div>
+    <div className="flex flex-col gap-8">
+      <PageHeader title="Settings" description="Your app profile, your plan, and your account." />
 
-      <div className="bg-white border border-gray-200 rounded-xl p-6 max-w-xl">
-        <h2 className="text-lg font-bold text-gray-900 mb-6">
-          Application Details
-        </h2>
+      <div className="grid gap-8 lg:grid-cols-[15rem_minmax(0,1fr)]">
+        <SectionNav label="Settings sections" sections={sections} />
 
-        <div className="space-y-5">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              App Name
-            </label>
-            <input
-              type="text"
-              value={appName}
-              onChange={(e) => setAppName(e.target.value)}
-              placeholder="My Bible App"
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              App URL
-            </label>
-            <input
-              type="url"
-              value={appUrl}
-              onChange={(e) => setAppUrl(e.target.value)}
-              placeholder="https://mybibleapp.com"
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Use Case
-            </label>
-            <select
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary bg-white"
-            >
-              <option value="">Select a use case...</option>
-              {useCases.map((uc) => (
-                <option key={uc} value={uc}>
-                  {uc}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div className="flex items-center gap-3 pt-2">
-            <button
-              onClick={() => updateMutation.mutate()}
-              disabled={updateMutation.isPending}
-              className="px-4 py-2 text-sm font-semibold text-white bg-primary hover:bg-primary-dark rounded-lg transition-colors disabled:opacity-50"
-            >
-              {updateMutation.isPending ? "Saving..." : "Save Changes"}
-            </button>
-            {saved && (
-              <span className="text-sm text-green-600 font-medium">
-                Changes saved successfully.
-              </span>
+        <div className="flex min-w-0 flex-col gap-6">
+          <Section id="profile" title="App profile" description="Tell us what you are building with the API.">
+            {stored.isError ? (
+              // No form over a failed load: saving it would blank the stored profile (AUDIT finding 2).
+              <Alert
+                tone="danger"
+                title="Your profile could not be loaded."
+                action={
+                  <Button variant="secondary" size="sm" loading={stored.isFetching} onClick={() => stored.refetch()}>
+                    Try again
+                  </Button>
+                }
+              >
+                The form stays hidden until it loads, so nothing you have saved can be overwritten.
+              </Alert>
+            ) : stored.isPending ? (
+              <div aria-busy className="flex flex-col gap-3">
+                <SkeletonText lines={5} />
+                <p className="sr-only">Loading your profile</p>
+              </div>
+            ) : (
+              <ProfileForm profile={stored.data} />
             )}
-          </div>
-        </div>
+          </Section>
 
-        {/* Tier Info */}
-        <div className="mt-8 pt-6 border-t border-gray-200">
-          <h3 className="text-sm font-semibold text-gray-900 mb-2">
-            Current Plan
-          </h3>
-          <div className="flex items-center gap-2">
-            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-green-100 text-green-800">
-              Free
-            </span>
-            <span className="text-sm text-gray-500">
-              1,000 requests per day, 60 per minute
-            </span>
-          </div>
+          <Section id="plan" title="Plan" description="Your tier and the limits that come with it.">
+            <PlanSummary />
+          </Section>
+
+          <Section id="account" title="Account" description="The account you signed in with.">
+            <AccountSummary />
+          </Section>
+
+          <Section id="your-data" title="Your data" description="A copy of everything we hold, or deletion.">
+            <DataRights />
+          </Section>
         </div>
       </div>
     </div>
