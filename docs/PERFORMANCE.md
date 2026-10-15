@@ -222,7 +222,7 @@ These costs are inflated on this host, where allocation and system calls are slo
 - **Give the engine a migration baseline** like the gateway's, so a restored dump can boot with `MIGRATE_ON_BOOT=true`.
 - **Data quality.** 1,194 chapters have no verses (partial translations), so readers navigating to them get `404`. Three abbreviations cannot be addressed by URL: " Alaba-K’abeena NT" and " Glavda NT Portion" (leading spaces) and "Matupi Chin Standard Bible w/ Strongs" (a slash).
 - **JIT is not worth chasing.** It compiles 13 functions per download (about 30 ms in plans); switching it off for the engine moved the download query's mean from 164-176 ms to 152-172 ms in the engine path. Left on.
-- **Engine CPU per read.** About 15% of the engine's CPU on cold reads is drizzle building SQL text for every request. Prepared queries would trim it; more engine replicas are the cheaper lever today.
+- **Engine CPU per read.** About 15% of the engine's CPU on cold reads in this run was drizzle building SQL text for every request; a later local profile of the read routes put drizzle at 24%. The engine now prepares its hot read queries once (engine commit `264852e`). In an interleaved in-process benchmark against the local Postgres (three rounds of 600 requests per route), CPU per request fell 54 to 56% on chapter reads, 37% on book lists, and 32 to 41% on passages, with byte-identical responses. That benchmark is single-process and uncontended, so it measures CPU per request, not throughput under this page's load; the scenarios above have not been re-run since. [TBD: re-run the cold-read scenario on vdk to measure the throughput effect.]
 
 ## Search infrastructure: how long the full catalog takes
 
