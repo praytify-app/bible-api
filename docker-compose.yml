@@ -12,6 +12,12 @@
 ## Sign in to the dashboard with email and password (enabled below), or add
 ## GitHub/Google OAuth credentials to .env. For production, see
 ## docker-compose.prod.yml and docs/DEPLOY.md.
+##
+## The `*-change-me` fallbacks below are public. Ports bind to 127.0.0.1 so
+## they never leave this machine. To serve other machines, set BIND_ADDRESS
+## (or put a reverse proxy in front), PUBLIC_API_URL and PORTAL_URL, and real
+## secrets in .env; the gateway refuses to start on placeholders once
+## PUBLIC_API_URL is not localhost.
 
 x-hardening: &hardening
   read_only: true
@@ -55,7 +61,8 @@ services:
     environment:
       DATABASE_URL: postgresql://bible_engine:${ENGINE_DB_PASSWORD:-engine-db-password-change-me}@postgres:5432/praytify_bible
       GATEWAY_TOKEN: ${GATEWAY_TOKEN:-self-host-gateway-token-change-me}
-      ADMIN_TOKEN: ${ADMIN_TOKEN:-self-host-admin-token-change-me}
+      # Unset locks the engine's admin routes; set one only if you use them.
+      ADMIN_TOKEN: ${ADMIN_TOKEN:-}
       MIGRATE_ON_BOOT: "true"
       PORT: "3100"
     depends_on:
@@ -91,7 +98,7 @@ services:
     build: .
     restart: unless-stopped
     ports:
-      - "3200:3200"
+      - "${BIND_ADDRESS:-127.0.0.1}:3200:3200"
     environment:
       NODE_ENV: production
       DATABASE_URL: postgresql://bible_gateway:${GATEWAY_DB_PASSWORD:-gateway-db-password-change-me}@postgres:5432/praytify_bible
@@ -125,7 +132,7 @@ services:
         VITE_API_URL: ${PUBLIC_API_URL:-http://localhost:3200}
     restart: unless-stopped
     ports:
-      - "8080:80"
+      - "${BIND_ADDRESS:-127.0.0.1}:8080:80"
     sysctls:
       net.ipv4.ip_unprivileged_port_start: "0"
     tmpfs:

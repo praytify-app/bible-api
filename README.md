@@ -95,7 +95,22 @@ docker compose up -d                            # Postgres, engine, gateway, por
 docker compose --profile seed run --rm seed     # once: sample public-domain translations
 ```
 
-The portal is at http://localhost:8080 and the API at http://localhost:3200 (reference at `/docs`). Email and password sign-in is on by default for self-hosted instances; add GitHub or Google OAuth credentials in `.env` if you prefer. Change every `*-change-me` default before exposing the stack to a network.
+The portal is at http://localhost:8080 and the API at http://localhost:3200 (reference at `/docs`). Email and password sign-in is on by default for self-hosted instances; add GitHub or Google OAuth credentials in `.env` if you prefer.
+
+The compose file's `*-change-me` fallbacks are public, so its ports bind to `127.0.0.1` and the stack stays on your machine. To serve other machines, put these in `.env` before the first `docker compose up` (the database passwords are applied when Postgres first initializes):
+
+```bash
+BIND_ADDRESS=0.0.0.0                     # or keep 127.0.0.1 behind a reverse proxy on the same host
+PUBLIC_API_URL=https://api.example.org
+PORTAL_URL=https://bible.example.org
+BETTER_AUTH_SECRET=...                   # each: openssl rand -hex 32
+GATEWAY_TOKEN=...
+POSTGRES_PASSWORD=...
+ENGINE_DB_PASSWORD=...
+GATEWAY_DB_PASSWORD=...
+```
+
+The gateway refuses to start with a placeholder `BETTER_AUTH_SECRET` or `GATEWAY_TOKEN` once `PUBLIC_API_URL` is not localhost. The engine's admin routes stay locked unless you set `ADMIN_TOKEN`.
 
 **Local development without Docker:**
 

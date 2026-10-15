@@ -72,6 +72,43 @@ export function loadConfig(env: Record<string, string | undefined> = process.env
   return parsed.data;
 }
 
+// docker-compose.yml falls back to `*-change-me` values so `docker compose up`
+// works on a laptop with no .env. They are public, so they must never sign
+// sessions or guard the engine on a gateway other people can reach.
+const PLACEHOLDER = /change-me/i;
+
+/** True when the URL names this machine, so only local browsers can use the gateway. */
+export function isLoopbackUrl(url: string): boolean {
+  const host = new URL(url).hostname;
+  return host === "localhost" || host.endsWith(".localhost") || host === "127.0.0.1" || host === "[::1]";
+}
+
+function servedPublicly(cfg: Config): boolean {
+  return [cfg.BETTER_AUTH_URL, cfg.PUBLIC_API_URL].some((url) => url !== undefined && !isLoopbackUrl(url));
+}
+
+/** Secrets still on their compose placeholder. Each is changed in .env alone, so refusing costs one edit. */
+function placeholderSecrets(cfg: Config): string[] {
+  const out: string[] = [];
+  if (cfg.BETTER_AUTH_SECRET && PLACEHOLDER.test(cfg.BETTER_AUTH_SECRET)) out.push("BETTER_AUTH_SECRET");
+  if (cfg.GATEWAY_TOKEN && PLACEHOLDER.test(cfg.GATEWAY_TOKEN)) out.push("GATEWAY_TOKEN");
+  return out;
+}
+
+/**
+ * A placeholder database password only warns: Postgres is never published by
+ * the compose file, and changing an initialized role's password takes an
+ * ALTER ROLE, not just an .env edit.
+ */
+function placeholderDatabasePassword(cfg: Config): boolean {
+  if (!cfg.DATABASE_URL) return false;
+  try {
+    return PLACEHOLDER.test(decodeURIComponent(new URL(cfg.DATABASE_URL).password));
+  } catch {
+    return false;
+  }
+}
+
 /** Checks that only matter for a real deployment, kept out of loadConfig so tests stay light. */
 export function assertProductionReady(cfg: Config): void {
   const problems: string[] = [];
@@ -80,6 +117,13 @@ export function assertProductionReady(cfg: Config): void {
     if (!cfg.BETTER_AUTH_SECRET || cfg.BETTER_AUTH_SECRET.length < 32) {
       problems.push("BETTER_AUTH_SECRET must be at least 32 characters in production");
     }
+  }
+  const placeholders = placeholderSecrets(cfg);
+  if (placeholders.length && servedPublicly(cfg)) {
+    problems.push(
+      `${placeholders.join(" and ")} still ${placeholders.length > 1 ? "use their" : "uses its"} public docker-compose.yml placeholder, ` +
+        "but the gateway is served beyond localhost. Set real values in .env (openssl rand -hex 32)",
+    );
   }
   if (problems.length) throw new Error(`Refusing to start:\n  ${problems.join("\n  ")}`);
 }
@@ -95,6 +139,13 @@ export function configWarnings(cfg: Config): string[] {
   }
   if (cfg.NODE_ENV === "production" && cfg.TRUST_PROXY_HOPS === 0) {
     out.push("TRUST_PROXY_HOPS=0 in production: behind Traefik every client shares the proxy's IP for rate limiting");
+  }
+  const placeholders = placeholderSecrets(cfg);
+  if (placeholders.length && !servedPublicly(cfg)) {
+    out.push(`${placeholders.join(" and ")} use public placeholders: fine on this machine, change them before exposing the gateway`);
+  }
+  if (placeholderDatabasePassword(cfg)) {
+    out.push("the DATABASE_URL password is a public placeholder: keep Postgres unpublished, or set real passwords before first boot");
   }
   if (!cfg.EMAIL_PASSWORD_AUTH && !(cfg.GITHUB_CLIENT_ID && cfg.GITHUB_CLIENT_SECRET) && !(cfg.GOOGLE_CLIENT_ID && cfg.GOOGLE_CLIENT_SECRET)) {
     out.push("no sign-in method is configured: set GitHub or Google OAuth credentials, or EMAIL_PASSWORD_AUTH=true");
