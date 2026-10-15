@@ -7,8 +7,9 @@
 ## Routing is configured in the Dokploy Domains UI, not with Traefik labels.
 ##
 ## Set in the Dokploy compose environment:
-##   required: POSTGRES_PASSWORD, DATABASE_URL, BETTER_AUTH_SECRET, ADMIN_TOKEN, GATEWAY_TOKEN
-##   optional: GITHUB_CLIENT_ID/SECRET, GOOGLE_CLIENT_ID/SECRET, REDIS_URL,
+##   required: POSTGRES_PASSWORD, DATABASE_URL, BETTER_AUTH_SECRET, GATEWAY_TOKEN
+##   optional: ADMIN_TOKEN (unset locks the engine's admin routes),
+##             GITHUB_CLIENT_ID/SECRET, GOOGLE_CLIENT_ID/SECRET, REDIS_URL,
 ##             ENGINE_DATABASE_URL, GATEWAY_DATABASE_URL (least-privilege roles),
 ##             MASTER_API_KEY (deprecated; remove once Praytify uses an internal key)
 ## See .env.production.example. Image tags are bumped by scripts/deploy.sh.

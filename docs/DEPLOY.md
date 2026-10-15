@@ -91,6 +91,7 @@ Self-hosted installs from `docker-compose.yml` get these roles automatically on 
 
 ## After the release
 
+- Rotate the three production credentials that remain in git history: [runbooks/rotate-production-secrets.md](runbooks/rotate-production-secrets.md). Do it before any repository goes public.
 - Move Praytify off `MASTER_API_KEY` as described in [integrations/praytify.md](integrations/praytify.md), then remove the variable.
 - Optional: a publishable key restricted to `https://praytify.bible`, passed to the portal build as `VITE_PUBLIC_SEARCH_KEY`, turns on search in the reader.
 - Optional: run Redis and set `REDIS_URL` before running more than one gateway replica.
