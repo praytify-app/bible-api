@@ -91,12 +91,31 @@ function pickEncoding(acceptEncoding: string | undefined): "br" | "gzip" | null 
   return null;
 }
 
+/**
+ * Brotli window bits for a body: the smallest window that holds all of it
+ * (a window is 2^bits - 16 bytes), so the output does not change. The default
+ * 22-bit window is a 4 MB buffer allocated and freed on every call; for
+ * chapter-sized bodies that setup cost more than the compression itself.
+ * Sizing it cut brotli CPU per cache miss 2.4 to 4 times (docs/PERFORMANCE.md).
+ */
+export function brotliWindowBits(byteLength: number): number {
+  const { BROTLI_MIN_WINDOW_BITS, BROTLI_DEFAULT_WINDOW } = zlibConstants;
+  const needed = Math.ceil(Math.log2(byteLength + 16));
+  return Math.min(BROTLI_DEFAULT_WINDOW, Math.max(BROTLI_MIN_WINDOW_BITS, needed));
+}
+
 async function encode(entry: StoredResponse, enc: "br" | "gzip"): Promise<Uint8Array> {
   const existing = entry.encodings[enc];
   if (existing) return existing;
   const out =
     enc === "br"
-      ? await brotli(entry.body, { params: { [zlibConstants.BROTLI_PARAM_QUALITY]: 5 } })
+      ? await brotli(entry.body, {
+          params: {
+            [zlibConstants.BROTLI_PARAM_QUALITY]: 5,
+            [zlibConstants.BROTLI_PARAM_LGWIN]: brotliWindowBits(entry.body.byteLength),
+            [zlibConstants.BROTLI_PARAM_SIZE_HINT]: entry.body.byteLength,
+          },
+        })
       : await gzipAsync(entry.body, { level: 6 });
   const bytes = new Uint8Array(out.buffer, out.byteOffset, out.byteLength);
   entry.encodings[enc] = bytes;
