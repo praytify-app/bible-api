@@ -26,6 +26,8 @@ services:
   postgres:
     image: postgres:16-alpine
     restart: unless-stopped
+    # Modest settings for a small server; raise for the full corpus (docs/PERFORMANCE.md).
+    command: ["postgres", "-c", "shared_buffers=256MB", "-c", "effective_cache_size=768MB", "-c", "work_mem=8MB"]
     environment:
       POSTGRES_USER: bible
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-bible}

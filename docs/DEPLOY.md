@@ -34,6 +34,16 @@ The gateway migrates on boot (`MIGRATE_ON_BOOT=true`). The first boot baselines 
 ssh netcup-server 'docker exec <postgres-container> pg_dump -U bible -d praytify_bible -n platform -Fc' > platform-$(date +%F).dump
 ```
 
+### 3b. Check the engine's migration journal
+
+The engine does not migrate on boot in production. Before deploying, check its journal:
+
+```bash
+ssh netcup-server 'docker exec <postgres-container> psql -U bible -d praytify_bible -c "SELECT id, created_at FROM drizzle.__drizzle_migrations"'
+```
+
+Two rows means the schema is current. If the table is missing or empty, `pnpm db:migrate` from the engine (or one boot with `MIGRATE_ON_BOOT=true`) baselines the restored schema and applies nothing else. If only one row exists while the `versions.license_type` column is present, insert the 0001 record by hand before migrating, because 0001 is not idempotent.
+
 ### 4. Pin the new tags and merge
 
 Update the three `image:` tags in `docker-compose.prod.yml` to the tag from step 1 in the same commit that merges the release. The hardened portal service (read-only root, no capabilities) only works with the new unprivileged portal image, so the compose change and the new portal tag must ship together.
@@ -74,6 +84,10 @@ Today the gateway and engine share one superuser. `scripts/db-roles.sql` gives e
 4. Verify `/health/ready` on the gateway and a chapter read through the API. To roll back, remove the two variables and redeploy; the superuser still owns nothing it needs, because superusers bypass ownership checks.
 
 Self-hosted installs from `docker-compose.yml` get these roles automatically on first boot (`ENGINE_DB_PASSWORD`, `GATEWAY_DB_PASSWORD`).
+
+## Performance notes
+
+`docs/PERFORMANCE.md` has the production-scale measurements. The deploy-relevant points: Postgres now runs with memory settings sized for its 2 GB container (applied on the next Postgres restart); full-Bible downloads are limited to two concurrent builds per engine (`DOWNLOAD_CONCURRENCY`); building the full search infrastructure takes about an hour on a fresh database, dominated by the 48-minute trigram index, so run it off-peak and drop existing search indexes before a bulk re-vectorize.
 
 ## After the release
 

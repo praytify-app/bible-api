@@ -86,6 +86,8 @@ services:
       # limiter; the gateway enforces per-account and per-IP quotas itself.
       GATEWAY_TOKEN: ${GATEWAY_TOKEN}
       RATE_LIMIT_MAX: "1000"
+      # Full-Bible downloads build two at a time; more queue (up to 16) or get 503.
+      DOWNLOAD_CONCURRENCY: "2"
       PORT: "3100"
     healthcheck:
       test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3100/api/v1/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
@@ -104,6 +106,20 @@ services:
     restart: unless-stopped
     mem_limit: 2g
     shm_size: 256m
+    # Sized for the 2 GB container (Postgres defaults assume 128 MB). See
+    # docs/PERFORMANCE.md; random_page_cost assumes SSD or NVMe storage.
+    command:
+      - postgres
+      - -c
+      - shared_buffers=512MB
+      - -c
+      - effective_cache_size=1536MB
+      - -c
+      - work_mem=16MB
+      - -c
+      - maintenance_work_mem=256MB
+      - -c
+      - random_page_cost=1.1
     security_opt:
       - no-new-privileges:true
     environment:
