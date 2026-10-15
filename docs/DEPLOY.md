@@ -69,7 +69,7 @@ In the gateway logs, the first boot should show `baselined existing gateway sche
 
 ### 6. Rollback
 
-Re-pin the previous tags (`gateway 0.4.0-17ea66f`, `engine 1.4.0-b0835ca`, `portal 0.4.1-c167e10`) and restore the previous `docker-compose.prod.yml`. The previous portal image needs the old compose: it runs nginx as root and cannot start under the hardened settings. Migration 0001 only adds columns and an index, so the old gateway runs against the migrated schema unchanged.
+Restore `docker-compose.prod.yml` from `4672eea` (the last pre-release `main`), which pins the previous tags: `gateway 0.4.0-17ea66f`, `engine 1.4.0-b0835ca`, `portal 0.4.1-e043cc9`. The previous portal image needs the old compose: it runs nginx as root and cannot start under the hardened settings. Migration 0001 only adds columns and an index, so the old gateway runs against the migrated schema unchanged.
 
 ## Least-privilege database roles (recommended, after the release is stable)
 

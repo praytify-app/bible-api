@@ -2,6 +2,8 @@
 
 Three production credentials were committed inline to `docker-compose.prod.yml` and remain in main's git history: `BETTER_AUTH_SECRET` and `ADMIN_TOKEN` (commit `7559415`, 2026-03-24) and the `bible` Postgres role's password (`b67c4b0` in `DATABASE_URL`, `740483f` as `POSTGRES_PASSWORD`). The July purge removed `.env.production` but not these. The decision (2026-10-15) is to rotate all three and leave history as is: once rotated, the values in it are dead. The repositories stay private until this runbook is done.
 
+**Status, checked 2026-10-15 by comparing SHA-256 hashes of the Dokploy values with the leaked ones (no values printed):** `BETTER_AUTH_SECRET` and `ADMIN_TOKEN` were already rotated (Dokploy deployments titled "Rotate exposed Praytify Bible credentials", 2026-08-23). The `bible` Postgres password is still the leaked value in both `POSTGRES_PASSWORD` and `DATABASE_URL`. Only the database steps below remain: 1, the password line of 2, 3, 5, and 6. Rotating it does not sign anyone out.
+
 Allow 20 minutes. Every signed-in portal user is signed out once. API keys keep working: they are stored as SHA-256 hashes and never signed with any of these secrets.
 
 ## What each secret does, and what rotating it breaks
