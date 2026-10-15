@@ -67,15 +67,19 @@ export function DashboardShell() {
   return (
     <div className="min-h-dvh bg-surface lg:pl-64">
       <SkipLink />
-      {/* Fixed sidebar from lg up; below that the same nav opens in a Sheet. */}
-      <div className="fixed inset-y-0 left-0 z-30 hidden w-64 flex-col border-r border-hairline bg-surface lg:flex">
+      {/* Fixed sidebar from lg up; below that the same nav opens in a Sheet.
+          A landmark so screen reader landmark navigation reaches the logo link. */}
+      <aside
+        aria-label="Sidebar"
+        className="fixed inset-y-0 left-0 z-30 hidden w-64 flex-col border-r border-hairline bg-surface lg:flex"
+      >
         <div className="flex h-16 shrink-0 items-center px-5">
           <Link to="/dashboard" aria-label="Praytify Bible dashboard, overview" className="rounded-[4px]">
             <Logo product height={22} />
           </Link>
         </div>
         <SidebarNav />
-      </div>
+      </aside>
 
       <header className="sticky top-0 z-20 border-b border-hairline bg-surface">
         <div className="flex h-16 items-center gap-2 px-4 sm:px-6 lg:px-8">

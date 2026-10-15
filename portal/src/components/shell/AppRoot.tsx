@@ -1,5 +1,6 @@
 import { Outlet, useMatches } from "@tanstack/react-router";
 import { useDocumentTitle } from "./document-title";
+import { useRouteFocus } from "./route-focus";
 
 /**
  * Root route component. Titles live on the routes as `staticData.title`; the
@@ -9,5 +10,14 @@ import { useDocumentTitle } from "./document-title";
 export function AppRoot() {
   const title = useMatches({ select: (matches) => matches[matches.length - 1]?.staticData.title });
   useDocumentTitle(title);
-  return <Outlet />;
+  const announcement = useRouteFocus();
+  return (
+    <>
+      <Outlet />
+      {/* Mounted from the first render: a live region added later is not watched. */}
+      <div role="status" className="sr-only">
+        {announcement}
+      </div>
+    </>
+  );
 }

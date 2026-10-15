@@ -38,6 +38,7 @@ Passed / failed / skipped, desktop (1440x900) and mobile (Pixel 7, 390x844).
 | `qa/inert-controls.spec.ts` | 16 / 0 / 0 | 16 / 0 / 0 |
 | `qa/must-not-regress.spec.ts` | 6 / 0 / 0 | 6 / 0 / 0 |
 | `qa/reader-search.spec.ts` | 2 / 0 / 0 | 2 / 0 / 0 |
+| `qa/screen-reader.spec.ts` (added 2026-10-15) | 15 / 0 / 0 | 15 / 0 / 0 |
 | `qa/screens.spec.ts` | 0 / 0 / 38 | 0 / 0 / 38 |
 | `smoke.spec.ts` | 1 / 0 / 0 | 1 / 0 / 0 |
 
@@ -68,6 +69,8 @@ Examined: brand (Sacred Dawn cream and brown ink, indigo accent, serif italic di
 Firefox, WebKit (Safari's engine, desktop) and an iPhone 15 profile, added as opt-in Playwright projects (`E2E_BROWSERS=all`), on `a3534e2`, 2026-10-14, against the local stack after the lead's gateway restart at 18:38 (account export and deletion live). Playwright 1.64.0 with chromium-1248, firefox-1555, webkit-2370. Preview mode now builds into `portal/dist-e2e`, so no other `vite build` can swap the bundle mid-run.
 
 Command, from `portal/`: `E2E_BROWSERS=all E2E_MODE=preview E2E_OUTPUT_DIR=<scratch> ./node_modules/.bin/playwright test --grep-invert screens` (all five projects, one run). Exit 0: **536 passed, 0 failed, 0 flaky, 14 skipped** in 7.3 min.
+
+Re-run on 2026-10-15 after the screen-reader fixes (route focus, sidebar landmark), whole suite including `qa/screen-reader`: `E2E_BROWSERS=all E2E_MODE=preview ./node_modules/.bin/playwright test`. Exit 0: **607 passed, 0 failed, 208 skipped** in 5.9 min. The skips are the opt-in screens spec (190), the 14 above, and the skip-link test on the two WebKit projects (WebKit desktop and the iPhone profile), where Safari's Tab skips links by default.
 
 | Project | Engine, viewport | Passed | Failed | Skipped |
 |---|---|---|---|---|
@@ -132,6 +135,8 @@ How it was checked: `e2e/qa/inert-controls.spec.ts` visits 16 routes on both pro
 | 3 | Vite inlines the 1,716-byte Plus Jakarta Sans cyrillic-ext subset as a `data:` font; the portal CSP (`font-src 'self'`) blocks it on every page | `portal/vite.config.ts` (no `assetsInlineLimit`), CSP at `portal/nginx.conf:17`, `:52` | design-system | low (one unicode range falls back; console CSP error on every page) | fixed in b4c8730, verified (rebuilt container: zero CSP and font errors on 13 routes, both projects) |
 | 4 | Scalar loads its fonts from `https://fonts.scalar.com`, which the gateway's `fontSrc` does not allow | `src/app.ts:100` | lead | low (cosmetic, 14 CSP errors on `/docs`) | fixed in 4de785b, verified (running gateway serves Scalar with `withDefaultFonts: false`; zero CSP errors on `/docs`) |
 | 5 | `/embed/` redirects with nginx's default `absolute_redirect on`, so `Location` is built from the container's scheme and port: `http://localhost/embed` behind `-p 8080:80` (wrong port), `http://praytify.bible/embed` behind the TLS proxy (an http hop). Introduced by the `/embed/` fix (ebe1d48) | `portal/nginx.conf:35-36` | lead | low (trailing-slash URL only) | fixed in ad5a696, verified (`Location: /embed` from the rebuilt container) |
+| 6 | Client-side navigation was silent to screen readers: the title changed but nothing was read, and focus stayed on the link that was clicked (or fell to `<body>` when the link unmounted) | `portal/src/components/shell/AppRoot.tsx` (no focus handling) | lead | medium (every navigation, for every screen reader user) | fixed: `route-focus.ts` moves focus to the new page's h1 once it settles, or announces the heading in a live region when focus is on a control that survived (the reader's chapter buttons); verified by `qa/screen-reader` "route changes" on all five projects |
+| 7 | The desktop dashboard sidebar's logo link sat outside every landmark (axe `region`), so landmark navigation skipped it | `portal/src/components/shell/DashboardShell.tsx:71` | lead | low | fixed: the sidebar is `<aside aria-label="Sidebar">`; verified by `qa/screen-reader` "outline of every dashboard page" |
 
 
 ## Gated or partial features
@@ -154,9 +159,9 @@ How it was checked: `e2e/qa/inert-controls.spec.ts` visits 16 routes on both pro
 
 ## Not verified
 
-- OAuth sign-in with GitHub or Google (instructed not to click locally).
-- Browsers other than Chromium: no Firefox, WebKit or Safari runs, and no real phones. "Mobile" is Chromium with the Pixel 7 profile.
-- Screen readers: no VoiceOver or NVDA pass. Accessibility evidence is axe plus the keyboard paths the specs drive (skip link, verse selection, translation picker, dialogs).
+- OAuth sign-in with GitHub or Google, past the provider's page. Initiation was checked against the local gateway on 2026-10-15: both providers redirect to their authorize endpoint with the gateway's own callback, PKCE (S256), a `state` bound to an HttpOnly, SameSite=Lax cookie that expires in 5 minutes, and minimal scopes (`read:user user:email`; `openid email profile`). An unknown provider returns 404, a foreign `callbackURL` 403, and a cookie-bearing request from a foreign origin 403.
+- Real Safari and real phones. Firefox, WebKit and an iPhone 15 profile run in Playwright (see Cross-browser), which is the engine, not the device.
+- Screen readers: no VoiceOver or NVDA pass. `qa/screen-reader` stands in for one: axe's structure rules that the WCAG-tag gate skips (one h1, heading order, landmarks, everything inside a landmark, bypass), the skip link as the first Tab stop, focus and announcement on route changes, and each page's accessibility tree for review (`ARIA_SNAPSHOT_DIR`). The trees were read for unnamed controls, vague names, and repeated names; none found.
 - Production conditions: TLS, HSTS over HTTPS, the production CSP origin, 1,288 translations in the catalog and pickers (the local stack has 3), and the production rate limits (local anonymous limit is raised to 1,000 a minute).
 - Pre-revamp comparison: no pre-revamp captures were stored, so the screens were judged against the brand and the AUDIT route table, not pixel-compared with the old UI.
 - The widget's dark rendering on a dark OS: headless Chromium reports a light colour scheme, so "Match the visitor's device" was only seen in light.

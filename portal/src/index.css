@@ -396,6 +396,12 @@
     outline-offset: 2px;
   }
 
+  /* Route changes move focus to the page heading so screen readers read it
+     (route-focus.ts). It is a reading position, not a control: no ring. */
+  h1[tabindex="-1"]:focus-visible {
+    outline: none;
+  }
+
   ::selection {
     background-color: var(--accent-subtle);
     color: var(--ink);
