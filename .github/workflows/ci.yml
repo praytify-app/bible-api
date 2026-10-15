@@ -96,8 +96,14 @@ jobs:
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: pnpm
-          cache-dependency-path: portal/pnpm-lock.yaml
+          cache-dependency-path: |
+            portal/pnpm-lock.yaml
+            packages/embed/pnpm-lock.yaml
       - run: pnpm install --frozen-lockfile
+      # The build compiles the embed widget (scripts/copy-embed.mjs) with the
+      # embed package's own TypeScript; that package is its own workspace root.
+      - run: pnpm install --frozen-lockfile
+        working-directory: packages/embed
       - run: pnpm typecheck
       - run: pnpm lint
       - run: pnpm test
