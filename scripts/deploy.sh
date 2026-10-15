@@ -39,12 +39,19 @@ echo "Docker Hub: ${DOCKER_USER}"
 echo "Tag: ${TAG}"
 echo ""
 
-# Ensure buildx builder exists for multi-platform
-if ! docker buildx inspect praytify-builder &>/dev/null; then
-  echo "Creating buildx builder..."
-  docker buildx create --name praytify-builder --use
+# Buildx builder. BUILDER picks an existing one (for example the active
+# Docker context's own, such as "vdk"); the default is created on first use.
+# A builder left on a dead context fails here instead of mid-release.
+BUILDER="${BUILDER:-praytify-builder}"
+if ! docker buildx inspect "$BUILDER" &>/dev/null; then
+  echo "Creating buildx builder ${BUILDER}..."
+  docker buildx create --name "$BUILDER" --use
 else
-  docker buildx use praytify-builder
+  docker buildx use "$BUILDER"
+fi
+if ! docker buildx inspect --bootstrap "$BUILDER" &>/dev/null; then
+  echo "Builder ${BUILDER} is not usable. Set BUILDER to a working one (docker buildx ls)." >&2
+  exit 1
 fi
 
 # Build + push Bible engine
