@@ -234,7 +234,8 @@ export function createProxy(opts: ProxyOptions) {
       return upstreamFailure(c, err);
     }
     const out = new Headers();
-    for (const h of ["content-type", "content-length", "etag", "last-modified", "content-disposition"]) {
+    // retry-after carries the engine's download bulkhead hint on a 503.
+    for (const h of ["content-type", "content-length", "etag", "last-modified", "content-disposition", "retry-after"]) {
       const v = res.headers.get(h);
       if (v) out.set(h, v);
     }

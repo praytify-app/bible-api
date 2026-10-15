@@ -295,6 +295,19 @@ describe("keyed routes and key kinds", () => {
     expect(r.headers.get("x-cache")).toBe("BYPASS");
   });
 
+  it("passes the engine's busy signal and Retry-After through on a download", async () => {
+    const { app } = setup();
+    engine = () =>
+      new Response(JSON.stringify({ error: { code: "BUSY", message: "Too many full-Bible downloads in progress." } }), {
+        status: 503,
+        headers: { "content-type": "application/json", "retry-after": "10" },
+      });
+    const r = await app.request("/v1/versions/WEB/download", { headers: { authorization: `Bearer ${SECRET}` } });
+    expect(r.status).toBe(503);
+    expect(r.headers.get("retry-after")).toBe("10");
+    expect(r.headers.get("cache-control")).toBe("no-store");
+  });
+
   it("lets the master key through without rate limiting, in constant time", async () => {
     const { app } = setup({ ANON_RATE_PER_MINUTE: "1" });
     for (let i = 0; i < 5; i++) {
