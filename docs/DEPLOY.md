@@ -8,13 +8,13 @@ This release changes the gateway's database schema, adds a shared secret, and ch
 
 ### 1. Build and push images
 
-From a clean `main` after the release branches are merged, with the engine repository checked out next to this one at the matching commit:
+Merging this repository's `main` is the deploy, so build the images before that merge, from the reviewed head of the release branch. Merge the engine's release PR first: the engine's `main` deploys nothing (its CI builds an image without pushing it). Then, with `../open-bible-api` on its updated `main` and this repository on the release branch head:
 
 ```bash
 scripts/deploy.sh 0.5.0-$(git rev-parse --short HEAD)
 ```
 
-The script builds `linux/amd64` images for the engine, gateway, and portal and pushes them to Docker Hub. Note the tag.
+The script builds `linux/amd64` images for the engine, gateway, and portal and pushes them to Docker Hub. It does not edit `docker-compose.prod.yml`. Note the tag.
 
 ### 2. Add the new secret in Dokploy
 
@@ -46,7 +46,7 @@ Two rows means the schema is current. If the table is missing or empty, `pnpm db
 
 ### 4. Pin the new tags and merge
 
-Update the three `image:` tags in `docker-compose.prod.yml` to the tag from step 1 in the same commit that merges the release. The hardened portal service (read-only root, no capabilities) only works with the new unprivileged portal image, so the compose change and the new portal tag must ship together.
+On the release branch, update the three `image:` tags in `docker-compose.prod.yml` to the tag from step 1, commit, push, and merge the PR. Never merge the release with the old tags pinned. The hardened portal service (read-only root, no capabilities) only works with the new unprivileged portal image, so the compose change and the new portal tag must ship together.
 
 ### 5. Verify
 

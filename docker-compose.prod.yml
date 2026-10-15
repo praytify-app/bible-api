@@ -12,7 +12,8 @@
 ##             GITHUB_CLIENT_ID/SECRET, GOOGLE_CLIENT_ID/SECRET, REDIS_URL,
 ##             ENGINE_DATABASE_URL, GATEWAY_DATABASE_URL (least-privilege roles),
 ##             MASTER_API_KEY (deprecated; remove once Praytify uses an internal key)
-## See .env.production.example. Image tags are bumped by scripts/deploy.sh.
+## See .env.production.example. Pin image tags by hand to the tag scripts/deploy.sh
+## prints (docs/DEPLOY.md, steps 1 and 4).
 
 x-hardening: &hardening
   read_only: true
