@@ -4,6 +4,8 @@ Production is `docker-compose.prod.yml` on the netcup VPS, managed by Dokploy (p
 
 ## Release 0.5.0 checklist
 
+**Deployed 2026-10-16 04:15 UTC** (`main` `dc096a6`, images `0.5.0-f229baf`). The first auto-deploy, on the merge, failed at image pull on a never-pushed portal pin and changed nothing. Pre-release backups of the `platform` schema and the auth tables are on the Postgres volume at `/var/lib/postgresql/data/pre-release-backups/`. Every check in step 5 passed. Next: the least-privilege roles below, then moving Praytify to an internal-tier key.
+
 This release changes the gateway's database schema, adds a shared secret, and changes the portal's runtime user. Do the steps in order.
 
 ### 1. Build and push images
