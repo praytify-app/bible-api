@@ -49,7 +49,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ path
 
 Operator steps (once, on production):
 
-State on 2026-10-16: production has no developer profile for Praytify yet (the one key belongs to another app), so Praytify still uses the master key. Step 1 creates the profile; step 2 can then be run through the Dokploy terminal on the Postgres container, as the gateway role owns `platform`.
+**Done 2026-10-16 (steps 1 to 3 for the server key):** a service account, "Praytify app (service account)", exists with the internal tier and one secret key, "Praytify server (Convex and web proxy)". Its email is under the reserved `.invalid` domain, so no GitHub or Google sign-in can link to it. The key is stored as `BIBLE_GATEWAY_SECRET_KEY` in the Dokploy environment of `praytify-app` / Prod (the web container) and was never printed; a keyed search against production returned 200 at 6,000 requests a minute. Remaining, by the owner: copy that value into the production Convex environment (`npx convex env set BIBLE_GATEWAY_SECRET_KEY ...`), deploy Convex from sireskay/praytify#99, then merge #99 so web redeploys, and remove `BIBLE_GATEWAY_MASTER_KEY` once both run on the new key. A publishable key for the web build is still to create (dashboard, by a signed-in human).
 
 1. Sign in at https://praytify.bible with the Praytify team account and save a profile.
 2. Set the account's tier: `UPDATE platform.developer_profiles SET tier = 'internal' WHERE user_id = '<id>';`
