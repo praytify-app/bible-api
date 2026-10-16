@@ -74,7 +74,7 @@ services:
 
   bible-engine:
     <<: *hardening
-    image: novashock/praytify-bible-engine:0.5.0-f229baf
+    image: novashock/praytify-bible-engine:1.5.1-e4a6152
     restart: unless-stopped
     mem_limit: 1g
     expose:
@@ -146,7 +146,7 @@ services:
 
   portal:
     <<: *hardening
-    image: novashock/praytify-bible-portal:0.5.1-343272e
+    image: novashock/praytify-bible-portal:0.5.2-4152c2e
     restart: unless-stopped
     mem_limit: 128m
     # Requires the unprivileged nginx image (portal/Dockerfile). The old
