@@ -1,7 +1,7 @@
 import { useMemo, type ReactNode } from "react";
 import { SearchSelect, Select } from "@/components/ds";
 import type { BibleBook } from "@/lib/api";
-import { isOldTestament, sortBooks } from "./chapter-nav";
+import { availableChapters, hasChapter, isOldTestament, sortBooks } from "./chapter-nav";
 
 const count = new Intl.NumberFormat();
 
@@ -56,11 +56,12 @@ export interface ChapterPickerProps {
 }
 
 export function ChapterPicker({ book, chapter, onSelect, className }: ChapterPickerProps) {
+  // Only chapters with text: partial translations skip numbers (missingChapters).
   const options = useMemo(
-    () => Array.from({ length: book?.chapterCount ?? 0 }, (_, i) => ({ value: String(i + 1), label: String(i + 1) })),
-    [book?.chapterCount],
+    () => (book ? availableChapters(book) : []).map((n) => ({ value: String(n), label: String(n) })),
+    [book],
   );
-  const valid = book !== undefined && chapter >= 1 && chapter <= book.chapterCount;
+  const valid = book !== undefined && hasChapter(book, chapter);
 
   // Sized by a wrapper: the control fills its container (controlBase is w-full).
   return (

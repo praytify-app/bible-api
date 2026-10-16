@@ -43,8 +43,11 @@ export interface Book {
   bookCode: string;
   name: string;
   position: number;
+  /** Highest chapter number; partial translations can skip some below it. */
   chapterCount: number;
   testament: "OT" | "NT" | string;
+  /** Chapter numbers from 1 to chapterCount with no text (engine 1.5.1+). */
+  missingChapters?: number[];
 }
 
 export interface Chapter {

@@ -8,7 +8,7 @@ import { versionLabel } from "@/lib/version-slug";
 import { toDir, toLangTag } from "@/lib/lang";
 import { BookChapterPickersRow } from "@/features/reader/BookChapterPickers";
 import { ChapterBody } from "@/features/reader/ChapterBody";
-import { adjacentChapters, resolveVersionSwitch, sortBooks } from "@/features/reader/chapter-nav";
+import { adjacentChapters, availableChapters, hasChapter, resolveVersionSwitch, sortBooks } from "@/features/reader/chapter-nav";
 import { isNotFound, isRateLimited, rateLimitMessage, retryUnlessFinal } from "@/features/reader/errors";
 import { useChapterShortcuts } from "@/features/reader/keyboard";
 import { rememberLocation } from "@/features/reader/last-read";
@@ -73,10 +73,19 @@ export function ReadPage() {
   // Book names and scripture are in the translation's language; version names and UI are not.
   const dir = toDir(detail?.textDirection);
   const lang = toLangTag(detail?.languageCode);
-  const { prev, next } = useMemo(
-    () => (books ? adjacentChapters(books, bookCode, chapter) : { prev: null, next: null }),
-    [books, bookCode, chapter],
-  );
+  // Everything derived from the book list, in one memo: neighbours skip chapters a
+  // partial translation lacks, and a missing book falls back to the first real chapter.
+  const { prev, next, chapterExists, fallbackBook, fallbackChapter } = useMemo(() => {
+    if (!books) return { prev: null, next: null, chapterExists: true, fallbackBook: undefined, fallbackChapter: 1 };
+    const book = books.find((b) => b.bookCode === bookCode);
+    const fallback = book ? undefined : sortBooks(books).find((b) => availableChapters(b).length > 0);
+    return {
+      ...adjacentChapters(books, bookCode, chapter),
+      chapterExists: book ? hasChapter(book, chapter) : true,
+      fallbackBook: fallback,
+      fallbackChapter: fallback ? availableChapters(fallback)[0] : 1,
+    };
+  }, [books, bookCode, chapter]);
 
   const goTo = useCallback(
     (v: string, book: string, ch: number) =>
@@ -110,23 +119,22 @@ export function ReadPage() {
   // A link to a book this translation lacks lands on its first book, with the
   // same note a translation switch shows. The catalog links every version to
   // Genesis 1, and some translations are New Testament only.
-  const fallbackBook = books && !currentBook ? sortBooks(books).find((b) => b.chapterCount > 0) : undefined;
   const redirectedFrom = useRef<string | null>(null);
   useEffect(() => {
     const from = `${version}/${bookCode}`;
     if (!fallbackBook || redirectedFrom.current === from) return;
     redirectedFrom.current = from;
     const note = {
-      path: readerPath(version, fallbackBook.bookCode, 1).toUpperCase(),
+      path: readerPath(version, fallbackBook.bookCode, fallbackChapter).toUpperCase(),
       // The abbreviation, not the name: the version details may not have arrived yet.
-      text: `${version} does not include ${bookName}, so you are at ${fallbackBook.name} 1.`,
+      text: `${version} does not include ${bookName}, so you are at ${fallbackBook.name} ${fallbackChapter}.`,
     };
     void navigate({
       to: "/read/$version/$book/$chapter",
-      params: { version, book: fallbackBook.bookCode, chapter: "1" },
+      params: { version, book: fallbackBook.bookCode, chapter: String(fallbackChapter) },
       replace: true,
     }).then(() => setSwitchNote(note));
-  }, [fallbackBook, version, bookCode, bookName, navigate]);
+  }, [fallbackBook, fallbackChapter, version, bookCode, bookName, navigate]);
 
   async function switchVersion(abbreviation: string) {
     if (abbreviation.toUpperCase() === version) return;
@@ -205,6 +213,26 @@ export function ReadPage() {
                 Go to {bookName} {currentBook.chapterCount}
               </Link>
             </Button>
+          }
+        />
+      );
+    }
+    // A number inside the book's range that this (partial) translation skips.
+    if (currentBook && !chapterExists) {
+      // prev/next already skip missing chapters; prefer one in this book.
+      const target = next?.book.bookCode === bookCode ? next : prev?.book.bookCode === bookCode ? prev : (next ?? prev);
+      return (
+        <EmptyState
+          titleAs="h2"
+          title={`${version} has no text for ${bookName} ${chapter}`}
+          action={
+            target ? (
+              <Button asChild variant="secondary">
+                <Link to="/read/$version/$book/$chapter" params={{ version, book: target.book.bookCode, chapter: String(target.chapter) }}>
+                  Go to {target.book.name} {target.chapter}
+                </Link>
+              </Button>
+            ) : undefined
           }
         />
       );

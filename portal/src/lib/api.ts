@@ -308,8 +308,11 @@ export interface BibleBook {
   bookCode: string;
   name: string;
   position: number;
+  /** Highest chapter number; see missingChapters for gaps below it. */
   chapterCount: number;
   testament: string;
+  /** Numbers from 1 to chapterCount with no text in this translation (engine 1.5.1+). */
+  missingChapters?: number[];
 }
 
 export interface BibleVerse {

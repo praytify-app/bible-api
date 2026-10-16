@@ -9,7 +9,22 @@ export function sortBooks(books: readonly BibleBook[]): BibleBook[] {
   return [...books].sort((a, b) => a.position - b.position);
 }
 
-/** Previous and next chapter, crossing book boundaries in canonical order. */
+/**
+ * The chapters that have text, in order. Partial translations skip numbers
+ * inside a book's range; the engine lists them in missingChapters.
+ */
+export function availableChapters(book: BibleBook): number[] {
+  const missing = new Set(book.missingChapters ?? []);
+  const out: number[] = [];
+  for (let n = 1; n <= book.chapterCount; n++) if (!missing.has(n)) out.push(n);
+  return out;
+}
+
+export function hasChapter(book: BibleBook, chapter: number): boolean {
+  return chapter >= 1 && chapter <= book.chapterCount && !(book.missingChapters ?? []).includes(chapter);
+}
+
+/** Previous and next chapter with text, crossing book boundaries in canonical order. */
 export function adjacentChapters(
   books: readonly BibleBook[],
   bookCode: string,
@@ -18,15 +33,27 @@ export function adjacentChapters(
   const sorted = sortBooks(books);
   const index = sorted.findIndex((b) => b.bookCode === bookCode);
   if (index < 0) return { prev: null, next: null };
-  const book = sorted[index];
+  const here = availableChapters(sorted[index]);
 
   let prev: ChapterLink | null = null;
-  if (chapter > 1) prev = { book, chapter: Math.min(chapter - 1, book.chapterCount) };
-  else if (index > 0) prev = { book: sorted[index - 1], chapter: sorted[index - 1].chapterCount };
+  const before = here.filter((n) => n < chapter).at(-1);
+  if (before !== undefined) prev = { book: sorted[index], chapter: before };
+  else {
+    for (let i = index - 1; i >= 0 && !prev; i--) {
+      const last = availableChapters(sorted[i]).at(-1);
+      if (last !== undefined) prev = { book: sorted[i], chapter: last };
+    }
+  }
 
   let next: ChapterLink | null = null;
-  if (chapter < book.chapterCount) next = { book, chapter: chapter + 1 };
-  else if (index < sorted.length - 1) next = { book: sorted[index + 1], chapter: 1 };
+  const after = here.find((n) => n > chapter);
+  if (after !== undefined) next = { book: sorted[index], chapter: after };
+  else {
+    for (let i = index + 1; i < sorted.length && !next; i++) {
+      const first = availableChapters(sorted[i])[0];
+      if (first !== undefined) next = { book: sorted[i], chapter: first };
+    }
+  }
 
   return { prev, next };
 }
@@ -53,10 +80,14 @@ export function resolveVersionSwitch(
 ): VersionSwitchTarget | null {
   const sorted = sortBooks(books);
   const book = sorted.find((b) => b.bookCode === bookCode);
-  if (book && chapter >= 1 && chapter <= book.chapterCount) return { bookCode, chapter, fallback: null };
-  if (book && book.chapterCount > 0) return { bookCode, chapter: 1, fallback: "chapter" };
-  const first = sorted.find((b) => b.chapterCount > 0);
-  return first ? { bookCode: first.bookCode, chapter: 1, fallback: "book" } : null;
+  if (book && hasChapter(book, chapter)) return { bookCode, chapter, fallback: null };
+  const firstHere = book ? availableChapters(book)[0] : undefined;
+  if (book && firstHere !== undefined) return { bookCode, chapter: firstHere, fallback: "chapter" };
+  for (const b of sorted) {
+    const first = availableChapters(b)[0];
+    if (first !== undefined) return { bookCode: b.bookCode, chapter: first, fallback: "book" };
+  }
+  return null;
 }
 
 const OLD_TESTAMENT = new Set(["OT", "OLD", "OLD_TESTAMENT", "OLD TESTAMENT"]);
