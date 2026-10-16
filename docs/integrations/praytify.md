@@ -49,6 +49,8 @@ export async function GET(request: Request, { params }: { params: Promise<{ path
 
 Operator steps (once, on production):
 
+State on 2026-10-16: production has no developer profile for Praytify yet (the one key belongs to another app), so Praytify still uses the master key. Step 1 creates the profile; step 2 can then be run through the Dokploy terminal on the Postgres container, as the gateway role owns `platform`.
+
 1. Sign in at https://praytify.bible with the Praytify team account and save a profile.
 2. Set the account's tier: `UPDATE platform.developer_profiles SET tier = 'internal' WHERE user_id = '<id>';`
 3. Create the two keys in the dashboard and store them as `BIBLE_GATEWAY_SECRET_KEY` (Convex env) and `NEXT_PUBLIC_BIBLE_PUBLISHABLE_KEY` (web build env).
