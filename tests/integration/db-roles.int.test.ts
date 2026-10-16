@@ -16,6 +16,7 @@ const suite = ADMIN_URL ? describe : describe.skip;
 const stamp = Date.now();
 const freshDb = `roles_fresh_${stamp}`;
 const legacyDb = `roles_legacy_${stamp}`;
+const extDb = `roles_ext_${stamp}`;
 const ENGINE_PW = "engine-password-for-tests-0001";
 const GATEWAY_PW = "gateway-password-for-tests-001";
 
@@ -67,6 +68,7 @@ suite("least-privilege database roles", () => {
     admin = postgres(ADMIN_URL!, { max: 1, onnotice: () => {} });
     await admin.unsafe(`CREATE DATABASE ${freshDb}`);
     await admin.unsafe(`CREATE DATABASE ${legacyDb}`);
+    await admin.unsafe(`CREATE DATABASE ${extDb}`);
     process.env.LOG_LEVEL = "silent";
   });
 
@@ -74,6 +76,7 @@ suite("least-privilege database roles", () => {
     for (const c of open) await c.end({ timeout: 5 }).catch(() => {});
     await admin.unsafe(`DROP DATABASE IF EXISTS ${freshDb} WITH (FORCE)`);
     await admin.unsafe(`DROP DATABASE IF EXISTS ${legacyDb} WITH (FORCE)`);
+    await admin.unsafe(`DROP DATABASE IF EXISTS ${extDb} WITH (FORCE)`);
     await admin.end({ timeout: 5 });
   });
 
@@ -156,6 +159,25 @@ suite("least-privilege database roles", () => {
       const sql = connect(legacyDb);
       const script = await readFile(join(process.cwd(), "scripts", "db-roles.sql"), "utf8");
       expect(await denied(() => sql.unsafe(script))).toBe("P0001");
+    });
+  });
+
+  // Production keeps pg_trgm in a schema named after the old shared user,
+  // reached through the default "$user" search path. The first rollout left the
+  // engine role without it, and trigram search failed with "function
+  // similarity(text, unknown) does not exist".
+  describe("extensions outside public", () => {
+    beforeAll(async () => {
+      const owner = connect(extDb);
+      await owner.unsafe("CREATE SCHEMA legacy_ext; CREATE EXTENSION pg_trgm SCHEMA legacy_ext;");
+      await owner.unsafe(ENGINE_TABLES_SQL);
+      await applyRoles(extDb);
+    });
+
+    it("lets the engine call pg_trgm unqualified", async () => {
+      const engine = connect(extDb, "bible_engine", ENGINE_PW);
+      const [row] = await engine`SELECT similarity('shepherd', 'shepherds') > 0.5 AS close, 'lord' % 'lords' AS match`;
+      expect(row).toEqual({ close: true, match: true });
     });
   });
 });

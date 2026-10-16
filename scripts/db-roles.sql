@@ -26,6 +26,7 @@ DECLARE
   gateway_pw text := current_setting('bible.gateway_password', true);
   db         text := current_database();
   t          record;
+  ext_path   text := '';
 BEGIN
   IF coalesce(length(engine_pw), 0) < 16 OR coalesce(length(gateway_pw), 0) < 16 THEN
     RAISE EXCEPTION 'Set bible.engine_password and bible.gateway_password (16+ characters each)';
@@ -54,6 +55,23 @@ BEGIN
   REVOKE CREATE ON SCHEMA public FROM PUBLIC;
   GRANT USAGE, CREATE ON SCHEMA public TO bible_engine, bible_gateway;
 
+  -- Extensions can live outside public: production keeps pg_trgm in a schema
+  -- named after the old shared user, found through the default "$user" search
+  -- path. Without USAGE and a search_path that includes it, the engine loses
+  -- similarity() and the trigram operators, and non-dictionary search fails.
+  FOR t IN
+    SELECT DISTINCT n.nspname
+    FROM pg_extension e JOIN pg_namespace n ON n.oid = e.extnamespace
+    WHERE n.nspname NOT IN ('public', 'pg_catalog')
+    ORDER BY n.nspname
+  LOOP
+    EXECUTE format('GRANT USAGE ON SCHEMA %I TO bible_engine, bible_gateway', t.nspname);
+    ext_path := ext_path || ', ' || quote_ident(t.nspname);
+  END LOOP;
+  IF ext_path <> '' THEN
+    EXECUTE format('ALTER ROLE bible_engine IN DATABASE %I SET search_path = public%s', db, ext_path);
+    EXECUTE format('ALTER ROLE bible_gateway IN DATABASE %I SET search_path = public%s', db, ext_path);
+  END IF;
   IF NOT EXISTS (SELECT FROM pg_namespace WHERE nspname = 'platform') THEN
     CREATE SCHEMA platform AUTHORIZATION bible_gateway;
   END IF;
