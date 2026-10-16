@@ -87,6 +87,7 @@ if [ "$BUILD_PORTAL" = true ]; then
     --platform linux/amd64 \
     --build-arg VITE_API_URL="${VITE_API_URL:-https://api.praytify.bible}" \
     --build-arg VITE_PUBLIC_SEARCH_KEY="${VITE_PUBLIC_SEARCH_KEY:-}" \
+    --build-arg VITE_SOURCE_URL="${VITE_SOURCE_URL:-https://github.com/praytify-app/bible-api}" \
     --file "${PORTAL_DIR}/Dockerfile" \
     --tag "${PORTAL_IMAGE}:${TAG}" \
     --tag "${PORTAL_IMAGE}:latest" \

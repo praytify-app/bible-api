@@ -73,7 +73,9 @@ In the gateway logs, the first boot should show `baselined existing gateway sche
 
 Restore `docker-compose.prod.yml` from `4672eea` (the last pre-release `main`), which pins the previous tags: `gateway 0.4.0-17ea66f`, `engine 1.4.0-b0835ca`, `portal 0.4.1-e043cc9`. The previous portal image needs the old compose: it runs nginx as root and cannot start under the hardened settings. Migration 0001 only adds columns and an index, so the old gateway runs against the migrated schema unchanged.
 
-## Least-privilege database roles (recommended, after the release is stable)
+## Least-privilege database roles
+
+**Rolled out in production 2026-10-16:** the gateway connects as `bible_gateway` and the engine as `bible_engine` (`GATEWAY_DATABASE_URL`, `ENGINE_DATABASE_URL`), each owning only its own tables. A full backup was taken first (`pre-release-backups/full-2026-10-16.dump` on the Postgres volume).
 
 Today the gateway and engine share one superuser. `scripts/db-roles.sql` gives each service its own role that owns only its own tables, so a compromised engine cannot read developer sessions, OAuth tokens, or keys, and a compromised gateway cannot alter scripture. It is idempotent and transfers ownership of existing tables; `tests/integration/db-roles.int.test.ts` proves the isolation and the migration of a shared-superuser database.
 
