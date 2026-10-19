@@ -96,7 +96,7 @@ Self-hosted installs from `docker-compose.yml` get these roles automatically on 
 ## After the release
 
 - Rotate the three production credentials that remain in git history: [runbooks/rotate-production-secrets.md](runbooks/rotate-production-secrets.md). Do it before any repository goes public.
-- Move Praytify off `MASTER_API_KEY` as described in [integrations/praytify.md](integrations/praytify.md), then remove the variable.
+- Done 2026-10-19: Praytify moved off `MASTER_API_KEY` ([integrations/praytify.md](integrations/praytify.md)) and the variable is unset in production. Self-hosters should leave it unset and give each first-party app an internal-tier secret key.
 - Optional: a publishable key restricted to `https://praytify.bible`, passed to the portal build as `VITE_PUBLIC_SEARCH_KEY`, turns on search in the reader.
 - Optional: run Redis and set `REDIS_URL` before running more than one gateway replica.
 - HSTS is sent as `max-age=31536000; includeSubDomains` from the gateway and portal. Adding `preload` and submitting praytify.bible to hstspreload.org would protect even first visits, but it is hard to reverse and binds every subdomain to HTTPS; decide it deliberately.

@@ -11,7 +11,7 @@
 ##   optional: ADMIN_TOKEN (unset locks the engine's admin routes),
 ##             GITHUB_CLIENT_ID/SECRET, GOOGLE_CLIENT_ID/SECRET, REDIS_URL,
 ##             ENGINE_DATABASE_URL, GATEWAY_DATABASE_URL (least-privilege roles),
-##             MASTER_API_KEY (deprecated; remove once Praytify uses an internal key)
+##             MASTER_API_KEY (deprecated; unset in production since 2026-10-19)
 ## See .env.production.example. Pin image tags by hand to the tag scripts/deploy.sh
 ## prints (docs/DEPLOY.md, steps 1 and 4).
 
