@@ -62,3 +62,23 @@ export function toLangTag(code: string | null | undefined): string | undefined {
 export function toDir(direction: string | null | undefined): "rtl" | "ltr" {
   return direction === "rtl" ? "rtl" : "ltr";
 }
+
+const LETTER = /\p{L}/gu;
+const SEPARATE_LETTER_SCRIPT =
+  /[\p{Script=Latin}\p{Script=Greek}\p{Script=Cyrillic}\p{Script=Armenian}\p{Script=Georgian}]/u;
+
+/**
+ * Whether `text` keeps its shape under letter-spacing (the eyebrow's tracking).
+ *
+ * Latin, Greek, Cyrillic, Armenian and Georgian set each letter on its own, so
+ * tracking only widens the gaps. Arabic and the other joined scripts lose the
+ * joins between letters, and Indic and Southeast Asian scripts split their
+ * clusters, so real Safari showed an Arabic version name as loose letters. Any
+ * letter outside the allowed scripts returns false; text with no letters is fine.
+ */
+export function toleratesLetterSpacing(text: string): boolean {
+  for (const [letter] of text.matchAll(LETTER)) {
+    if (!SEPARATE_LETTER_SCRIPT.test(letter)) return false;
+  }
+  return true;
+}

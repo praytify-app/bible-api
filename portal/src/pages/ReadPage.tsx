@@ -5,7 +5,7 @@ import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } fro
 import { Alert, Button, Card, EmptyState, Eyebrow, IconButton, SkeletonText, Spinner } from "@/components/ds";
 import { PUBLIC_SEARCH_KEY, bible, type BibleBook } from "@/lib/api";
 import { versionLabel } from "@/lib/version-slug";
-import { toDir, toLangTag } from "@/lib/lang";
+import { toDir, toLangTag, toleratesLetterSpacing } from "@/lib/lang";
 import { BookChapterPickersRow } from "@/features/reader/BookChapterPickers";
 import { ChapterBody } from "@/features/reader/ChapterBody";
 import { adjacentChapters, availableChapters, hasChapter, resolveVersionSwitch, sortBooks } from "@/features/reader/chapter-nav";
@@ -362,7 +362,8 @@ export function ReadPage() {
       <article aria-labelledby="reader-chapter-title">
         {/* No synthetic italic: scripts the serif lacks (Arabic, Hebrew) fall back upright. */}
         <header className="mb-8">
-          <Eyebrow as="p">
+          {/* Tracking pulls joined scripts apart (Arabic showed as loose letters in Safari). */}
+          <Eyebrow as="p" className={toleratesLetterSpacing(versionName) ? undefined : "tracking-normal"}>
             <bdi>{versionName}</bdi>
           </Eyebrow>
           <h1 id="reader-chapter-title" lang={lang} dir={dir} className="mt-2 font-serif text-h1 font-medium italic text-ink [font-synthesis:none]">
