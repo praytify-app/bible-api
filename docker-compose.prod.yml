@@ -146,7 +146,7 @@ services:
 
   portal:
     <<: *hardening
-    image: novashock/praytify-bible-portal:0.5.2-4152c2e
+    image: novashock/praytify-bible-portal:0.5.3-78ca402
     restart: unless-stopped
     mem_limit: 128m
     # Requires the unprivileged nginx image (portal/Dockerfile). The old
