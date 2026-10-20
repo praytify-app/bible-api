@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { MACROLANGUAGE_ALIASES, toDir, toLangTag } from "../lang";
+import { MACROLANGUAGE_ALIASES, toDir, toLangTag, toleratesLetterSpacing } from "../lang";
 
 describe("toLangTag", () => {
   it.each([
@@ -34,5 +34,37 @@ describe("toDir", () => {
     expect(toDir("rtl")).toBe("rtl");
     expect(toDir("ltr")).toBe("ltr");
     expect(toDir(null)).toBe("ltr");
+  });
+});
+
+describe("toleratesLetterSpacing", () => {
+  it("accepts scripts that set each letter on its own", () => {
+    for (const name of [
+      "World English Bible",
+      "Bíblia Livre Para Todos",
+      "Reina-Valera 1909",
+      "Η Αγία Γραφή",
+      "Синодальный перевод",
+      "Աստվածաշունչ",
+      "ბიბლია",
+      "1909",
+      "",
+    ]) {
+      expect(toleratesLetterSpacing(name), name).toBe(true);
+    }
+  });
+
+  it("rejects joined and clustered scripts, where spacing breaks the letterforms", () => {
+    for (const name of [
+      "الكتاب المقدس باللغة العربية، فان دايك",
+      "Ketab El Hayat Majani/كتاب الحياة مجانى",
+      "کتاب مقدس",
+      "ܟܬܒܐ ܩܕܝܫܐ",
+      "पवित्र बाइबिल",
+      "พระคัมภีร์",
+      "和合本",
+    ]) {
+      expect(toleratesLetterSpacing(name), name).toBe(false);
+    }
   });
 });
