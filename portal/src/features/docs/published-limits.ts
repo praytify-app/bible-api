@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { limits, type Limits, type Tier } from "@/lib/api";
+import { limits, type ClientShare, type Limits, type Tier } from "@/lib/api";
 
 /**
  * The defaults README.md publishes. Public pages read the live values from
@@ -12,6 +12,20 @@ export const PUBLISHED_LIMITS = {
   partner: { perMinute: 600, perDay: 100_000 },
 } satisfies Record<string, Limits>;
 
+/** README.md's per-client share of a publishable key's budget. */
+export const PUBLISHED_CLIENT_SHARE: ClientShare = { perMinute: 0.25, perDay: 0.1 };
+
+const percent = new Intl.NumberFormat("en", { style: "percent", maximumFractionDigits: 1 });
+
+/** One sentence explaining why a publishable key has a per-visitor cap, and what it is. */
+export function clientShareSentence(share: ClientShare): string {
+  return (
+    "A publishable key is shared by every visitor of the site it is on, so one visitor (one IP address) " +
+    `can use at most ${percent.format(share.perMinute)} of its per-minute limit and ` +
+    `${percent.format(share.perDay)} of its per-day limit.`
+  );
+}
+
 /** The SDK's default, and the hosted API's address. */
 export const HOSTED_API_URL = "https://api.praytify.bible";
 
@@ -21,6 +35,8 @@ export interface ShownLimits {
   anonymous: Limits;
   free: Limits;
   partner: Limits;
+  /** Null when the live gateway does not report one, so the page never claims a cap it does not enforce. */
+  publishableClientShare: ClientShare | null;
   /** "live" when read from this deployment, "published" when falling back to the README defaults. */
   source: "live" | "published";
 }
@@ -33,9 +49,10 @@ export function usePublishedLimits(): ShownLimits & { isPending: boolean } {
       anonymous: q.data.anonymous,
       free: q.data.tiers.free.secret,
       partner: q.data.tiers.partner.secret,
+      publishableClientShare: q.data.publishableClientShare ?? null,
       source: "live",
       isPending: false,
     };
   }
-  return { ...PUBLISHED_LIMITS, source: "published", isPending: q.isPending };
+  return { ...PUBLISHED_LIMITS, publishableClientShare: PUBLISHED_CLIENT_SHARE, source: "published", isPending: q.isPending };
 }

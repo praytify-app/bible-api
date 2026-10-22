@@ -2,7 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Alert, SkeletonText, Table, TableBody, TableCell, TableHead, TableHeaderCell, TableRow } from "@/components/ds";
 import { plan, type Limits } from "@/lib/api";
 import { useSession } from "@/lib/auth";
-import { TIER_NAMES as tierNames, usePublishedLimits } from "./published-limits";
+import { clientShareSentence, TIER_NAMES as tierNames, usePublishedLimits } from "./published-limits";
 
 const count = new Intl.NumberFormat();
 
@@ -63,17 +63,24 @@ export function RateLimitTable() {
     );
   }
 
+  const shareNote = shown.publishableClientShare && (
+    <p className="text-sm text-ink-secondary">{clientShareSentence(shown.publishableClientShare)}</p>
+  );
+
   if (signedIn && current.data) {
     const p = current.data;
     return (
-      <LimitsTable
-        caption={`Your rate limits on the ${tierNames[p.tier]} plan`}
-        rows={[
-          { who: `Secret keys (${tierNames[p.tier]} plan)`, limits: p.limits.secret },
-          { who: `Publishable keys (${tierNames[p.tier]} plan)`, limits: p.limits.publishable },
-          { who: "Anonymous, per IP", limits: p.limits.anonymous },
-        ]}
-      />
+      <div className="flex flex-col gap-3">
+        <LimitsTable
+          caption={`Your rate limits on the ${tierNames[p.tier]} plan`}
+          rows={[
+            { who: `Secret keys (${tierNames[p.tier]} plan)`, limits: p.limits.secret },
+            { who: `Publishable keys (${tierNames[p.tier]} plan)`, limits: p.limits.publishable },
+            { who: "Anonymous, per IP", limits: p.limits.anonymous },
+          ]}
+        />
+        {shareNote}
+      </div>
     );
   }
 
@@ -86,6 +93,7 @@ export function RateLimitTable() {
         caption={shown.source === "live" ? "Rate limits on this server" : "Published rate limits"}
         rows={publishedRows}
       />
+      {shareNote}
     </div>
   );
 }

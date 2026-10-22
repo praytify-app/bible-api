@@ -209,7 +209,14 @@ export const plan = {
 export interface PublicLimits {
   anonymous: Limits;
   tiers: Record<Tier, { secret: Limits; publishable: Limits }>;
+  /** The most of a publishable budget one client may use, as fractions. Absent on gateways before 0.6.0. */
+  publishableClientShare?: ClientShare;
   maxKeysPerUser: number;
+}
+
+export interface ClientShare {
+  perMinute: number;
+  perDay: number;
 }
 
 /** The limits this deployment enforces, for public pages. No credentials. */
