@@ -79,9 +79,14 @@ ENGINE_ENV=(DATABASE_URL="$DB_URL" PORT="$ENGINE_PORT" GATEWAY_TOKEN="$GATEWAY_T
 
 # Explicit values below win over the gateway's .env: Node's --env-file never
 # overrides variables that are already set.
+# The portal origins the gateway trusts (CORS, sign-in, the docs frame): Vite's
+# dev server and Playwright's (E2E_PORT, default 5199), so the e2e suite runs
+# against this stack without extra setup.
+E2E_ORIGIN_PORT="${E2E_PORT:-5199}"
+DEV_PORTAL_URLS="http://localhost:5173,http://127.0.0.1:5173,http://localhost:$E2E_ORIGIN_PORT,http://127.0.0.1:$E2E_ORIGIN_PORT"
 GATEWAY_ENV=(DATABASE_URL="$DB_URL" PORT="$GATEWAY_PORT" BIBLE_API_URL="http://127.0.0.1:$ENGINE_PORT"
   GATEWAY_TOKEN="$GATEWAY_TOKEN" BETTER_AUTH_URL="http://localhost:$GATEWAY_PORT"
-  PUBLIC_API_URL="http://localhost:$GATEWAY_PORT" PORTAL_URL="${PORTAL_URL:-http://localhost:5173,http://127.0.0.1:5173}"
+  PUBLIC_API_URL="http://localhost:$GATEWAY_PORT" PORTAL_URL="${PORTAL_URL:-$DEV_PORTAL_URLS}"
   BETTER_AUTH_SECRET="${BETTER_AUTH_SECRET:-dev-secret-change-me-dev-secret-change-me}"
   EMAIL_PASSWORD_AUTH="${EMAIL_PASSWORD_AUTH:-true}" NODE_ENV=development
   # Every local tab and test runner shares 127.0.0.1, so the production

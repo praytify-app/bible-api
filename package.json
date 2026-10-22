@@ -1,6 +1,6 @@
 {
   "name": "praytify-bible",
-  "version": "0.5.0",
+  "version": "0.6.0",
   "private": true,
   "description": "Praytify Bible gateway: public API, developer accounts, API keys, quotas, and caching in front of the Open Bible API engine",
   "type": "module",
