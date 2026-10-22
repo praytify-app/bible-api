@@ -79,7 +79,6 @@ Owner: design-system. Consumers read this instead of the source. Source of truth
 | (none) | `--radius-pill` | `rounded-pill` | 9999px | same | Buttons, chips, badges |
 | (none) | `--container-content` | `max-w-content` | 70rem (1120px) | same | Page content width |
 | (none) | `--container-measure` | `max-w-measure` | 68ch | same | Editorial line length |
-| `primary-*` (portal legacy) | deprecated aliases | `text-primary`, `bg-primary-50` … | unchanged indigo | unchanged | Kept only so unmigrated pages render. Remove after Phase 4 |
 
 ## Contrast pairs
 
@@ -201,7 +200,7 @@ Helpers also exported: `cx()` (class join, no conflict resolution: prefer props 
 
 ## Not provided
 
-- **Stock Tailwind palette** (`gray-*`, `indigo-*`, `white`, `black`). Use the semantic utilities. The palette stays compiled only until Phase 4 finishes, then `--color-*: initial` removes it. Same for the deprecated `primary-*` aliases.
+- **Stock Tailwind palette** (`gray-*`, `indigo-*`, `white`, `black`) and the old `primary-*` aliases. Use the semantic utilities. Since 0.6.0 (2026-10-22) `--color-*: initial` at the top of the `@theme inline` block removes both, so a raw colour utility generates no CSS at all.
 - **Space Grotesk and IBM Plex Mono.** Not loaded; eyebrows use Plus Jakarta Sans with tracking (BRIEF §4).
 - **Syntax highlighting.** CodeBlock shows the language as a label. A highlighter is a new dependency and needs a BOARD decision.
 - **Toasts.** Feedback stays next to the action (CopyButton, Alert, Field errors). A toast that outlives the banner must never carry a show-once key.

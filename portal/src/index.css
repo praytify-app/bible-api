@@ -202,6 +202,11 @@
    Markup: bg-surface, text-ink, border-hairline, bg-accent, text-accent-text...
    --------------------------------------------------------------------------- */
 @theme inline {
+  /* Only the semantic names below exist. The reset drops Tailwind's stock
+     palette (red-500, gray-700, white, black...), so a raw colour utility
+     generates no CSS and a page cannot drift off the brand tokens. */
+  --color-*: initial;
+
   --color-surface: var(--surface-base);
   --color-surface-raised: var(--surface-raised);
   --color-surface-sunken: var(--surface-sunken);
@@ -328,21 +333,6 @@
     0%, 100% { opacity: 1; }
     50% { opacity: 0.55; }
   }
-
-  /* Legacy aliases, DEPRECATED. Unmigrated pages still use primary-*; they keep
-     rendering until Phase 4 moves them to the semantic names above. Remove this
-     block once `grep -r "primary-" src/pages src/components` is empty. */
-  --color-primary: #4f46e5;
-  --color-primary-dark: #4338ca;
-  --color-primary-light: #818cf8;
-  --color-primary-50: #eef2ff;
-  --color-primary-100: #e0e7ff;
-  --color-primary-200: #c7d2fe;
-  --color-primary-300: #a5b4fc;
-  --color-primary-400: #818cf8;
-  --color-primary-500: #6366f1;
-  --color-primary-600: #4f46e5;
-  --color-primary-700: #4338ca;
 }
 
 /* The committed panel from DESIGN.md: marks decision points only, never decoration.
