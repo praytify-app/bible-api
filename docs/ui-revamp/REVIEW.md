@@ -4,6 +4,21 @@ Branch `ui/core2-revamp` at `300366d`, 2026-10-14. Static gates and e2e ran on `
 
 Every result below was produced on this branch's final tree against the real local stack (gateway `:3200`, engine `:3100`, Postgres with WEB, KJV and AVD seeded; anonymous limit raised to 1,000 a minute for local runs). Commands run from `portal/` unless noted.
 
+## Closeout: release 0.6.0 (2026-10-22)
+
+Re-run of the done definition on `main` at `42c6d97` (merge of #4), after the post-Phase-4 palette removal, against the local stack with engine 1.5.2 and the gateway's per-client share (#3):
+
+- `tsc -b`, `eslint .`, `vitest run` (281 passed), `vite build` (emits `dist/embed/v1.js`), static gates (0 identity, raw hex, palette, primitive hits), contrast (57 gated pairs AA): all exit 0.
+- e2e on the production build, desktop and mobile: 246 passed, 0 failed, 82 skipped (opt-in screen capture, search without a local key, viewport-only paths). The first run failed 94 tests because `scripts/dev-stack.sh` did not trust Playwright's origin; fixed in `5b525bd`.
+- Images: gateway and portal `0.6.0-42c6d97`, engine `1.5.2-6299022`, smoke-tested read-only with no capabilities as non-root users, then deployed (`d401f5f`). The API answered 404 for about 30 seconds while the single gateway replica restarted.
+
+Verified in production after the deploy:
+
+- Reader search, desktop and mobile in Chromium: "love one another" in WEB returns 21 results, each a link to one verse; the first opens John 13:34 with the verse selected; every search request is 200 with the publishable key and no cookie; no page errors.
+- The key is refused from any origin but `https://praytify.bible` (403), and each visitor's share is enforced: `X-RateLimit-Limit: 150` and `RateLimit-Policy: 150;w=60` (a quarter of the partner tier's 600).
+- `GET /v1/versions?search=e` returns `400 VALIDATION_ERROR` with a readable message; `GET /api/limits` publishes `publishableClientShare`.
+- The version-switch fallback on a partial canon (WEB Genesis 1 to Amo NT) lands on Matthew 1 with its note, desktop and mobile.
+
 ## Gate results
 
 | Gate | Command | Result |
