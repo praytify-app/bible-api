@@ -279,6 +279,52 @@ describe("keyed routes and key kinds", () => {
     expect(server.status).toBe(403);
   });
 
+  it("caps one client's share of a publishable key so the site's other visitors keep theirs", async () => {
+    // A fixed instant mid-minute, so the minute window cannot roll over mid-test.
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(new Date("2026-10-22T12:00:05Z"));
+    try {
+      const { app } = setup();
+      const search = (ip: string) =>
+        app.request("/v1/search?q=love", {
+          headers: { authorization: `Bearer ${PUBLISHABLE}`, origin: "https://church.example", "x-forwarded-for": ip },
+        });
+      // Free plan: 60 a minute per account, so one client gets 15.
+      const first = await search("198.51.100.1");
+      expect(first.headers.get("x-ratelimit-limit")).toBe("15");
+      expect(first.headers.get("x-ratelimit-remaining")).toBe("14");
+      for (let i = 1; i < 15; i++) expect((await search("198.51.100.1")).status).toBe(200);
+      const capped = await search("198.51.100.1");
+      expect(capped.status).toBe(429);
+      expect(capped.headers.get("retry-after")).toBeTruthy();
+      expect((await capped.json()).error.message).toMatch(/One client may use 15 requests per minute/);
+
+      // Refusals are not charged to the account: after 30 more from the capped
+      // client, three other clients still get their full share.
+      for (let i = 0; i < 30; i++) await search("198.51.100.1");
+      for (const ip of ["198.51.100.2", "198.51.100.3", "198.51.100.4"]) {
+        for (let i = 0; i < 15; i++) expect((await search(ip)).status).toBe(200);
+      }
+
+      // 60 charged: now the account budget itself is spent, for every client.
+      const spent = await search("198.51.100.5");
+      expect(spent.status).toBe(429);
+      expect((await spent.json()).error.message).toMatch(/free plan allows 60 requests per minute/);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("leaves secret keys on the account budget alone", async () => {
+    const { app } = setup();
+    for (let i = 0; i < 20; i++) {
+      const r = await app.request("/v1/search?q=love", {
+        headers: { authorization: `Bearer ${SECRET}`, "x-forwarded-for": "198.51.100.1" },
+      });
+      expect(r.status).toBe(200);
+    }
+  });
+
   it("refuses downloads with a publishable key", async () => {
     const { app } = setup();
     const r = await app.request("/v1/versions/WEB/download", {
@@ -373,6 +419,7 @@ describe("hardening", () => {
     const body = await r.json();
     expect(body.anonymous).toEqual({ perMinute: 77, perDay: 20000 });
     expect(body.tiers.free.secret).toEqual({ perMinute: 60, perDay: 1000 });
+    expect(body.publishableClientShare).toEqual({ perMinute: 0.25, perDay: 0.1 });
     expect(body.maxKeysPerUser).toBe(9);
     expect(r.headers.get("access-control-allow-origin")).toBe("*");
   });

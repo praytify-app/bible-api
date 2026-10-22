@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { anonymousBucket, MemoryStore, RateLimiter, rateLimitHeaders } from "../../src/middleware/rate-limit.js";
+import { PLAN_LIMITS, publishableClientLimits } from "../../src/plans.js";
 
 const LIMITS = { perMinute: 3, perDay: 5 };
 const T0 = Date.UTC(2026, 9, 14, 12, 0, 0);
@@ -78,5 +79,17 @@ describe("anonymousBucket", () => {
   it("puts every address in one IPv6 /64 in the same bucket", () => {
     expect(anonymousBucket("2001:db8:1:2::a")).toBe(anonymousBucket("2001:db8:1:2:dead:beef:0:1"));
     expect(anonymousBucket("2001:db8:1:2::a")).not.toBe(anonymousBucket("2001:db8:1:3::a"));
+  });
+});
+
+describe("publishableClientLimits", () => {
+  it("gives one client a quarter of the minute budget and a tenth of the day", () => {
+    expect(publishableClientLimits(PLAN_LIMITS.free.publishable)).toEqual({ perMinute: 15, perDay: 100 });
+    expect(publishableClientLimits(PLAN_LIMITS.partner.publishable)).toEqual({ perMinute: 150, perDay: 10_000 });
+  });
+
+  it("rounds up and never drops below one request", () => {
+    expect(publishableClientLimits({ perMinute: 3, perDay: 5 })).toEqual({ perMinute: 1, perDay: 1 });
+    expect(publishableClientLimits({ perMinute: 10, perDay: 25 })).toEqual({ perMinute: 3, perDay: 3 });
   });
 });

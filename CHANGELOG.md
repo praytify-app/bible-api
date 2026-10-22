@@ -2,7 +2,13 @@
 
 All notable changes to the gateway, portal, SDK, and embed. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follow [Semantic Versioning](https://semver.org/).
 
-## [0.5.0] - Unreleased
+## [Unreleased]
+
+### Security
+
+- **Per-client share of publishable budgets.** A publishable key ships in a web page, so one client could copy it, forge the `Origin`, and spend the account's whole allowance, switching the feature off for everyone else on the site. Each client (one IP, or one IPv6 /64) can now use at most a quarter of a publishable key's per-minute budget and a tenth of its per-day budget (15 and 100 on the free plan). Refused requests are not charged to the account. `GET /api/limits` publishes the share as `publishableClientShare`. Secret keys are unchanged. ([ADR 0001](docs/adr/0001-publishable-and-secret-api-keys.md))
+
+## [0.5.0] - 2026-10-16
 
 The "open the platform" release: safe to share, easy to embed, fast at scale. Background and evidence in [docs/GAP-EVAL-2026-10-14.md](docs/GAP-EVAL-2026-10-14.md).
 
