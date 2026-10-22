@@ -80,13 +80,21 @@ if [ "$BUILD_GATEWAY" = true ]; then
   echo ""
 fi
 
+# Reader search on praytify.bible. A publishable key, public by design: it ships
+# in every visitor's bundle and works only from https://praytify.bible, with a
+# per-visitor share of its budget (ADR 0001). It belongs to the "Praytify Bible
+# portal" service account (partner tier). Set VITE_PUBLIC_SEARCH_KEY to use
+# another key, or to an empty value to build without search: a self-hosted
+# portal needs its own key, because this one is refused on any other origin.
+PORTAL_SEARCH_KEY="pb_pk_aHpCkCpV1vKVKx6gKuP8iWMxGtRh47Eb60ajmj7SNUg"
+
 # Build + push portal
 if [ "$BUILD_PORTAL" = true ]; then
   echo ">>> Building ${PORTAL_IMAGE}:${TAG} (linux/amd64)..."
   docker buildx build \
     --platform linux/amd64 \
     --build-arg VITE_API_URL="${VITE_API_URL:-https://api.praytify.bible}" \
-    --build-arg VITE_PUBLIC_SEARCH_KEY="${VITE_PUBLIC_SEARCH_KEY:-}" \
+    --build-arg VITE_PUBLIC_SEARCH_KEY="${VITE_PUBLIC_SEARCH_KEY-$PORTAL_SEARCH_KEY}" \
     --build-arg VITE_SOURCE_URL="${VITE_SOURCE_URL:-https://github.com/praytify-app/bible-api}" \
     --file "${PORTAL_DIR}/Dockerfile" \
     --tag "${PORTAL_IMAGE}:${TAG}" \

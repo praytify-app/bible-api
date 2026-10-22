@@ -65,7 +65,7 @@ curl -s https://api.praytify.bible/v1/openapi.json | grep -c '"/v1/'            
 curl -sI https://praytify.bible/embed/v1.js | grep -i access-control-allow-origin            # *
 ```
 
-Open https://api.praytify.bible/docs and https://praytify.bible/docs and confirm the reference renders. Sign in, create a publishable key for `https://praytify.bible`, and confirm it works from the portal and is refused elsewhere.
+Open https://api.praytify.bible/docs and https://praytify.bible/docs and confirm the reference renders. Open https://praytify.bible/read/WEB/JHN/3, search for a word, and confirm results appear: the portal build carries the reader's publishable key (`scripts/deploy.sh`), which works only from `https://praytify.bible`.
 
 In the gateway logs, the first boot should show `baselined existing gateway schema at migration 0000` and `gateway migrations complete`.
 
@@ -97,7 +97,7 @@ Self-hosted installs from `docker-compose.yml` get these roles automatically on 
 
 - Rotate the three production credentials that remain in git history: [runbooks/rotate-production-secrets.md](runbooks/rotate-production-secrets.md). Do it before any repository goes public.
 - Done 2026-10-19: Praytify moved off `MASTER_API_KEY` ([integrations/praytify.md](integrations/praytify.md)) and the variable is unset in production. Self-hosters should leave it unset and give each first-party app an internal-tier secret key.
-- Optional: a publishable key restricted to `https://praytify.bible`, passed to the portal build as `VITE_PUBLIC_SEARCH_KEY`, turns on search in the reader.
+- Done 2026-10-22: reader search is on. `scripts/deploy.sh` passes the "Reader search (praytify.bible)" publishable key (service account "Praytify Bible portal", partner tier) as `VITE_PUBLIC_SEARCH_KEY`. Rolling it means a new key in the database, a new value in `scripts/deploy.sh`, and a portal rebuild. A self-hosted portal needs its own key or builds without search (`VITE_PUBLIC_SEARCH_KEY=`).
 - Optional: run Redis and set `REDIS_URL` before running more than one gateway replica.
 - HSTS is sent as `max-age=31536000; includeSubDomains` from the gateway and portal. Adding `preload` and submitting praytify.bible to hstspreload.org would protect even first visits, but it is hard to reverse and binds every subdomain to HTTPS; decide it deliberately. Decided 2026-10-19: not now. The header stays without `preload`; revisit once every praytify.bible subdomain is known to serve HTTPS.
 - Point uptime monitoring at `https://api.praytify.bible/health/ready`, which returns `503` when the database is unreachable.
