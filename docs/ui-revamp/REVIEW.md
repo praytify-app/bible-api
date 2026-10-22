@@ -143,19 +143,18 @@ How it was checked: `e2e/qa/inert-controls.spec.ts` visits 16 routes on both pro
 
 | Feature | State | Reason | What it needs |
 |---|---|---|---|
-| Terms of Service and Privacy Policy | gated | BRIEF §11: neither document exists, so the login page no longer mentions them (no "terms" or "privacy" text in `src`) | Real documents (a separate legal task), then a route and a link on `/login` |
-| Source links (header, footer, hero) | gated on `VITE_SOURCE_URL` | The repository returned 404 on 2026-10-14. Copy still says "open source" and "MIT licensed" without a link | Make the repository public and set the build argument |
-| Reader search | gated on `VITE_PUBLIC_SEARCH_KEY` | BRIEF §11. Verified end to end locally with a publishable key restricted to `http://localhost:5199`: results, empty state, result links that open and select the verse, Bearer key without the cookie | An operator creates a production publishable key restricted to the portal origin and passes it as a build argument |
+| Terms of Service and Privacy Policy | gated | BRIEF §11. Drafts exist in `docs/legal/` (with a counsel review packet) but are not approved, so the login page still makes no claim | Counsel approves `docs/legal/`, then a route and a link on `/login` |
+| Source links (header, footer, hero) | done (portal 0.5.1, 2026-10-16) | Both repositories are public and the build sets `VITE_SOURCE_URL` | Nothing |
+| Reader search | done (0.6.0, 2026-10-22) | The portal build carries the "Reader search (praytify.bible)" publishable key, partner tier, accepted only from `https://praytify.bible` and refused elsewhere (403). The gateway caps each visitor's share of it, so one client cannot switch search off for everyone. Verified in production, see the closeout below | Nothing |
 | GitHub and Google sign-in | partial | Buttons follow `/api/auth-methods`. The OAuth round trip cannot complete locally and must not be clicked | A run against staging with real OAuth apps |
-| Anonymous limits on public pages | partial | Quick start and other signed-out pages quote README defaults (`features/docs/published-limits.ts`: 120 a minute, 20,000 a day); signed-in pages read `GET /api/dashboard/plan`. If `ANON_RATE_PER_MINUTE` or `ANON_RATE_PER_DAY` changes in production, the public copy drifts | A public limits endpoint, or a release check that compares the constant with production config |
-| Reader fallback on a version switch to a translation without the book | partial | WEB, KJV and AVD share all 66 books, so it cannot happen with the seeded stack; unit-tested in `chapter-nav.test.ts`, the missing-book page is covered in e2e via `/read/WEB/TOB/1` | A seeded translation with a partial canon |
+| Anonymous limits on public pages | done (0.5.0) | Signed-out pages read `GET /api/limits` and fall back to the README defaults only when the API is unreachable; signed-in pages read `GET /api/dashboard/plan` | Nothing |
+| Reader fallback on a version switch to a translation without the book | done (verified in production 2026-10-22) | The seeded stack cannot produce it (WEB, KJV and AVD share all 66 books), so it was checked on praytify.bible: switching from WEB Genesis 1 to Amo NT (27 books) lands on `/read/amo/MAT/1` with "amo does not include Genesis 1, so you are at Matiyu 1.", desktop and mobile, no page errors. Minor: the note names the translation by its code (`amo`), not its abbreviation | Optional: a partial-canon translation in the sample seeder so e2e covers it |
 
 ## Open owner decisions
 
-- **Terms and Privacy text** (BRIEF §11, BOARD "Decisions needed"). Working default holds: no claim on the login page.
-- **Production search key** (BRIEF §11): create the publishable key and pass `VITE_PUBLIC_SEARCH_KEY` at build time.
-- **Public repository** (BRIEF §11): make it public and set `VITE_SOURCE_URL`, or keep the source links hidden.
-- **HSTS `preload`** (raised in this pass): the lead dropped `preload` in `300366d`; the portal now sends `max-age=31536000; includeSubDomains`. Adding it back and submitting to the preload list is the owner's call. The note is in `docs/DEPLOY.md` on `feat/platform-hardening`, not yet on this branch.
+- **Terms and Privacy text** (BRIEF §11). Drafted in `docs/legal/`; counsel must approve it before it is published or linked from `/login`.
+- **OAuth sign-in end to end** (below, "Not verified"): needs a sign-in with real GitHub and Google accounts.
+- Closed: the production search key (2026-10-22, 0.6.0), the public repository (2026-10-16), and HSTS `preload` (decided 2026-10-19: not now, see `docs/DEPLOY.md`).
 
 ## Not verified
 
