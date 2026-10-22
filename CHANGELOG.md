@@ -2,11 +2,44 @@
 
 All notable changes to the gateway, portal, SDK, and embed. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versions follow [Semantic Versioning](https://semver.org/).
 
-## [Unreleased]
+## [0.6.0] - 2026-10-22
+
+Closes the UI revamp: reader search goes live, and the portal theme keeps only its brand tokens.
+
+### Added
+
+- **Reader search on praytify.bible.** The portal build carries a publishable key for `https://praytify.bible` (`scripts/deploy.sh`), owned by a "Praytify Bible portal" service account on the partner tier. Self-hosted builds stay without search until they set their own `VITE_PUBLIC_SEARCH_KEY`.
+- The rate-limit table on the quick start states the per-visitor share of a publishable key, from `GET /api/limits` (hidden when a gateway does not report one).
+
+### Fixed
+
+- `scripts/dev-stack.sh` trusts the Playwright origin (`E2E_PORT`, default 5199) as well as Vite's, so the documented end-to-end run works on a fresh stack. Before, sign-up, the auth-method list, and the docs frame were refused from the test origin unless `PORTAL_URL` was set by hand.
+
+### Removed
+
+- The portal theme no longer compiles Tailwind's stock palette or the deprecated `primary-*` aliases (`--color-*: initial`). Only the semantic tokens in `CONTRACTS.md` generate colour utilities, so a raw `bg-red-500` or `text-white` produces no CSS.
 
 ### Security
 
 - **Per-client share of publishable budgets.** A publishable key ships in a web page, so one client could copy it, forge the `Origin`, and spend the account's whole allowance, switching the feature off for everyone else on the site. Each client (one IP, or one IPv6 /64) can now use at most a quarter of a publishable key's per-minute budget and a tenth of its per-day budget (15 and 100 on the free plan). Refused requests are not charged to the account. `GET /api/limits` publishes the share as `publishableClientShare`. Secret keys are unchanged. ([ADR 0001](docs/adr/0001-publishable-and-secret-api-keys.md))
+
+## [0.5.3] - 2026-10-20 (portal)
+
+### Fixed
+
+- The reader's version label keeps letter-spacing only for Latin, Greek, Cyrillic, Armenian, and Georgian. Spacing broke the joins in Arabic and the clusters in Indic and Southeast Asian scripts.
+
+## [0.5.2] - 2026-10-16 (portal)
+
+### Fixed
+
+- The reader skips chapters a partial translation lacks (`missingChapters` from engine 1.5.1): the picker lists only chapters with text, next and previous step over gaps, and a direct link to a missing chapter explains itself instead of a 404.
+
+## [0.5.1] - 2026-10-16 (portal)
+
+### Added
+
+- Source links in the header, footer, and hero now that the repositories are public.
 
 ## [0.5.0] - 2026-10-16
 
