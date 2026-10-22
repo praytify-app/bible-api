@@ -55,6 +55,8 @@ Send a key as `Authorization: Bearer <key>`.
 | Free account (per key kind) | 60 | 1,000 |
 | Partner | 600 | 100,000 |
 
+A publishable key is shared by every visitor of the site it is on, so one client (one IP, or one IPv6 /64) can use at most a quarter of its per-minute limit and a tenth of its per-day limit. On the free plan that is 15 a minute and 100 a day per visitor, and no single visitor can use up the site's allowance.
+
 Every response carries `X-RateLimit-*` headers, and a `429` includes `Retry-After`. Scripture responses carry `ETag` and `Cache-Control`, so a client that sends `If-None-Match` gets a `304` and pays nothing.
 
 **Attribution.** Many translations require it as a licence condition. Responses include `attribution`, `attributionUrl`, and `license`; show them wherever you show the text.

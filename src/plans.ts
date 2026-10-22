@@ -38,3 +38,19 @@ export function normalizeTier(value: unknown): Tier {
 export function limitsFor(tier: Tier, kind: KeyKind): Limits {
   return PLAN_LIMITS[tier][kind];
 }
+
+/**
+ * The most of a publishable budget one client (one IP, or one IPv6 /64) can
+ * use. A publishable key ships inside a web page, so every visitor of that
+ * site shares the account's budget, and anyone can copy the key and forge a
+ * matching Origin from a script. Without a per-client cap, one client could
+ * spend the whole allowance and switch the feature off for everyone else.
+ */
+export const PUBLISHABLE_CLIENT_SHARE = { perMinute: 0.25, perDay: 0.1 } as const;
+
+export function publishableClientLimits(account: Limits): Limits {
+  return {
+    perMinute: Math.max(1, Math.ceil(account.perMinute * PUBLISHABLE_CLIENT_SHARE.perMinute)),
+    perDay: Math.max(1, Math.ceil(account.perDay * PUBLISHABLE_CLIENT_SHARE.perDay)),
+  };
+}

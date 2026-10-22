@@ -30,5 +30,6 @@ Option 2.
 ## Consequences
 
 - Origin checks only bind browsers. A script can forge an `Origin` header, so a publishable key is a quota-attribution and abuse-friction tool, not a secret. That is acceptable because every route it can reach is read-only scripture text, and most of it is already public without any key.
+- Because anyone can copy a publishable key, one client could spend the whole account budget and switch the feature off for every other visitor of the site. Since 2026-10-22 each client (one IP, or one IPv6 /64) is also held to a share of the publishable budget: a quarter per minute and a tenth per day (`PUBLISHABLE_CLIENT_SHARE` in `src/plans.ts`). The client's share is checked first, so its refused requests do not spend the account budget. Many clients together can still exhaust it; the remedy for a site that outgrows that is a higher tier, not a larger share.
 - Key prefixes now carry meaning, so the portal can warn when someone pastes a secret key into client-side code samples.
 - One migration adds three defaulted or nullable columns; no backfill beyond `kind = 'secret'`.

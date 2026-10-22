@@ -1,6 +1,6 @@
 import type { Context, Next } from "hono";
 import type { Limits } from "../plans.js";
-import { limitsFor } from "../plans.js";
+import { limitsFor, publishableClientLimits } from "../plans.js";
 import { apiError } from "../lib/errors.js";
 import { log } from "../lib/logger.js";
 import type { GatewayEnv } from "../types.js";
@@ -158,7 +158,10 @@ export function rateLimitHeaders(r: RateLimitResult, now = Date.now()): Record<s
 
 /**
  * Charges the request to the caller's account (keyed requests) or to the
- * client IP (anonymous requests). Master-key traffic is exempt.
+ * client IP (anonymous requests). Master-key traffic is exempt. A publishable
+ * key is also charged to the client's share of its account budget
+ * (`publishableClientLimits`), checked first so a client past its share is
+ * refused without spending what the site's other visitors rely on.
  */
 export function rateLimitMiddleware(limiter: RateLimiter, anonymous: Limits) {
   return async (c: Context<GatewayEnv>, next: Next) => {
@@ -167,10 +170,24 @@ export function rateLimitMiddleware(limiter: RateLimiter, anonymous: Limits) {
 
     const scope = auth.type === "key" ? `u:${auth.userId}:${auth.kind}` : `ip:${anonymousBucket(auth.ip)}`;
     const limits = auth.type === "key" ? limitsFor(auth.tier, auth.kind) : anonymous;
+    const perClient = auth.type === "key" && auth.kind === "publishable";
 
     let result: RateLimitResult;
+    let clientCapped = false;
     try {
-      result = await limiter.check(scope, limits);
+      if (perClient) {
+        const client = await limiter.check(`${scope}:ip:${anonymousBucket(auth.ip)}`, publishableClientLimits(limits));
+        if (client.allowed) {
+          result = await limiter.check(scope, limits);
+          // Report whichever budget runs out first, as check() does for its windows.
+          if (result.allowed && client.remaining < result.remaining) result = client;
+        } else {
+          result = client;
+          clientCapped = true;
+        }
+      } else {
+        result = await limiter.check(scope, limits);
+      }
     } catch (err) {
       // Fail open: a cache outage must not take scripture offline. Logged at
       // error so it pages whoever watches the logs.
@@ -183,7 +200,9 @@ export function rateLimitMiddleware(limiter: RateLimiter, anonymous: Limits) {
       const hint =
         auth.type === "anonymous"
           ? "Send an API key to get a per-account quota instead of the shared per-IP one."
-          : `Your ${auth.tier} plan allows ${result.limit} requests per ${result.window}.`;
+          : clientCapped
+            ? `One client may use ${result.limit} requests per ${result.window} of this publishable key's shared allowance.`
+            : `Your ${auth.tier} plan allows ${result.limit} requests per ${result.window}.`;
       return apiError(c, 429, "RATE_LIMITED", `Rate limit exceeded. ${hint}`, headers);
     }
     await next();
